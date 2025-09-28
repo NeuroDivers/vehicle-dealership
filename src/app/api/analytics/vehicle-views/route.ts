@@ -2,7 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // In-memory storage for demo purposes
 // In production, this would use your database
-let vehicleViews: any[] = [];
+interface VehicleViewData {
+  id: string;
+  vehicleId: string;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  timestamp: string;
+  userAgent: string;
+  referrer: string;
+  url: string;
+  ip: string;
+}
+
+let vehicleViews: VehicleViewData[] = [];
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +52,7 @@ export async function GET(request: NextRequest) {
     
     // Calculate time range
     const now = new Date();
-    let startDate = new Date();
+    const startDate = new Date();
     
     switch (timeRange) {
       case '24h':
@@ -68,7 +82,18 @@ export async function GET(request: NextRequest) {
     const averageViewsPerVehicle = uniqueVehicles > 0 ? totalViews / uniqueVehicles : 0;
     
     // Top vehicles by view count
-    const vehicleViewCounts = filteredViews.reduce((acc, view) => {
+    interface VehicleViewCount {
+      vehicleId: string;
+      make: string;
+      model: string;
+      year: number;
+      price: number;
+      viewCount: number;
+      timestamp: string;
+      referrer: string;
+    }
+    
+    const vehicleViewCounts: Record<string, VehicleViewCount> = filteredViews.reduce((acc, view) => {
       const key = view.vehicleId;
       if (!acc[key]) {
         acc[key] = {
@@ -84,10 +109,10 @@ export async function GET(request: NextRequest) {
       }
       acc[key].viewCount++;
       return acc;
-    }, {});
+    }, {} as Record<string, VehicleViewCount>);
     
     const topVehicles = Object.values(vehicleViewCounts)
-      .sort((a: any, b: any) => b.viewCount - a.viewCount)
+      .sort((a, b) => b.viewCount - a.viewCount)
       .slice(0, 5);
     
     // Recent views
@@ -96,7 +121,7 @@ export async function GET(request: NextRequest) {
       .slice(0, 10);
     
     // Referrer stats
-    const referrerCounts = filteredViews.reduce((acc, view) => {
+    const referrerCounts: Record<string, number> = filteredViews.reduce((acc, view) => {
       const referrer = view.referrer || 'direct';
       const source = referrer.includes('google') ? 'Google' :
                     referrer.includes('facebook') ? 'Facebook' :
@@ -105,11 +130,11 @@ export async function GET(request: NextRequest) {
       
       acc[source] = (acc[source] || 0) + 1;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
     
     const referrerStats = Object.entries(referrerCounts)
-      .map(([source, count]) => ({ source, count }))
-      .sort((a: any, b: any) => b.count - a.count);
+      .map(([source, count]) => ({ source, count: count as number }))
+      .sort((a, b) => b.count - a.count);
     
     // Daily views for chart
     const dailyViews = [];
