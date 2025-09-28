@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload, X, Image as ImageIcon } from 'lucide-react';
 
 export default function AddVehicle() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     make: '',
     model: '',
@@ -17,6 +18,7 @@ export default function AddVehicle() {
     bodyType: 'Sedan',
     color: '',
     description: '',
+    images: [] as string[],
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,7 +29,10 @@ export default function AddVehicle() {
       const res = await fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          images: JSON.stringify(formData.images), // Convert images array to JSON string for database
+        }),
       });
 
       if (res.ok) {
@@ -50,6 +55,70 @@ export default function AddVehicle() {
       [name]: name === 'year' || name === 'price' || name === 'odometer' 
         ? parseInt(value) || 0 
         : value
+    }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPEG, PNG, WebP, or AVIF)');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingImage(true);
+    
+    try {
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Upload directly to Worker API
+      const uploadRes = await fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadRes.ok) {
+        const error = await uploadRes.json();
+        throw new Error(error.error || 'Failed to upload image');
+      }
+      
+      const { url } = await uploadRes.json();
+      
+      // Add image URL to form data
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, url],
+      }));
+      
+      // Success feedback
+      console.log('Image uploaded successfully:', url);
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert(error instanceof Error ? error.message : 'Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
     }));
   };
 
@@ -197,6 +266,71 @@ export default function AddVehicle() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter vehicle description..."
             />
+          </div>
+
+          {/* Image Upload Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Vehicle Images
+            </label>
+            
+            {/* Image Preview Grid */}
+            {formData.images.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                {formData.images.map((image, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={image}
+                      alt={`Vehicle ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Upload Button */}
+            <div className="flex items-center space-x-4">
+              <label className="relative cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage || formData.images.length >= 10}
+                  className="hidden"
+                />
+                <div className={`flex items-center space-x-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors ${
+                  uploadingImage || formData.images.length >= 10 ? 'opacity-50 cursor-not-allowed' : ''
+                }`}>
+                  {uploadingImage ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                      <span className="text-gray-600">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-5 w-5 text-gray-600" />
+                      <span className="text-gray-600">
+                        {formData.images.length >= 10 ? 'Maximum 10 images' : 'Upload Image'}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </label>
+              <span className="text-sm text-gray-500">
+                {formData.images.length}/10 images uploaded
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Supported formats: JPEG, PNG, WebP, AVIF (max 5MB each)
+            </p>
           </div>
 
           <div className="flex justify-end space-x-4">

@@ -14,6 +14,7 @@ interface Vehicle {
   bodyType: string;
   color: string;
   isSold: number;
+  images?: string;
 }
 
 export default function AdminVehicles() {
@@ -117,6 +118,9 @@ export default function AdminVehicles() {
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Image
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Vehicle
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -134,16 +138,31 @@ export default function AdminVehicles() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {vehicles.map((vehicle) => (
-                  <tr key={vehicle.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {vehicle.year} {vehicle.make} {vehicle.model}
+                {vehicles.map((vehicle) => {
+                  const images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
+                  return (
+                    <tr key={vehicle.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {images.length > 0 ? (
+                          <img
+                            src={images[0]}
+                            alt={`${vehicle.make} ${vehicle.model}`}
+                            className="h-16 w-16 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="h-16 w-16 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">No image</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {vehicle.year} {vehicle.make} {vehicle.model}
+                          </div>
+                          <div className="text-sm text-gray-500">ID: {vehicle.id}</div>
                         </div>
-                        <div className="text-sm text-gray-500">ID: {vehicle.id}</div>
-                      </div>
-                    </td>
+                      </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {vehicle.color} • {vehicle.bodyType}
@@ -187,7 +206,8 @@ export default function AdminVehicles() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
