@@ -128,44 +128,31 @@ export default function EditVehicleClient() {
     setUploadingImage(true);
     
     try {
-      // Step 1: Get presigned URL from API
-      const presignedRes = await fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/upload/presigned-url', {
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Upload directly to Worker API
+      const uploadRes = await fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileType: file.type,
-        }),
-      });
-      
-      if (!presignedRes.ok) {
-        const error = await presignedRes.json();
-        throw new Error(error.error || 'Failed to get upload URL');
-      }
-      
-      const { uploadUrl, publicUrl } = await presignedRes.json();
-      
-      // Step 2: Upload directly to R2 using presigned URL
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
+        body: formData,
       });
       
       if (!uploadRes.ok) {
-        throw new Error('Failed to upload image to storage');
+        const error = await uploadRes.json();
+        throw new Error(error.error || 'Failed to upload image');
       }
       
-      // Step 3: Add image URL to form data
+      const { url } = await uploadRes.json();
+      
+      // Add image URL to form data
       setFormData(prev => ({
         ...prev,
-        images: [...(prev.images || []), publicUrl],
+        images: [...(prev.images || []), url],
       }));
       
       // Success feedback
-      console.log('Image uploaded successfully:', publicUrl);
+      console.log('Image uploaded successfully:', url);
       
     } catch (error) {
       console.error('Upload failed:', error);
