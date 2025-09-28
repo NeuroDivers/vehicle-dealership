@@ -1,7 +1,8 @@
 import EditVehicleClient from './EditVehicleClient';
 
-export function generateStaticParams() {
-  // Return empty array to prevent static generation but allow dynamic routing
+export async function generateStaticParams() {
+  // Return empty array - this tells Next.js to handle this route dynamically
+  // even though we're using static export
   return [];
 }
 
