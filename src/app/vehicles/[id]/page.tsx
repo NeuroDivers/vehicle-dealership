@@ -58,7 +58,7 @@ export default function VehicleDetailPage() {
         <div className="max-w-7xl mx-auto px-4 py-16 text-center">
           <Car className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Vehicle Not Found</h1>
-          <p className="text-gray-600 mb-8">Sorry, we couldn't find the vehicle you're looking for.</p>
+          <p className="text-gray-600 mb-8">Sorry, we couldn&apos;t find the vehicle you&apos;re looking for.</p>
           <Link href="/vehicles" className="text-blue-600 hover:text-blue-800">
             ← Back to Inventory
           </Link>
