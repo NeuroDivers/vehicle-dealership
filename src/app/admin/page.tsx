@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getVehicleEndpoint } from '@/lib/api-config';
 import { Car, TrendingUp, Users, DollarSign, BarChart3, UserCheck, MessageSquare } from 'lucide-react';
 
 interface Stats {
@@ -21,14 +22,16 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles')
+    fetch(getVehicleEndpoint())
       .then(res => res.json())
       .then(data => {
         const vehicles = Array.isArray(data) ? data : [];
         const total = vehicles.length;
         const sold = vehicles.filter((v) => v.isSold === 1).length;
-        const totalValue = vehicles.reduce((sum, v) => sum + (v.price || 0), 0);
-        const avgPrice = total > 0 ? totalValue / total : 0;
+        // Calculate total value only for available vehicles (not sold)
+        const availableVehicles = vehicles.filter((v) => v.isSold !== 1);
+        const totalValue = availableVehicles.reduce((sum, v) => sum + (v.price || 0), 0);
+        const avgPrice = availableVehicles.length > 0 ? totalValue / availableVehicles.length : 0;
         
         setStats({
           totalVehicles: total,

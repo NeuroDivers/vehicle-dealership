@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { getVehicleEndpoint } from '@/lib/api-config';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Filter, X, Car } from 'lucide-react';
 import { trackSearchQuery } from '@/lib/analytics-config';
 
+const VehiclesPage = () => {
 interface Vehicle {
   id: string;
   make: string;
@@ -35,7 +37,7 @@ export default function VehiclesPage() {
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles')
+    fetch(getVehicleEndpoint())
       .then(res => res.json())
       .then(data => {
         // Only show available vehicles (not sold)

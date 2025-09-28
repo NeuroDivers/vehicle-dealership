@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getVehicleEndpoint } from '@/lib/api-config';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Upload, X } from 'lucide-react';
@@ -26,7 +27,7 @@ export default function AddVehicle() {
     setLoading(true);
 
     try {
-      const res = await fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles', {
+      const res = await fetch(getVehicleEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,23 +80,22 @@ export default function AddVehicle() {
 
     setUploadingImage(true);
     
-    try {
       // Create FormData for upload
       const formData = new FormData();
       formData.append('file', file);
       
       // Upload directly to Worker API
-      const uploadRes = await fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/upload', {
+      const imageUploadRes = await fetch(`${getVehicleEndpoint().replace('/api/vehicles', '')}/api/upload`, {
         method: 'POST',
         body: formData,
       });
       
-      if (!uploadRes.ok) {
-        const error = await uploadRes.json();
+      if (!imageUploadRes.ok) {
+        const error = await imageUploadRes.json();
         throw new Error(error.error || 'Failed to upload image');
       }
       
-      const { url } = await uploadRes.json();
+      const { url } = await imageUploadRes.json();
       
       // Add image URL to form data
       setFormData(prev => ({

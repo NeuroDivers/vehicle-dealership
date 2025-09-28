@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getVehicleEndpoint } from '@/lib/api-config';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Car, Calendar, Gauge, Palette, Loader2 } from 'lucide-react';
@@ -41,7 +42,7 @@ export default function VehicleDetailClient() {
     }
 
     // Fetch vehicle data
-    fetch(`https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles/${vehicleId}`)
+    fetch(getVehicleEndpoint(`/${vehicleId}`))
       .then(res => res.json())
       .then(data => {
         if (data.error) {
