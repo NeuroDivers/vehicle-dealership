@@ -1,9 +1,6 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Car, Calendar, Gauge, Palette, MapPin, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, Car, Calendar, Gauge, Palette } from 'lucide-react';
+import VehicleContactButton from './VehicleContactButton';
 
 interface Vehicle {
   id: string;
@@ -21,8 +18,6 @@ interface Vehicle {
 
 // Generate static params for all vehicle IDs at build time
 export async function generateStaticParams() {
-  // For static export, we'll generate pages for these IDs
-  // In production, this would fetch from your API
   return [
     { id: '1' },
     { id: '2' },
@@ -33,38 +28,23 @@ export async function generateStaticParams() {
   ];
 }
 
-export default function VehicleDetailPage() {
-  const params = useParams();
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showContactModal, setShowContactModal] = useState(false);
-
-  useEffect(() => {
-    if (params.id) {
-      fetch(`https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles/${params.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (!data.error) {
-            setVehicle(data);
-          }
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error('Failed to fetch vehicle:', err);
-          setLoading(false);
-        });
-    }
-  }, [params.id]);
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 py-16">
-          <p className="text-gray-600">Loading vehicle details...</p>
-        </div>
-      </main>
-    );
+// Fetch vehicle data at build time
+async function getVehicle(id: string): Promise<Vehicle | null> {
+  try {
+    const res = await fetch(`https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles/${id}`, {
+      cache: 'no-store'
+    });
+    const data = await res.json();
+    if (data.error) return null;
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch vehicle:', error);
+    return null;
   }
+}
+
+export default async function VehicleDetailPage({ params }: { params: { id: string } }) {
+  const vehicle = await getVehicle(params.id);
 
   if (!vehicle) {
     return (
@@ -159,53 +139,11 @@ export default function VehicleDetailPage() {
             {/* Contact Section */}
             <div className="bg-blue-50 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Interested in this vehicle?</h2>
-              <button
-                onClick={() => setShowContactModal(true)}
-                disabled={vehicle.isSold === 1}
-                className={`w-full py-3 px-6 rounded-lg font-semibold transition ${
-                  vehicle.isSold === 1
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {vehicle.isSold === 1 ? 'Vehicle Sold' : 'Contact Us About This Vehicle'}
-              </button>
+              <VehicleContactButton vehicle={vehicle} />
             </div>
           </div>
         </div>
       </div>
-
-      {/* Contact Modal */}
-      {showContactModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-xl font-semibold mb-4">Contact Information</h3>
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center space-x-3">
-                <Phone className="h-5 w-5 text-blue-600" />
-                <span>(555) 123-4567</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Mail className="h-5 w-5 text-blue-600" />
-                <span>info@autodealership.com</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <MapPin className="h-5 w-5 text-blue-600" />
-                <span>123 Main St, City, State 12345</span>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Reference Vehicle ID: {vehicle.id}
-            </p>
-            <button
-              onClick={() => setShowContactModal(false)}
-              className="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
