@@ -12,6 +12,7 @@ import {
   PieChart,
   Search
 } from 'lucide-react';
+import { fetchAnalytics, ANALYTICS_ENDPOINTS } from '@/lib/analytics-config';
 
 interface VehicleView {
   vehicleId: string;
@@ -51,47 +52,18 @@ export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState('7d');
 
   useEffect(() => {
-    fetchAnalytics();
+    fetchAnalyticsData();
   }, [timeRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchAnalytics = async () => {
+  const fetchAnalyticsData = async () => {
     setLoading(true);
     try {
-      // Fetch vehicle views analytics
-      const viewsResponse = await fetch(`/api/analytics/vehicle-views?timeRange=${timeRange}`);
-      const searchResponse = await fetch(`/api/analytics/search-queries?timeRange=${timeRange}`);
+      // Fetch vehicle views analytics using config
+      const viewsData = await fetchAnalytics(ANALYTICS_ENDPOINTS.VEHICLE_VIEWS, { timeRange });
+      const searchData = await fetchAnalytics(ANALYTICS_ENDPOINTS.SEARCH_QUERIES, { timeRange });
       
-      if (viewsResponse.ok) {
-        const viewsData = await viewsResponse.json();
-        setAnalytics(viewsData);
-      } else {
-        // Fallback for views
-        setAnalytics({
-          totalViews: 0,
-          uniqueVehiclesViewed: 0,
-          averageViewsPerVehicle: 0,
-          topVehicles: [],
-          recentViews: [],
-          referrerStats: [{ source: 'No data yet', count: 0 }],
-          dailyViews: []
-        });
-      }
-      
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        setSearchAnalytics(searchData);
-      } else {
-        // Fallback for search analytics
-        setSearchAnalytics({
-          totalSearches: 0,
-          uniqueQueries: 0,
-          averageResultsPerSearch: 0,
-          popularSearches: [],
-          inventoryGaps: [],
-          recentSearches: [],
-          dailySearches: []
-        });
-      }
+      setAnalytics(viewsData);
+      setSearchAnalytics(searchData);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
       

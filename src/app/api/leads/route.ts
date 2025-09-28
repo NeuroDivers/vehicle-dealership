@@ -173,14 +173,22 @@ export async function GET(request: NextRequest) {
       acc[vehicleKey].inquiries++;
       acc[vehicleKey].averageScore += lead.leadScore;
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, VehicleInterestItem>);
+    
+    interface VehicleInterestItem {
+      vehicle: string;
+      vehicleId: string;
+      price: number;
+      inquiries: number;
+      averageScore: number;
+    }
     
     const topVehicleInterest = Object.values(vehicleInterest)
-      .map((item: any) => ({
+      .map((item: VehicleInterestItem) => ({
         ...item,
         averageScore: Math.round(item.averageScore / item.inquiries)
       }))
-      .sort((a: any, b: any) => b.inquiries - a.inquiries)
+      .sort((a, b) => b.inquiries - a.inquiries)
       .slice(0, 5);
     
     const analytics = {

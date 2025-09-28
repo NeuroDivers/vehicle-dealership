@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Phone, Mail, MessageCircle, Star } from 'lucide-react';
+import { submitLead } from '@/lib/analytics-config';
 
 interface Vehicle {
   id: string;
@@ -67,14 +68,10 @@ export default function VehicleContactForm({ vehicle, isOpen, onClose }: Vehicle
         url: window.location.href
       };
 
-      // Submit to leads API
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(leadData)
-      });
+      // Submit to leads API using analytics config
+      const result = await submitLead(leadData);
 
-      if (response.ok) {
+      if (result.success) {
         setSubmitted(true);
         // Reset form after 3 seconds
         setTimeout(() => {

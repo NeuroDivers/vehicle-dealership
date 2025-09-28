@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Filter, X, Car } from 'lucide-react';
+import { trackSearchQuery } from '@/lib/analytics-config';
 
 interface Vehicle {
   id: string;
@@ -82,26 +83,10 @@ export default function VehiclesPage() {
     return Array.from(types).sort();
   }, [vehicles]);
 
-  // Track search queries for analytics
-  const trackSearchQuery = async (query: string, resultCount: number) => {
+  // Track search queries for analytics (using imported function)
+  const trackSearchAnalytics = (query: string, resultCount: number) => {
     if (!query.trim()) return;
-    
-    try {
-      await fetch('/api/analytics/search-queries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: query.trim(),
-          resultCount,
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          url: window.location.href
-        })
-      });
-    } catch (error) {
-      // Silently fail analytics tracking
-      console.log('Search analytics tracking failed:', error);
-    }
+    trackSearchQuery({ query: query.trim(), resultCount });
   };
 
   const handleSearchChange = (value: string) => {
@@ -122,7 +107,7 @@ export default function VehiclesPage() {
                  vehicle.year.toString().includes(value) ||
                  vehicle.color.toLowerCase().includes(searchLower);
         });
-        trackSearchQuery(value, results.length);
+        trackSearchAnalytics(value, results.length);
       }
     }, 1000); // Track after 1 second of no typing
     

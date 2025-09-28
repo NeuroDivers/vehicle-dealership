@@ -8,6 +8,7 @@ import VehicleImageGallery from '../components/VehicleImageGallery';
 import VehicleContactButton from '../components/VehicleContactButton';
 import VehicleContactForm from '../components/VehicleContactForm';
 import VehicleSEO from './VehicleSEO';
+import { trackVehicleView } from '@/lib/analytics-config';
 
 interface Vehicle {
   id: string;
@@ -48,7 +49,13 @@ export default function VehicleDetailClient() {
         } else {
           setVehicle(data);
           // Track vehicle view for analytics
-          trackVehicleView(data);
+          trackVehicleView({
+            vehicleId: data.id,
+            make: data.make,
+            model: data.model,
+            year: data.year,
+            price: data.price,
+          });
         }
         setLoading(false);
       })
@@ -58,36 +65,6 @@ export default function VehicleDetailClient() {
         setLoading(false);
       });
   }, [vehicleId, router]);
-
-  // Track vehicle view for analytics
-  const trackVehicleView = async (vehicleData: Vehicle) => {
-    try {
-      const viewData = {
-        vehicleId: vehicleData.id,
-        make: vehicleData.make,
-        model: vehicleData.model,
-        year: vehicleData.year,
-        price: vehicleData.price,
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        referrer: document.referrer || 'direct',
-        url: window.location.href
-      };
-
-      // Send to analytics API (non-blocking)
-      fetch('/api/analytics/vehicle-views', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(viewData)
-      }).catch(err => {
-        // Silently fail analytics to not affect user experience
-        console.log('Analytics tracking failed:', err);
-      });
-    } catch (error) {
-      // Silently fail analytics
-      console.log('Analytics error:', error);
-    }
-  };
 
   if (loading) {
     return (

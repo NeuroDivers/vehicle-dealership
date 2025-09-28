@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy:analytics": "wrangler deploy",
+    "db:create": "wrangler d1 create vehicle-dealership-analytics",
+    "db:init": "wrangler d1 execute vehicle-dealership-analytics --file=./schema.sql",
+    "db:query": "wrangler d1 execute vehicle-dealership-analytics --command"
   },
   "dependencies": {
     "lucide-react": "^0.544.0",

@@ -1,0 +1,20 @@
+name = "vehicle-dealership-analytics"
+main = "src/worker.js"
+compatibility_date = "2023-12-01"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "vehicle-dealership-analytics"
+database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+
+# CORS settings for frontend integration
+[env.production.vars]
+CORS_ORIGIN = "*"
+
+[env.development.vars]
+CORS_ORIGIN = "http://localhost:3000"
