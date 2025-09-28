@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Car, Calendar, Gauge, Palette, Loader2 } from 'lucide-react';
 import VehicleImageGallery from '../components/VehicleImageGallery';
 import VehicleContactButton from '../components/VehicleContactButton';
+import VehicleContactForm from '../components/VehicleContactForm';
 import VehicleSEO from './VehicleSEO';
 
 interface Vehicle {
@@ -30,6 +31,7 @@ export default function VehicleDetailClient() {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
 
   useEffect(() => {
     if (!vehicleId) {
@@ -194,10 +196,25 @@ export default function VehicleDetailClient() {
           {/* Contact Section */}
           <div className="bg-blue-50 rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Interested in this vehicle?</h2>
-            <VehicleContactButton vehicle={vehicle} />
+            <div className="space-y-4">
+              <button
+                onClick={() => setShowContactForm(true)}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition font-semibold"
+              >
+                Get More Information
+              </button>
+              <VehicleContactButton vehicle={vehicle} />
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Contact Form Modal */}
+      <VehicleContactForm 
+        vehicle={vehicle} 
+        isOpen={showContactForm}
+        onClose={() => setShowContactForm(false)}
+      />
     </div>
   );
 }
