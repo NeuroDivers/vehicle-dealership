@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Car, TrendingUp, Users, DollarSign, BarChart3 } from 'lucide-react';
+import { Car, TrendingUp, Users, DollarSign, BarChart3, UserCheck, MessageSquare } from 'lucide-react';
 
 interface Stats {
   totalVehicles: number;
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Link
             href="/admin/vehicles"
             className="bg-blue-600 text-white text-center py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2"
@@ -118,6 +118,20 @@ export default function AdminDashboard() {
           >
             <BarChart3 className="h-4 w-4" />
             <span>View Analytics</span>
+          </Link>
+          <Link
+            href="/admin/leads"
+            className="bg-orange-600 text-white text-center py-3 px-6 rounded-lg hover:bg-orange-700 transition flex items-center justify-center space-x-2"
+          >
+            <MessageSquare className="h-4 w-4" />
+            <span>Manage Leads</span>
+          </Link>
+          <Link
+            href="/admin/staff"
+            className="bg-indigo-600 text-white text-center py-3 px-6 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center space-x-2"
+          >
+            <UserCheck className="h-4 w-4" />
+            <span>Staff Management</span>
           </Link>
           <Link
             href="/"
