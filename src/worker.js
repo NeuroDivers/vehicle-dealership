@@ -722,6 +722,156 @@ async function handleVehicles(request, env) {
   }
 }
 
+// Import bcryptjs for password hashing
+import bcrypt from 'bcryptjs';
+
+// Authentication functions (inline for Worker compatibility)
+function generateToken() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function handleLogin(request, env) {
+  try {
+    const { email, password } = await request.json();
+    
+    if (!email || !password) {
+      return new Response(JSON.stringify({ error: 'Email and password required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Get user from database
+    const user = await env.DB.prepare(
+      'SELECT * FROM staff WHERE email = ? AND is_active = 1'
+    ).bind(email).first();
+    
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Verify password
+    const isValid = await bcrypt.compare(password, user.password_hash);
+    
+    if (!isValid) {
+      return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Generate session token
+    const token = generateToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    // Create session
+    await env.DB.prepare(
+      `INSERT INTO sessions (id, staff_id, token, expires_at, ip_address, user_agent)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(
+      crypto.randomUUID(),
+      user.id,
+      token,
+      expiresAt.toISOString(),
+      request.headers.get('CF-Connecting-IP') || 'unknown',
+      request.headers.get('User-Agent') || 'unknown'
+    ).run();
+    
+    // Update last login
+    await env.DB.prepare(
+      'UPDATE staff SET last_login = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(user.id).run();
+    
+    // Return user data and token
+    return new Response(JSON.stringify({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    return new Response(JSON.stringify({ error: 'Login failed' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function verifySession(token, env) {
+  if (!token) return null;
+  
+  const session = await env.DB.prepare(
+    `SELECT s.*, st.id as user_id, st.email, st.name, st.role 
+     FROM sessions s 
+     JOIN staff st ON s.staff_id = st.id 
+     WHERE s.token = ? AND s.expires_at > datetime('now') AND st.is_active = 1`
+  ).bind(token).first();
+  
+  return session;
+}
+
+async function handleLogout(request, env) {
+  try {
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    
+    if (token) {
+      await env.DB.prepare('DELETE FROM sessions WHERE token = ?').bind(token).run();
+    }
+    
+    return new Response(JSON.stringify({ message: 'Logged out successfully' }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return new Response(JSON.stringify({ error: 'Logout failed' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function handleStaff(request, env, method) {
+  // Simplified staff handler - implement full CRUD as needed
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+  const session = await verifySession(token, env);
+  
+  if (!session) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  if (method === 'GET') {
+    const { results } = await env.DB.prepare(
+      'SELECT id, email, name, role, phone, is_active, last_login, created_at FROM staff ORDER BY name'
+    ).all();
+    
+    return new Response(JSON.stringify(results), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  return new Response(JSON.stringify({ error: 'Method not implemented' }), {
+    status: 501,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
 // Main request handler
 const workerHandler = {
   async fetch(request, env) {
@@ -730,10 +880,43 @@ const workerHandler = {
     
     const url = new URL(request.url);
     const path = url.pathname;
+    const method = request.method;
     
     try {
       // Route requests to appropriate handlers
-      if (path.startsWith('/api/vehicles')) {
+      
+      // Authentication endpoints
+      if (path === '/api/auth/login' && method === 'POST') {
+        return await handleLogin(request, env);
+      } else if (path === '/api/auth/logout' && method === 'POST') {
+        return await handleLogout(request, env);
+      } else if (path === '/api/auth/verify' && method === 'GET') {
+        const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+        const session = await verifySession(token, env);
+        if (session) {
+          return new Response(JSON.stringify({
+            authenticated: true,
+            user: {
+              id: session.user_id,
+              email: session.email,
+              name: session.name,
+              role: session.role
+            }
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } else {
+          return new Response(JSON.stringify({ authenticated: false }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      } else if (path.startsWith('/api/staff')) {
+        return await handleStaff(request, env, method);
+      }
+      
+      // Existing endpoints
+      else if (path.startsWith('/api/vehicles')) {
         return await handleVehicles(request, env);
       } else if (path.startsWith('/api/analytics/vehicle-views')) {
         return await handleVehicleViews(request, env);
