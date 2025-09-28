@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface Vehicle {
   id: string;
@@ -49,7 +50,11 @@ export default function VehiclesPage() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {vehicles.map((vehicle) => (
-            <div key={vehicle.id} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
+            <Link 
+              key={vehicle.id} 
+              href={`/vehicles/${vehicle.id}`}
+              className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block"
+            >
               <h2 className="text-xl font-semibold mb-2">
                 {vehicle.year} {vehicle.make} {vehicle.model}
               </h2>
@@ -57,10 +62,13 @@ export default function VehiclesPage() {
                 <p>{vehicle.color} • {vehicle.bodyType}</p>
                 <p>{vehicle.odometer.toLocaleString()} km</p>
               </div>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-green-600 mb-3">
                 ${vehicle.price.toLocaleString()}
               </p>
-            </div>
+              <span className="text-blue-600 text-sm font-medium hover:text-blue-800">
+                View Details →
+              </span>
+            </Link>
           ))}
         </div>
         
