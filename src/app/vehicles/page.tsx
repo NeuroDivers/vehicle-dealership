@@ -229,7 +229,7 @@ export default function VehiclesPage() {
               return (
                 <Link 
                   key={vehicle.id} 
-                  href={`/vehicles/${vehicle.id}`}
+                  href={`/vehicles/detail?id=${vehicle.id}`}
                   className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition block"
                 >
                   {/* Vehicle Image */}

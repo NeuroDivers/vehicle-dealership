@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Car, Calendar, Gauge, Palette } from 'lucide-react';
-import VehicleContactButton from './VehicleContactButton';
-import VehicleImageGallery from './VehicleImageGallery';
+import VehicleContactButton from '../components/VehicleContactButton';
+import VehicleImageGallery from '../components/VehicleImageGallery';
 
 interface Vehicle {
   id: string;
