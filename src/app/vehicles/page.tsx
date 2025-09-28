@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, Car } from 'lucide-react';
 
 interface Vehicle {
   id: string;
@@ -15,6 +15,7 @@ interface Vehicle {
   color: string;
   description?: string;
   isSold?: number;
+  images?: string;
 }
 
 export default function VehiclesPage() {
@@ -223,27 +224,53 @@ export default function VehiclesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVehicles.map((vehicle) => (
-              <Link 
-                key={vehicle.id} 
-                href={`/vehicles/${vehicle.id}`}
-                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block"
-              >
-                <h2 className="text-xl font-semibold mb-2">
-                  {vehicle.year} {vehicle.make} {vehicle.model}
-                </h2>
-                <div className="text-sm text-gray-600 mb-3">
-                  <p>{vehicle.color} • {vehicle.bodyType}</p>
-                  <p>{vehicle.odometer.toLocaleString()} km</p>
-                </div>
-                <p className="text-2xl font-bold text-green-600 mb-3">
-                  ${vehicle.price.toLocaleString()}
-                </p>
-                <span className="text-blue-600 text-sm font-medium hover:text-blue-800">
-                  View Details →
-                </span>
-              </Link>
-            ))}
+            {filteredVehicles.map((vehicle) => {
+              const images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
+              return (
+                <Link 
+                  key={vehicle.id} 
+                  href={`/vehicles/${vehicle.id}`}
+                  className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition block"
+                >
+                  {/* Vehicle Image */}
+                  <div className="relative h-48 bg-gray-100">
+                    {images.length > 0 ? (
+                      <img
+                        src={images[0]}
+                        alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <Car className="h-16 w-16" />
+                      </div>
+                    )}
+                    {images.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                        +{images.length - 1} photos
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Vehicle Details */}
+                  <div className="p-6">
+                    <h2 className="text-xl font-semibold mb-2">
+                      {vehicle.year} {vehicle.make} {vehicle.model}
+                    </h2>
+                    <div className="text-sm text-gray-600 mb-3">
+                      <p>{vehicle.color} • {vehicle.bodyType}</p>
+                      <p>{vehicle.odometer.toLocaleString()} km</p>
+                    </div>
+                    <p className="text-2xl font-bold text-green-600 mb-3">
+                      ${vehicle.price.toLocaleString()}
+                    </p>
+                    <span className="text-blue-600 text-sm font-medium hover:text-blue-800">
+                      View Details →
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

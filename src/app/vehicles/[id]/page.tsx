@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Car, Calendar, Gauge, Palette } from 'lucide-react';
 import VehicleContactButton from './VehicleContactButton';
+import VehicleImageGallery from './VehicleImageGallery';
 
 interface Vehicle {
   id: string;
@@ -61,6 +62,9 @@ export default async function VehicleDetailPage({ params }: { params: { id: stri
     );
   }
 
+  // Parse images if they exist
+  const images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -73,9 +77,10 @@ export default async function VehicleDetailPage({ params }: { params: { id: stri
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Image Section */}
           <div>
-            <div className="bg-gray-200 rounded-lg h-96 flex items-center justify-center">
-              <Car className="h-24 w-24 text-gray-400" />
-            </div>
+            <VehicleImageGallery 
+              images={images}
+              vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+            />
             {vehicle.isSold === 1 && (
               <div className="mt-4 bg-red-100 text-red-800 px-4 py-2 rounded-lg text-center font-semibold">
                 This Vehicle Has Been Sold
