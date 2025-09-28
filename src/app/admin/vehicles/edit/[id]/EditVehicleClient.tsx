@@ -110,12 +110,70 @@ export default function EditVehicleClient() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // For now, we'll just show a placeholder message
-    // In the next step, we'll implement actual R2 upload
-    alert('Image upload will be implemented with Cloudflare R2 setup');
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPEG, PNG, WebP, or AVIF)');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingImage(true);
     
-    // Reset the input
-    e.target.value = '';
+    try {
+      // Step 1: Get presigned URL from API
+      const presignedRes = await fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/upload/presigned-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+        }),
+      });
+      
+      if (!presignedRes.ok) {
+        const error = await presignedRes.json();
+        throw new Error(error.error || 'Failed to get upload URL');
+      }
+      
+      const { uploadUrl, publicUrl } = await presignedRes.json();
+      
+      // Step 2: Upload directly to R2 using presigned URL
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+      
+      if (!uploadRes.ok) {
+        throw new Error('Failed to upload image to storage');
+      }
+      
+      // Step 3: Add image URL to form data
+      setFormData(prev => ({
+        ...prev,
+        images: [...(prev.images || []), publicUrl],
+      }));
+      
+      // Success feedback
+      console.log('Image uploaded successfully:', publicUrl);
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert(error instanceof Error ? error.message : 'Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
+    }
   };
 
   const removeImage = (index: number) => {
