@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Car, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { Car, TrendingUp, Users, DollarSign, BarChart3 } from 'lucide-react';
 
 interface Stats {
   totalVehicles: number;
@@ -98,24 +98,32 @@ export default function AdminDashboard() {
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             href="/admin/vehicles"
-            className="bg-blue-600 text-white text-center py-3 px-6 rounded-lg hover:bg-blue-700 transition"
+            className="bg-blue-600 text-white text-center py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2"
           >
-            Manage Vehicles
+            <Car className="h-4 w-4" />
+            <span>Manage Vehicles</span>
           </Link>
           <Link
             href="/admin/vehicles/add"
-            className="bg-green-600 text-white text-center py-3 px-6 rounded-lg hover:bg-green-700 transition"
+            className="bg-green-600 text-white text-center py-3 px-6 rounded-lg hover:bg-green-700 transition flex items-center justify-center space-x-2"
           >
-            Add New Vehicle
+            <span>Add New Vehicle</span>
+          </Link>
+          <Link
+            href="/admin/analytics"
+            className="bg-purple-600 text-white text-center py-3 px-6 rounded-lg hover:bg-purple-700 transition flex items-center justify-center space-x-2"
+          >
+            <BarChart3 className="h-4 w-4" />
+            <span>View Analytics</span>
           </Link>
           <Link
             href="/"
-            className="bg-gray-600 text-white text-center py-3 px-6 rounded-lg hover:bg-gray-700 transition"
+            className="bg-gray-600 text-white text-center py-3 px-6 rounded-lg hover:bg-gray-700 transition flex items-center justify-center space-x-2"
           >
-            View Public Site
+            <span>View Public Site</span>
           </Link>
         </div>
       </div>
