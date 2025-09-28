@@ -63,9 +63,31 @@ CREATE INDEX IF NOT EXISTS idx_vehicle_views_timestamp ON vehicle_views(timestam
 CREATE INDEX IF NOT EXISTS idx_vehicle_views_make_model ON vehicle_views(make, model);
 
 CREATE INDEX IF NOT EXISTS idx_search_queries_query ON search_queries(query);
-CREATE INDEX IF NOT EXISTS idx_search_queries_timestamp ON search_queries(timestamp);
 CREATE INDEX IF NOT EXISTS idx_search_queries_result_count ON search_queries(result_count);
 
+-- Create vehicles table
+CREATE TABLE IF NOT EXISTS vehicles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  make TEXT NOT NULL,
+  model TEXT NOT NULL,
+  year INTEGER NOT NULL,
+  price REAL NOT NULL,
+  odometer INTEGER NOT NULL,
+  bodyType TEXT NOT NULL,
+  color TEXT NOT NULL,
+  description TEXT,
+  images TEXT,
+  isSold INTEGER DEFAULT 0,
+  stockNumber TEXT,
+  vin TEXT,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index on isSold for filtering
+CREATE INDEX IF NOT EXISTS idx_vehicles_sold ON vehicles(isSold);
+
+-- Create leads table
 CREATE INDEX IF NOT EXISTS idx_leads_vehicle_id ON leads(vehicle_id);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_leads_timestamp ON leads(timestamp);

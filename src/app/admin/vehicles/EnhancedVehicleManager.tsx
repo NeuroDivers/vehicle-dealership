@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { getVehicleEndpoint } from '@/lib/api-config';
 import { 
   Plus, 
   Edit, 
@@ -61,7 +62,7 @@ export default function EnhancedVehicleManager() {
   }, []);
 
   const fetchVehicles = () => {
-    fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles')
+    fetch(getVehicleEndpoint())
       .then(res => res.json())
       .then(data => {
         setVehicles(Array.isArray(data) ? data : []);
@@ -139,7 +140,7 @@ export default function EnhancedVehicleManager() {
     
     setDeletingId(id);
     try {
-      const res = await fetch(`https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles/${id}`, {
+      const res = await fetch(getVehicleEndpoint(`/${id}`), {
         method: 'DELETE',
       });
       
@@ -163,7 +164,7 @@ export default function EnhancedVehicleManager() {
 
   const handleToggleSold = async (vehicle: Vehicle) => {
     try {
-      const res = await fetch(`https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles/${vehicle.id}`, {
+      const res = await fetch(getVehicleEndpoint(`/${vehicle.id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...vehicle, isSold: vehicle.isSold === 1 ? 0 : 1 }),

@@ -551,6 +551,177 @@ async function handleLeads(request, env) {
   }
 }
 
+// Vehicle CRUD handlers
+async function handleVehicles(request, env) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+  const method = request.method;
+  
+  // Extract vehicle ID from path if present
+  const vehicleIdMatch = path.match(/\/api\/vehicles\/(\d+)/);
+  const vehicleId = vehicleIdMatch ? vehicleIdMatch[1] : null;
+  
+  try {
+    switch (method) {
+      case 'GET':
+        if (vehicleId) {
+          // Get single vehicle
+          const vehicle = await env.DB.prepare(
+            'SELECT * FROM vehicles WHERE id = ?'
+          ).bind(vehicleId).first();
+          
+          if (!vehicle) {
+            return new Response(JSON.stringify({ error: 'Vehicle not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          // Parse images if stored as JSON string
+          if (vehicle.images && typeof vehicle.images === 'string') {
+            try {
+              vehicle.images = JSON.parse(vehicle.images);
+            } catch (e) {
+              // Keep as string if not valid JSON
+            }
+          }
+          
+          return new Response(JSON.stringify(vehicle), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } else {
+          // Get all vehicles
+          const { results } = await env.DB.prepare(
+            'SELECT * FROM vehicles ORDER BY id DESC'
+          ).all();
+          
+          // Parse images for each vehicle
+          const vehicles = results.map(vehicle => {
+            if (vehicle.images && typeof vehicle.images === 'string') {
+              try {
+                vehicle.images = JSON.parse(vehicle.images);
+              } catch (e) {
+                // Keep as string if not valid JSON
+              }
+            }
+            return vehicle;
+          });
+          
+          return new Response(JSON.stringify(vehicles), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+      case 'POST':
+        // Create new vehicle
+        const newVehicle = await request.json();
+        
+        // Stringify images array if needed
+        if (newVehicle.images && typeof newVehicle.images !== 'string') {
+          newVehicle.images = JSON.stringify(newVehicle.images);
+        }
+        
+        const insertResult = await env.DB.prepare(
+          `INSERT INTO vehicles (
+            make, model, year, price, odometer, bodyType, 
+            color, description, images, isSold, stockNumber, vin
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          newVehicle.make,
+          newVehicle.model,
+          newVehicle.year,
+          newVehicle.price,
+          newVehicle.odometer,
+          newVehicle.bodyType,
+          newVehicle.color,
+          newVehicle.description || null,
+          newVehicle.images || '[]',
+          newVehicle.isSold || 0,
+          newVehicle.stockNumber || null,
+          newVehicle.vin || null
+        ).run();
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          id: insertResult.meta.last_row_id 
+        }), {
+          status: 201,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+        
+      case 'PUT':
+        // Update vehicle
+        if (!vehicleId) {
+          return new Response(JSON.stringify({ error: 'Vehicle ID required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        const updatedVehicle = await request.json();
+        
+        // Stringify images array if needed
+        if (updatedVehicle.images && typeof updatedVehicle.images !== 'string') {
+          updatedVehicle.images = JSON.stringify(updatedVehicle.images);
+        }
+        
+        await env.DB.prepare(
+          `UPDATE vehicles SET 
+            make = ?, model = ?, year = ?, price = ?, 
+            odometer = ?, bodyType = ?, color = ?, 
+            description = ?, images = ?, isSold = ?, 
+            stockNumber = ?, vin = ?
+          WHERE id = ?`
+        ).bind(
+          updatedVehicle.make,
+          updatedVehicle.model,
+          updatedVehicle.year,
+          updatedVehicle.price,
+          updatedVehicle.odometer,
+          updatedVehicle.bodyType,
+          updatedVehicle.color,
+          updatedVehicle.description || null,
+          updatedVehicle.images || '[]',
+          updatedVehicle.isSold !== undefined ? updatedVehicle.isSold : 0,
+          updatedVehicle.stockNumber || null,
+          updatedVehicle.vin || null,
+          vehicleId
+        ).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+        
+      case 'DELETE':
+        // Delete vehicle
+        if (!vehicleId) {
+          return new Response(JSON.stringify({ error: 'Vehicle ID required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        await env.DB.prepare('DELETE FROM vehicles WHERE id = ?').bind(vehicleId).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+        
+      default:
+        return new Response('Method Not Allowed', {
+          status: 405,
+          headers: corsHeaders,
+        });
+    }
+  } catch (error) {
+    console.error('Vehicle handler error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to process vehicle request' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
 // Main request handler
 const workerHandler = {
   async fetch(request, env) {
@@ -562,7 +733,9 @@ const workerHandler = {
     
     try {
       // Route requests to appropriate handlers
-      if (path.startsWith('/api/analytics/vehicle-views')) {
+      if (path.startsWith('/api/vehicles')) {
+        return await handleVehicles(request, env);
+      } else if (path.startsWith('/api/analytics/vehicle-views')) {
         return await handleVehicleViews(request, env);
       } else if (path.startsWith('/api/analytics/search-queries')) {
         return await handleSearchQueries(request, env);
