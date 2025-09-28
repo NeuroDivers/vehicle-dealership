@@ -5,6 +5,19 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
+// Generate static params for build time
+export async function generateStaticParams() {
+  // Generate pages for these vehicle IDs
+  return [
+    { id: '1' },
+    { id: '2' },
+    { id: '3' },
+    { id: '4' },
+    { id: '5' },
+    { id: '6' },
+  ];
+}
+
 export default function EditVehicle() {
   const router = useRouter();
   const params = useParams();
