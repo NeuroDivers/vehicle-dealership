@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 
 interface Vehicle {
   id: string;

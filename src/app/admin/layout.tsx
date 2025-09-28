@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Car, Home, LogOut, Menu, X } from 'lucide-react';
+import { Home, LogOut, Menu, X } from 'lucide-react';
 
 export default function AdminLayout({
   children,

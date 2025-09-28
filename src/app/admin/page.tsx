@@ -26,8 +26,8 @@ export default function AdminDashboard() {
       .then(data => {
         const vehicles = Array.isArray(data) ? data : [];
         const total = vehicles.length;
-        const sold = vehicles.filter((v: any) => v.isSold === 1).length;
-        const totalValue = vehicles.reduce((sum: number, v: any) => sum + (v.price || 0), 0);
+        const sold = vehicles.filter((v) => v.isSold === 1).length;
+        const totalValue = vehicles.reduce((sum, v) => sum + (v.price || 0), 0);
         const avgPrice = total > 0 ? totalValue / total : 0;
         
         setStats({
