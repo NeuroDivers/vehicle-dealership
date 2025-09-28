@@ -31,6 +31,7 @@ export default function VehiclesPage() {
     maxYear: '',
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles')
@@ -81,6 +82,53 @@ export default function VehiclesPage() {
     return Array.from(types).sort();
   }, [vehicles]);
 
+  // Track search queries for analytics
+  const trackSearchQuery = async (query: string, resultCount: number) => {
+    if (!query.trim()) return;
+    
+    try {
+      await fetch('/api/analytics/search-queries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: query.trim(),
+          resultCount,
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          url: window.location.href
+        })
+      });
+    } catch (error) {
+      // Silently fail analytics tracking
+      console.log('Search analytics tracking failed:', error);
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    
+    // Clear previous timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    // Set new timeout to track search after user stops typing
+    const timeout = setTimeout(() => {
+      if (value.trim()) {
+        const results = vehicles.filter(vehicle => {
+          const searchLower = value.toLowerCase();
+          return vehicle.make.toLowerCase().includes(searchLower) ||
+                 vehicle.model.toLowerCase().includes(searchLower) ||
+                 vehicle.year.toString().includes(value) ||
+                 vehicle.color.toLowerCase().includes(searchLower);
+        });
+        trackSearchQuery(value, results.length);
+      }
+    }, 1000); // Track after 1 second of no typing
+    
+    setSearchTimeout(timeout);
+  };
+
   const clearFilters = () => {
     setFilters({
       bodyType: '',
@@ -90,6 +138,12 @@ export default function VehiclesPage() {
       maxYear: '',
     });
     setSearchTerm('');
+    
+    // Clear search timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      setSearchTimeout(null);
+    }
   };
 
   if (loading) {
@@ -106,7 +160,6 @@ export default function VehiclesPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-16">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Our Vehicles</h1>
         
         {/* Search Bar */}
         <div className="mb-6">
@@ -114,10 +167,10 @@ export default function VehiclesPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
-              placeholder="Search by make, model, year, or color..."
+              placeholder="Search vehicles..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
