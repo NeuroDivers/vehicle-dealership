@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { Search, Filter, X, Car } from 'lucide-react';
 import { trackSearchQuery } from '@/lib/analytics-config';
 
-const VehiclesPage = () => {
 interface Vehicle {
   id: string;
   make: string;

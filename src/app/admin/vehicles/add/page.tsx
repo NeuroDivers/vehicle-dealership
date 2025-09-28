@@ -80,6 +80,7 @@ export default function AddVehicle() {
 
     setUploadingImage(true);
     
+    try {
       // Create FormData for upload
       const formData = new FormData();
       formData.append('file', file);

@@ -130,6 +130,7 @@ export default function EditVehicle() {
 
     setUploadingImage(true);
     
+    try {
       // Create FormData for upload
       const uploadData = new FormData();
       uploadData.append('file', file);
@@ -172,7 +173,7 @@ export default function EditVehicle() {
     }));
   };
 
-  if (fetching) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
