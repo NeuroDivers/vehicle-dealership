@@ -1,14 +1,46 @@
-// Static data for now - will be replaced with database later
-const vehicles = [
-  { id: '1', make: 'Toyota', model: 'Camry', year: 2023, price: 28500, odometer: 15000, bodyType: 'Sedan', color: 'Silver' },
-  { id: '2', make: 'Honda', model: 'CR-V', year: 2022, price: 32000, odometer: 25000, bodyType: 'SUV', color: 'Black' },
-  { id: '3', make: 'Ford', model: 'F-150', year: 2021, price: 45000, odometer: 35000, bodyType: 'Truck', color: 'Blue' },
-  { id: '4', make: 'Tesla', model: 'Model 3', year: 2023, price: 42000, odometer: 5000, bodyType: 'Sedan', color: 'White' },
-  { id: '5', make: 'Chevrolet', model: 'Silverado', year: 2022, price: 48000, odometer: 20000, bodyType: 'Truck', color: 'Red' },
-  { id: '6', make: 'BMW', model: 'X5', year: 2021, price: 55000, odometer: 30000, bodyType: 'SUV', color: 'Gray' },
-];
+'use client';
+
+import { useState, useEffect } from 'react';
+
+interface Vehicle {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  odometer: number;
+  bodyType: string;
+  color: string;
+  description?: string;
+}
 
 export default function VehiclesPage() {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/vehicles')
+      .then(res => res.json())
+      .then(data => {
+        setVehicles(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch vehicles:', err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">Our Vehicles</h1>
+          <p className="text-gray-600">Loading vehicles from database...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -34,7 +66,7 @@ export default function VehiclesPage() {
         
         <div className="mt-12 text-center">
           <p className="text-sm text-gray-500">
-            Phase 4: Dynamic data with API routes
+            Phase 5: Connected to Cloudflare D1 Database via Worker API
           </p>
         </div>
       </div>
