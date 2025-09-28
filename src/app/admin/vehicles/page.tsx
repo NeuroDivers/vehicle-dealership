@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 
 interface Vehicle {
   id: string;
@@ -190,10 +190,18 @@ export default function AdminVehicles() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex space-x-2">
+                        <Link
+                          href={`/admin/vehicles/edit?id=${vehicle.id}`}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit vehicle"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Link>
                         <button
                           onClick={() => handleDelete(vehicle.id)}
                           disabled={deletingId === vehicle.id}
                           className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                          title="Delete vehicle"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
