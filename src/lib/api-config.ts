@@ -1,8 +1,13 @@
 // API Configuration
 // This file manages the API endpoints for the application
 
-// Vehicle API uses the original database with all the vehicle data
-const VEHICLE_API_URL = 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+// Check environment to determine which API to use for vehicles
+const USE_ANALYTICS_FOR_VEHICLES = process.env.NEXT_PUBLIC_USE_ANALYTICS_FOR_VEHICLES === 'true';
+
+// Vehicle API - the original API filters out sold vehicles, so we'll use analytics API if configured
+const VEHICLE_API_URL = USE_ANALYTICS_FOR_VEHICLES 
+  ? (process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev')
+  : 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
 
 // Analytics API uses the new D1 database for analytics data
 const ANALYTICS_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev';
