@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Search, Filter, X, Car } from 'lucide-react';
 
 interface Vehicle {
@@ -235,10 +236,12 @@ export default function VehiclesPage() {
                   {/* Vehicle Image */}
                   <div className="relative h-48 bg-gray-100">
                     {images.length > 0 ? (
-                      <img
+                      <Image
                         src={images[0]}
                         alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -246,7 +249,7 @@ export default function VehiclesPage() {
                       </div>
                     )}
                     {images.length > 1 && (
-                      <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                      <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded z-10">
                         +{images.length - 1} photos
                       </div>
                     )}
