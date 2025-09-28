@@ -5,19 +5,6 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-interface Vehicle {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  price: number;
-  odometer: number;
-  bodyType: string;
-  color: string;
-  description?: string;
-  isSold: number;
-}
-
 export default function EditVehicle() {
   const router = useRouter();
   const params = useParams();
