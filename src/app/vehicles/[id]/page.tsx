@@ -19,6 +19,20 @@ interface Vehicle {
   isSold: number;
 }
 
+// Generate static params for all vehicle IDs at build time
+export async function generateStaticParams() {
+  // For static export, we'll generate pages for these IDs
+  // In production, this would fetch from your API
+  return [
+    { id: '1' },
+    { id: '2' },
+    { id: '3' },
+    { id: '4' },
+    { id: '5' },
+    { id: '6' },
+  ];
+}
+
 export default function VehicleDetailPage() {
   const params = useParams();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
