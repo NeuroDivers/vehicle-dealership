@@ -1,5 +1,21 @@
 import { Suspense } from 'react';
+import { Metadata } from 'next';
 import VehicleDetailClient from './VehicleDetailClient';
+
+export const metadata: Metadata = {
+  title: 'Vehicle Details - Auto Dealership',
+  description: 'View detailed information about our vehicles including specifications, images, and pricing.',
+  openGraph: {
+    title: 'Vehicle Details - Auto Dealership',
+    description: 'View detailed information about our vehicles including specifications, images, and pricing.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Vehicle Details - Auto Dealership',
+    description: 'View detailed information about our vehicles including specifications, images, and pricing.',
+  },
+};
 
 export default function VehicleDetailPage() {
   return (

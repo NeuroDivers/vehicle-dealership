@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Car, Calendar, Gauge, Palette, Loader2 } from 'lucide-react';
 import VehicleImageGallery from '../components/VehicleImageGallery';
 import VehicleContactButton from '../components/VehicleContactButton';
+import VehicleSEO from './VehicleSEO';
 
 interface Vehicle {
   id: string;
@@ -44,6 +45,8 @@ export default function VehicleDetailClient() {
           setError(true);
         } else {
           setVehicle(data);
+          // Track vehicle view for analytics
+          trackVehicleView(data);
         }
         setLoading(false);
       })
@@ -53,6 +56,36 @@ export default function VehicleDetailClient() {
         setLoading(false);
       });
   }, [vehicleId, router]);
+
+  // Track vehicle view for analytics
+  const trackVehicleView = async (vehicleData: Vehicle) => {
+    try {
+      const viewData = {
+        vehicleId: vehicleData.id,
+        make: vehicleData.make,
+        model: vehicleData.model,
+        year: vehicleData.year,
+        price: vehicleData.price,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        referrer: document.referrer || 'direct',
+        url: window.location.href
+      };
+
+      // Send to analytics API (non-blocking)
+      fetch('/api/analytics/vehicle-views', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(viewData)
+      }).catch(err => {
+        // Silently fail analytics to not affect user experience
+        console.log('Analytics tracking failed:', err);
+      });
+    } catch (error) {
+      // Silently fail analytics
+      console.log('Analytics error:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -82,6 +115,9 @@ export default function VehicleDetailClient() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* SEO Component */}
+      <VehicleSEO vehicle={vehicle} images={images} />
+      
       {/* Back Button */}
       <Link href="/vehicles" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" />
