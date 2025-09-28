@@ -1,8 +1,11 @@
-import EditVehicleClient from './EditVehicleClient';
+import dynamic from 'next/dynamic';
 
-export async function generateStaticParams() {
-  // Return empty array - this tells Next.js to handle this route dynamically
-  // even though we're using static export
+const EditVehicleClient = dynamic(() => import('./EditVehicleClient'), {
+  ssr: false,
+});
+
+export function generateStaticParams() {
+  // Return empty array for dynamic handling
   return [];
 }
 
