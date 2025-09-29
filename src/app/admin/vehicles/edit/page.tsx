@@ -72,9 +72,12 @@ export default function EditVehicle() {
                   return img.variants.thumbnail || img.variants.public || img.variants.gallery;
                 } else if (img && img.url) {
                   return img.url; // Other object format
+                } else if (img && img.id) {
+                  // Cloudflare Images with just ID
+                  return img.id;
                 }
-                return img;
-              }).filter((url: any) => url);
+                return null; // Don't return the object itself
+              }).filter((url: any) => url && typeof url === 'string');
             }
           }
           

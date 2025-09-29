@@ -563,6 +563,21 @@ export default function EnhancedVehicleManager() {
               <tbody className="divide-y divide-gray-200">
                 {filteredVehicles.map((vehicle) => {
                   const images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
+                  // Extract the first image URL properly
+                  let firstImageUrl = null;
+                  if (images.length > 0) {
+                    const img = images[0];
+                    if (typeof img === 'string') {
+                      firstImageUrl = img;
+                    } else if (img && img.variants) {
+                      firstImageUrl = img.variants.thumbnail || img.variants.public || img.variants.gallery;
+                    } else if (img && img.url) {
+                      firstImageUrl = img.url;
+                    } else if (img && img.id) {
+                      firstImageUrl = img.id;
+                    }
+                  }
+                  
                   return (
                     <tr key={vehicle.id} className={`hover:bg-gray-50 ${vehicle.isSold === 1 ? 'opacity-60' : ''}`}>
                       <td className="px-6 py-4">
@@ -574,9 +589,9 @@ export default function EnhancedVehicleManager() {
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {images.length > 0 ? (
+                        {firstImageUrl ? (
                           <img
-                            src={images[0]}
+                            src={firstImageUrl}
                             alt={`${vehicle.make} ${vehicle.model}`}
                             className="h-16 w-16 object-cover rounded"
                           />
