@@ -105,7 +105,7 @@ export default function AnalyticsDashboard() {
   };
 
   const StatCard = ({ title, value, icon: Icon, change, color = 'blue' }: any) => {
-    const colorClasses = {
+    const colorClasses: Record<string, string> = {
       blue: 'bg-blue-500',
       green: 'bg-green-500',
       purple: 'bg-purple-500',
@@ -142,7 +142,7 @@ export default function AnalyticsDashboard() {
     if (!data || data.length === 0) return null;
     
     const max = Math.max(...data.map((d: any) => d.views || d.count || 0));
-    const colorClasses = {
+    const colorClasses: Record<string, string> = {
       blue: 'bg-blue-500',
       green: 'bg-green-500',
       purple: 'bg-purple-500'
