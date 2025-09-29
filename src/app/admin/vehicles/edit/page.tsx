@@ -212,6 +212,7 @@ export default function EditVehicle() {
         }
         
         const result = await imageUploadRes.json();
+        console.log('Upload response:', result);
         
         // Add image info to form data - handle new Cloudflare Images response format
         if (result.images && result.images.length > 0) {
@@ -224,6 +225,7 @@ export default function EditVehicle() {
             newImages: [...(prev.newImages || []), newImage], // Store full object for saving with safety check
           }));
           console.log('Image uploaded successfully:', newImage);
+          console.log('Image URL added to list:', imageUrl);
         } else if (result.urls && result.urls.length > 0) {
           // Fallback for old format
           setFormData(prev => ({
@@ -232,6 +234,26 @@ export default function EditVehicle() {
             newImages: prev.newImages || [], // Ensure newImages is always an array
           }));
           console.log('Image uploaded successfully:', result.urls[0]);
+        } else {
+          console.warn('Unexpected response format:', result);
+          // Try to handle other possible formats
+          if (result.url) {
+            setFormData(prev => ({
+              ...prev,
+              imagesList: [...prev.imagesList, result.url],
+              newImages: [...(prev.newImages || []), result],
+            }));
+            console.log('Image uploaded with single URL:', result.url);
+          } else if (result.id) {
+            // If we just get an ID, use it directly or construct a basic URL
+            const imageUrl = result.id;
+            setFormData(prev => ({
+              ...prev,
+              imagesList: [...prev.imagesList, imageUrl],
+              newImages: [...(prev.newImages || []), result],
+            }));
+            console.log('Image uploaded with ID:', result.id);
+          }
         }
       }
       
