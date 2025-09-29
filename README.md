@@ -125,12 +125,67 @@ The admin dashboard now includes a comprehensive **Settings** section (`/admin/s
 - **Validation**: Server-side validation and permission checks
 - **Persistence**: Settings stored securely with proper access controls
 
-## 📊 Admin Dashboard Features
+## 🤖 AI Chat Assistant
 
-The admin dashboard now includes:
+Your dealership now features an intelligent conversational AI that can:
 
-- **AI Features Manager**: Generate descriptions, translate content, create social captions
-- **Social Media Manager**: Configure auto-posting and manual social media publishing
+- **Search Inventory**: Find vehicles matching customer preferences
+- **Smart Recommendations**: Suggest alternatives when no matches found
+- **Partner Integration**: Offer to search through partners or auctions
+- **Natural Conversation**: Maintain context and provide helpful responses
+
+### Features
+
+- **Intelligent Search**: Uses OpenAI function calling to search your D1 database
+- **Fallback Options**: Offers partner search or auction access when inventory is unavailable
+- **Context Awareness**: Remembers conversation history for natural dialogue
+- **Vehicle Details**: Provides specific vehicle information with pricing and specs
+
+### Implementation
+
+```tsx
+import AIChatWidget from '@/components/AIChatWidget';
+
+// Add to your main layout or homepage
+<AIChatWidget />
+```
+
+### API Endpoint
+
+**POST** `/api/chat`
+
+Request body:
+```json
+{
+  "message": "I'm looking for a Toyota Camry under $25,000",
+  "conversationHistory": [...]
+}
+```
+
+Response:
+```json
+{
+  "response": "I'd be happy to help you find a Toyota Camry...",
+  "vehicles": [...],
+  "suggestedAction": "search_partners",
+  "conversationHistory": [...]
+}
+```
+
+### Configuration
+
+The AI uses these OpenAI models:
+- **GPT-4**: For intelligent conversation and complex reasoning
+- **Function Calling**: To search your inventory database
+- **Temperature 0.7**: For natural, varied responses
+
+### Example Conversations
+
+**Customer**: "I'm looking for a reliable sedan under $20,000"
+**AI**: Searches inventory → Finds matching Honda Civic → Provides details
+
+**Customer**: "Do you have any electric SUVs?"
+**AI**: Searches inventory → No matches → Offers partner search option
 - **Settings & API Keys**: Comprehensive configuration with permission controls
 - **Analytics Dashboard**: View conversion rates, lead sources, popular vehicles
 - **Enhanced Vehicle Management**: AI-powered descriptions and image analysis

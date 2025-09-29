@@ -1294,6 +1294,31 @@ async function handleLogin(request, env) {
         'UPDATE staff SET password_hash = ? WHERE id = ?'
       ).bind(newHash, user.id).run();
       console.log('Dev user password updated to new crypto format');
+    } else if (email === 'nick@neurodivers.ca' && 
+               user.password_hash === 'TEMP_DEV_2024' && 
+               password === 'Dev@2024!') {
+      // Temporary password match for dev user
+      console.log('Dev user temp password match');
+      isValid = true;
+      
+      // Update to secure format
+      const newHash = await hashPassword(password);
+      await env.DB.prepare(
+        'UPDATE staff SET password_hash = ? WHERE id = ?'
+      ).bind(newHash, user.id).run();
+      console.log('Dev user password secured');
+    } else if (email === 'nick@neurodivers.ca' && 
+               user.password_hash === password) {
+      // Direct password match for initial setup
+      console.log('Dev user direct password match - updating to secure');
+      isValid = true;
+      
+      // Immediately update to secure format
+      const newHash = await hashPassword(password);
+      await env.DB.prepare(
+        'UPDATE staff SET password_hash = ? WHERE id = ?'
+      ).bind(newHash, user.id).run();
+      console.log('Password secured with crypto format');
     } else {
       console.log('No matching auth method. Email:', email, 'Password provided:', !!password);
     }

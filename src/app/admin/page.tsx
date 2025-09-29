@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getVehicleEndpoint } from '@/lib/api-config';
-import { Car, TrendingUp, Users, DollarSign, BarChart3, UserCheck, MessageSquare, Settings } from 'lucide-react';
+import AIFeatureManager from '@/components/AIFeatureManager';
 
 interface Stats {
   totalVehicles: number;
@@ -13,6 +12,7 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'financing' | 'analytics' | 'staff' | 'settings' | 'ai'>('overview');
   const [stats, setStats] = useState<Stats>({
     totalVehicles: 0,
     soldVehicles: 0,
@@ -22,7 +22,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(getVehicleEndpoint())
+    fetch('/api/vehicles')
       .then(res => res.json())
       .then(data => {
         const vehicles = Array.isArray(data) ? data : [];
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
               <p className="text-sm text-gray-600">Total Vehicles</p>
               <p className="text-2xl font-bold">{loading ? '...' : stats.totalVehicles}</p>
             </div>
-            <Car className="h-8 w-8 text-blue-600" />
+            <div className="h-8 w-8 bg-blue-600 rounded-full"></div>
           </div>
         </div>
         
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
               <p className="text-sm text-gray-600">Sold Vehicles</p>
               <p className="text-2xl font-bold">{loading ? '...' : stats.soldVehicles}</p>
             </div>
-            <TrendingUp className="h-8 w-8 text-green-600" />
+            <div className="h-8 w-8 bg-green-600 rounded-full"></div>
           </div>
         </div>
         
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
                 {loading ? '...' : `$${stats.totalValue.toLocaleString()}`}
               </p>
             </div>
-            <DollarSign className="h-8 w-8 text-yellow-600" />
+            <div className="h-8 w-8 bg-yellow-600 rounded-full"></div>
           </div>
         </div>
         
@@ -93,20 +93,42 @@ export default function AdminDashboard() {
                 {loading ? '...' : `$${Math.round(stats.averagePrice).toLocaleString()}`}
               </p>
             </div>
-            <Users className="h-8 w-8 text-purple-600" />
+            <div className="h-8 w-8 bg-purple-600 rounded-full"></div>
           </div>
         </div>
       </div>
       
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Tabs */}
+      <div className="bg-white rounded-lg shadow mb-6">
+        <div className="border-b">
+          <nav className="flex space-x-8 px-6">
+            {(['overview', 'ai', 'vehicles', 'settings'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${
+                  activeTab === tab
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab === 'ai' ? '🤖 AI Features' : tab}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Link
             href="/admin/vehicles"
             className="bg-blue-600 text-white text-center py-3 px-6 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2"
           >
-            <Car className="h-4 w-4" />
+            <span>🚗</span>
             <span>Manage Vehicles</span>
           </Link>
           <Link
@@ -119,28 +141,28 @@ export default function AdminDashboard() {
             href="/admin/analytics"
             className="bg-purple-600 text-white text-center py-3 px-6 rounded-lg hover:bg-purple-700 transition flex items-center justify-center space-x-2"
           >
-            <BarChart3 className="h-4 w-4" />
+            <span>📊</span>
             <span>View Analytics</span>
           </Link>
           <Link
             href="/admin/leads"
             className="bg-orange-600 text-white text-center py-3 px-6 rounded-lg hover:bg-orange-700 transition flex items-center justify-center space-x-2"
           >
-            <MessageSquare className="h-4 w-4" />
+            <span>💬</span>
             <span>Manage Leads</span>
           </Link>
           <Link
             href="/admin/staff"
             className="bg-indigo-600 text-white text-center py-3 px-6 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center space-x-2"
           >
-            <UserCheck className="h-4 w-4" />
+            <span>👥</span>
             <span>Staff Management</span>
           </Link>
           <Link
             href="/admin/settings"
             className="bg-red-600 text-white text-center py-3 px-6 rounded-lg hover:bg-red-700 transition flex items-center justify-center space-x-2"
           >
-            <Settings className="h-4 w-4" />
+            <span>⚙️</span>
             <span>Settings & API Keys</span>
           </Link>
           <Link
@@ -151,6 +173,12 @@ export default function AdminDashboard() {
           </Link>
         </div>
       </div>
+      )}
+
+      {/* AI Features Tab */}
+      {activeTab === 'ai' && (
+        <AIFeatureManager />
+      )}
     </div>
   );
 }
