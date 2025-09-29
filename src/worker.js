@@ -904,10 +904,22 @@ async function handleVehicles(request, env, method) {
           // Update existing vehicle
           const updateData = await request.json();
           
-          // Check if vehicle is being marked as sold for the first time
-          let soldDate = null;
-          if (currentVehicle && currentVehicle.isSold === 0 && updateData.isSold === 1) {
-            soldDate = new Date().toISOString();
+          // Handle sold status changes
+          let soldDate = undefined; // undefined means don't change
+          if (currentVehicle) {
+            // Vehicle is being marked as sold for the first time
+            if (currentVehicle.isSold === 0 && updateData.isSold === 1) {
+              soldDate = new Date().toISOString();
+              console.log(`Vehicle ${vehicleId} marked as sold, setting soldDate: ${soldDate}`);
+            }
+            // Vehicle is being marked back as available (unsold)
+            else if (currentVehicle.isSold === 1 && updateData.isSold === 0) {
+              soldDate = null; // Clear the sold date
+              console.log(`Vehicle ${vehicleId} marked as available again, clearing soldDate`);
+              
+              // IMPORTANT: Images are preserved when marking back as available
+              // This is the safety net - we don't delete images immediately
+            }
           }
           
           // Stringify images array if needed
@@ -920,7 +932,11 @@ async function handleVehicles(request, env, method) {
               make = ?, model = ?, year = ?, price = ?, 
               odometer = ?, bodyType = ?, color = ?, 
               description = ?, images = ?, isSold = ?,
-              soldDate = COALESCE(?, soldDate),
+              soldDate = CASE 
+                WHEN ? IS NOT NULL THEN ?
+                WHEN ? = 0 THEN NULL
+                ELSE soldDate
+              END,
               stockNumber = ?, vin = ?
             WHERE id = ?`
           ).bind(
@@ -934,7 +950,9 @@ async function handleVehicles(request, env, method) {
             updateData.description || null,
             updateData.images || '[]',
             updateData.isSold || 0,
-            soldDate,
+            soldDate !== undefined ? soldDate : null, // First WHEN condition
+            soldDate !== undefined ? soldDate : null, // THEN value
+            updateData.isSold || 0, // Check if being marked as available
             updateData.stockNumber || null,
             updateData.vin || null,
             vehicleId
@@ -1632,36 +1650,45 @@ async function scheduled(event, env, ctx) {
 // Cleanup function for sold vehicle images
 async function cleanupSoldVehicleImages(env) {
   try {
-    // Get all sold vehicles
+    // Get all sold vehicles with their sold date
     const { results: soldVehicles } = await env.DB.prepare(`
-      SELECT id, images, isSold, soldDate 
+      SELECT id, images, isSold, soldDate, make, model, year
       FROM vehicles 
-      WHERE isSold = 1
+      WHERE isSold = 1 AND soldDate IS NOT NULL
     `).all();
+    
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
     
     for (const vehicle of soldVehicles) {
       if (!vehicle.images) continue;
       
+      const soldDate = new Date(vehicle.soldDate);
       const images = JSON.parse(vehicle.images);
-      if (images.length <= 1) continue; // Already cleaned up
       
-      // Check if vehicle was marked as sold (we'll need to track this)
-      // For now, let's clean up images for vehicles sold more than 7 days ago
-      // In production, you'd track soldDate properly
+      // SAFETY NET: Only process vehicles sold more than 7 days ago
+      // This gives time to correct mistakes
+      if (soldDate > sevenDaysAgo) {
+        console.log(`Skipping ${vehicle.year} ${vehicle.make} ${vehicle.model} - sold less than 7 days ago`);
+        continue;
+      }
       
-      // Keep only the first image for sold vehicles
-      const imagesToDelete = images.slice(1);
-      const imageToKeep = images.slice(0, 1);
+      // Phase 1: After 7 days, keep only first 3 images
+      if (soldDate <= sevenDaysAgo && images.length > 3) {
+        const imagesToDelete = images.slice(3);
+        const imagesToKeep = images.slice(0, 3);
       
-      // Delete extra images from Cloudflare
-      if (env.CF_ACCOUNT_ID && env.CF_IMAGES_TOKEN) {
-        for (const image of imagesToDelete) {
-          if (image.id) {
-            try {
-              await fetch(
-                `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/images/v1/${image.id}`,
-                {
-                  method: 'DELETE',
+        // Delete extra images from Cloudflare
+        if (env.CF_ACCOUNT_ID && env.CF_IMAGES_TOKEN) {
+          for (const image of imagesToDelete) {
+            if (image.id) {
+              try {
+                await fetch(
+                  `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/images/v1/${image.id}`,
+                  {
+                    method: 'DELETE',
                   headers: {
                     'Authorization': `Bearer ${env.CF_IMAGES_TOKEN}`
                   }
@@ -1674,19 +1701,47 @@ async function cleanupSoldVehicleImages(env) {
           }
         }
         
-        // Update vehicle with only the kept image
+        // Update vehicle with reduced images
         await env.DB.prepare(
           'UPDATE vehicles SET images = ? WHERE id = ?'
-        ).bind(JSON.stringify(imageToKeep), vehicle.id).run();
+        ).bind(JSON.stringify(imagesToKeep), vehicle.id).run();
+        
+        console.log(`Phase 1 cleanup: Kept 3 images for ${vehicle.year} ${vehicle.make} ${vehicle.model}`);
+      }
+      
+      // Phase 2: After 3 months, delete all remaining images
+      if (soldDate <= threeMonthsAgo && images.length > 0) {
+        // Delete ALL images from Cloudflare
+        if (env.CF_ACCOUNT_ID && env.CF_IMAGES_TOKEN) {
+          for (const image of images) {
+            if (image.id) {
+              try {
+                await fetch(
+                  `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/images/v1/${image.id}`,
+                  {
+                    method: 'DELETE',
+                    headers: {
+                      'Authorization': `Bearer ${env.CF_IMAGES_TOKEN}`
+                    }
+                  }
+                );
+                console.log(`Final cleanup: Deleted image ${image.id} for 3-month old sold vehicle ${vehicle.id}`);
+              } catch (error) {
+                console.error(`Failed to delete image ${image.id}:`, error);
+              }
+            }
+          }
+        }
+        
+        // Clear images from database
+        await env.DB.prepare(
+          'UPDATE vehicles SET images = ? WHERE id = ?'
+        ).bind('[]', vehicle.id).run();
+        
+        console.log(`Phase 2 cleanup: Removed all images for ${vehicle.year} ${vehicle.make} ${vehicle.model} (sold 3+ months ago)`);
       }
     }
     
-    // Clean up vehicles sold more than 3 months ago
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    
-    // This would need a soldDate column to track properly
-    // For now, this is a placeholder for the logic
     console.log('Sold vehicle image cleanup completed');
     
   } catch (error) {
