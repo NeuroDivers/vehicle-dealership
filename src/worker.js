@@ -627,11 +627,100 @@ async function handleLeads(request, env) {
   }
 }
 
-// Vehicle CRUD handlers
-async function handleVehicles(request, env) {
+// Vehicle Image Upload Handler for R2
+async function handleVehicleImageUpload(request, env) {
+  try {
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const vehicleId = pathParts[3]; // /api/vehicles/{id}/images
+    
+    // For now, return a message about R2 configuration
+    // In production, you'll need to:
+    // 1. Create an R2 bucket in Cloudflare dashboard
+    // 2. Add R2_BUCKET binding to wrangler.toml
+    // 3. Uncomment the actual upload code below
+    
+    return new Response(JSON.stringify({ 
+      error: 'R2 bucket not configured. Please set up R2 in Cloudflare dashboard and add binding to wrangler.toml',
+      instructions: [
+        '1. Go to Cloudflare dashboard > R2',
+        '2. Create a new bucket (e.g., "vehicle-images")',
+        '3. Add to wrangler.toml: [[r2_buckets]] binding = "R2_BUCKET" bucket_name = "vehicle-images"',
+        '4. Redeploy the worker'
+      ]
+    }), {
+      status: 503,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+    
+    /* Uncomment this when R2 is configured:
+    if (!env.R2_BUCKET) {
+      return new Response(JSON.stringify({ error: 'R2 bucket not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const formData = await request.formData();
+    const files = formData.getAll('images');
+    const uploadedUrls = [];
+    
+    for (const file of files) {
+      if (file instanceof File) {
+        const timestamp = Date.now();
+        const filename = `vehicles/${vehicleId}/${timestamp}-${file.name}`;
+        
+        await env.R2_BUCKET.put(filename, file.stream(), {
+          httpMetadata: {
+            contentType: file.type,
+          },
+          customMetadata: {
+            vehicleId: vehicleId,
+            originalName: file.name,
+            uploadedAt: new Date().toISOString()
+          }
+        });
+        
+        // Use your R2 public URL or generate signed URL
+        const publicUrl = `https://your-bucket.r2.dev/${filename}`;
+        uploadedUrls.push(publicUrl);
+      }
+    }
+    
+    if (uploadedUrls.length > 0) {
+      const vehicle = await env.DB.prepare('SELECT images FROM vehicles WHERE id = ?').bind(vehicleId).first();
+      
+      if (vehicle) {
+        const existingImages = vehicle.images ? JSON.parse(vehicle.images) : [];
+        const allImages = [...existingImages, ...uploadedUrls];
+        
+        await env.DB.prepare('UPDATE vehicles SET images = ? WHERE id = ?')
+          .bind(JSON.stringify(allImages), vehicleId)
+          .run();
+      }
+    }
+    
+    return new Response(JSON.stringify({ 
+      success: true, 
+      urls: uploadedUrls,
+      message: `Uploaded ${uploadedUrls.length} images`
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+    */
+  } catch (error) {
+    console.error('Image upload error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to upload images' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// Vehicle Management Handlers
+async function handleVehicles(request, env, method) {
   const url = new URL(request.url);
   const path = url.pathname;
-  const method = request.method;
   
   // Extract vehicle ID from path if present
   const vehicleIdMatch = path.match(/\/api\/vehicles\/(\d+)/);
@@ -1426,9 +1515,13 @@ const workerHandler = {
         return await handleStaff(request, env, method);
       }
       
-      // Existing endpoints
-      else if (path.startsWith('/api/vehicles')) {
-        return await handleVehicles(request, env);
+      // Vehicle endpoints
+      if (path.startsWith('/api/vehicles')) {
+        // Handle image uploads separately
+        if (path.match(/\/api\/vehicles\/[\w-]+\/images$/) && method === 'POST') {
+          return await handleVehicleImageUpload(request, env);
+        }
+        return await handleVehicles(request, env, method);
       } else if (path.startsWith('/api/analytics/vehicle-views')) {
         return await handleVehicleViews(request, env);
       } else if (path.startsWith('/api/analytics/search-queries')) {
