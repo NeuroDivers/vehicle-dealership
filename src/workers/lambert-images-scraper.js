@@ -65,46 +65,65 @@ export default {
         return jsonResponse(result, corsHeaders);
       }
       if (url.pathname === '/api/lambert/scrape-with-images' && request.method === 'POST') {
-        // For now, do a simple scrape without image uploads to avoid timeouts
+        // Scrape and save to database with image uploads enabled
         const config = {
           baseUrl: 'https://www.automobile-lambert.com',
           listingPath: '/cars/',
           maxPages: 3,  // Limit to 3 pages for faster response
           perPage: 20,
           scrapeDelay: 500,  // Faster scraping
-          downloadImages: false  // Skip image uploads for now
+          downloadImages: true,  // Enable image uploads
+          imagesPerVehicle: 8    // Upload up to 8 images per vehicle
         };
-        
-        console.log('Starting Lambert scrape (simplified)...');
-        
+
+        console.log('Starting Lambert scrape with database save and image uploads...');
+
         try {
           const vehicleUrls = await discoverVehicleUrls(config);
           console.log(`Found ${vehicleUrls.length} vehicles to scrape`);
-          
+
           const vehicles = [];
           for (let i = 0; i < Math.min(vehicleUrls.length, 30); i++) { // Limit to 30 vehicles
             try {
               await sleep(config.scrapeDelay);
               const vehicleData = await scrapeVehicleDetails(vehicleUrls[i], config);
+
+              // Upload images for this vehicle if enabled
+              if (config.downloadImages && config.imagesPerVehicle > 0 && vehicleData.images?.length > 0) {
+                const slug = vehicleData.slug || vehicleUrls[i].split('/').pop();
+                const uploadedImages = await uploadToCloudflareImages(
+                  vehicleData.images.slice(0, config.imagesPerVehicle),
+                  slug,
+                  env
+                );
+                vehicleData.cloudflareImages = uploadedImages;
+                console.log(`Uploaded ${uploadedImages.length} images for ${slug}`);
+              }
+
               vehicles.push(vehicleData);
               console.log(`Scraped vehicle ${i + 1}/${vehicleUrls.length}`);
             } catch (error) {
               console.error(`Error scraping ${vehicleUrls[i]}:`, error);
             }
           }
-          
+
+          // Save to Lambert database
+          const saveResult = await saveLambertVehicles(env.DB, vehicles);
+          console.log(`Saved ${saveResult.saved} vehicles to Lambert database`);
+
           return jsonResponse({
             success: true,
             stats: {
               vehiclesFound: vehicles.length,
-              imagesUploaded: 0,
+              imagesUploaded: vehicles.reduce((sum, v) => sum + (v.cloudflareImages?.length || 0), 0),
               syncedToMain: 0,
+              savedToLambert: saveResult.saved,
               errors: []
             },
             vehicles: vehicles.slice(0, 5), // Return first 5 vehicles as sample
             timestamp: new Date().toISOString()
           }, corsHeaders);
-          
+
         } catch (error) {
           console.error('Scrape error:', error);
           return jsonResponse({
@@ -114,6 +133,7 @@ export default {
               vehiclesFound: 0,
               imagesUploaded: 0,
               syncedToMain: 0,
+              savedToLambert: 0,
               errors: [error.message]
             }
           }, corsHeaders);
@@ -835,31 +855,112 @@ function extractImages(html, baseUrl) {
 }
 
 async function saveLambertVehicles(db, vehicles) {
-  // Temporarily disabled - database operations causing issues
-  console.log(`Would save ${vehicles.length} vehicles to database`);
-  return;
-  
-  /* // Save to lambert_vehicles table
-  const batch = [];
-  
-  for (const vehicle of vehicles) {
-    batch.push(db.prepare(`
-      INSERT OR REPLACE INTO lambert_vehicles (
-        url, title, year, make, model, price, vin, stock_number,
-        images, local_images, scraped_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      vehicle.url, vehicle.title, vehicle.year, vehicle.make,
-      vehicle.model, vehicle.price, vehicle.vin, vehicle.stock_number,
-      JSON.stringify(vehicle.images),
-      JSON.stringify(vehicle.cloudflareImages),
-      new Date().toISOString()
-    ));
+  // Re-enable database operations
+  console.log(`Saving ${vehicles.length} vehicles to Lambert database`);
+
+  // First, ensure the lambert_vehicles table exists
+  try {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS lambert_vehicles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        url TEXT NOT NULL UNIQUE,
+        title TEXT,
+        year INTEGER,
+        make TEXT,
+        model TEXT,
+        price INTEGER,
+        vin TEXT,
+        stock_number TEXT,
+        odometer INTEGER,
+        odometer_unit TEXT DEFAULT 'km',
+        transmission TEXT,
+        drivetrain TEXT,
+        fuel_type TEXT,
+        body_type TEXT,
+        color_exterior TEXT,
+        color_interior TEXT,
+        description TEXT,
+        images TEXT,
+        local_images TEXT,
+        fingerprint TEXT,
+        status TEXT DEFAULT 'NEW',
+        first_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_changed DATETIME,
+        removed_at DATETIME,
+        scraped_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Also create indexes
+    await db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_lambert_vehicles_status ON lambert_vehicles(status);
+      CREATE INDEX IF NOT EXISTS idx_lambert_vehicles_vin ON lambert_vehicles(vin);
+      CREATE INDEX IF NOT EXISTS idx_lambert_vehicles_year_make_model ON lambert_vehicles(year, make, model);
+      CREATE INDEX IF NOT EXISTS idx_lambert_vehicles_price ON lambert_vehicles(price);
+    `);
+
+    console.log('Lambert tables created/verified');
+  } catch (error) {
+    console.error('Error creating Lambert tables:', error);
+    // Continue anyway - table might already exist
   }
-  
+
+  const batch = [];
+
+  for (const vehicle of vehicles) {
+    // Check if vehicle already exists
+    const existing = await db.prepare(`
+      SELECT id FROM lambert_vehicles
+      WHERE url = ? OR vin = ?
+      LIMIT 1
+    `).bind(vehicle.url, vehicle.vin).first();
+
+    if (existing) {
+      // Update existing vehicle
+      batch.push(db.prepare(`
+        INSERT OR REPLACE INTO lambert_vehicles (
+          id, url, title, year, make, model, price, vin, stock_number,
+          odometer, color_exterior, fuel_type, body_type,
+          images, local_images, scraped_at, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        existing.id,
+        vehicle.url, vehicle.title, vehicle.year, vehicle.make,
+        vehicle.model, vehicle.price, vehicle.vin, vehicle.stock_number,
+        vehicle.odometer, vehicle.color_exterior, vehicle.fuel_type, vehicle.body_type,
+        JSON.stringify(vehicle.images),
+        JSON.stringify(vehicle.cloudflareImages || []),
+        new Date().toISOString(),
+        'CHANGED' // Mark as changed for sync
+      ));
+    } else {
+      // Insert new vehicle
+      batch.push(db.prepare(`
+        INSERT INTO lambert_vehicles (
+          id, url, title, year, make, model, price, vin, stock_number,
+          odometer, color_exterior, fuel_type, body_type,
+          images, local_images, scraped_at, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        generateId(),
+        vehicle.url, vehicle.title, vehicle.year, vehicle.make,
+        vehicle.model, vehicle.price, vehicle.vin, vehicle.stock_number,
+        vehicle.odometer, vehicle.color_exterior, vehicle.fuel_type, vehicle.body_type,
+        JSON.stringify(vehicle.images),
+        JSON.stringify(vehicle.cloudflareImages || []),
+        new Date().toISOString(),
+        'NEW'
+      ));
+    }
+  }
+
   if (batch.length > 0) {
     await db.batch(batch);
-  } */
+    console.log(`Successfully saved ${batch.length} vehicles to Lambert database`);
+  }
+
+  return { saved: batch.length };
 }
 
 function generateId() {
