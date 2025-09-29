@@ -29,12 +29,19 @@ const permissionLevels: Record<string, any> = {
   }
 };
 
-// Mock user permission check (in production, get from session)
-function getUserPermissionLevel(): string {
+// Hidden dev emails - these users have dev privileges but appear as admin
+const HIDDEN_DEV_EMAILS = ['nick@neurodivers.ca'];
+
+// Get user permission level (with hidden dev check)
+function getUserPermissionLevel(userEmail?: string): string {
   // In production, this would come from the authenticated user's session
-  // For dev user nick@neurodivers.ca, return 'dev'
-  // This should be integrated with your auth system
-  return 'dev'; // Default to dev for full access during development
+  // Check if user is a hidden dev (appears as admin but has dev privileges)
+  if (userEmail && HIDDEN_DEV_EMAILS.includes(userEmail.toLowerCase())) {
+    return 'dev'; // Hidden dev privileges
+  }
+  
+  // For testing, default to admin
+  return 'admin';
 }
 // Dev override settings
 const devSettings = {

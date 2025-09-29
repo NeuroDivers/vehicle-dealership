@@ -49,13 +49,21 @@ const devSettings: Record<string, any> = {
   restrictFeatureEnabling: false, // true = only dev can enable/disable features
 };
 
+// Hidden dev emails - these users have dev privileges but appear as admin
+const HIDDEN_DEV_EMAILS = ['nick@neurodivers.ca'];
+
 // Permission levels
 const userPermissions: Record<string, any> = {
   // In production, this would be per-user and stored in database
-  currentUserLevel: 'dev', // 'dev', 'admin', or 'user' - Set to dev for nick@neurodivers.ca
+  currentUserLevel: 'admin', // Default to admin (hidden devs are detected separately)
   canModifyKeys: true, // Whether this user can modify API keys
   canEnableFeatures: true, // Whether this user can enable/disable features
 };
+
+// Check if user is a hidden dev (internal use only)
+function isHiddenDev(email: string): boolean {
+  return HIDDEN_DEV_EMAILS.includes(email.toLowerCase());
+}
 
 export async function GET(request: NextRequest) {
   try {
