@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 interface SiteInfo {
   siteName: string;
@@ -31,7 +32,11 @@ interface SiteInfo {
     fr: string;
     es: string;
   };
-  themeColor: 'blue' | 'red' | 'green' | 'purple';
+  themeColors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
 }
 
 const defaultSiteInfo: SiteInfo = {
@@ -65,10 +70,15 @@ const defaultSiteInfo: SiteInfo = {
     fr: '© 2024 Premium Auto Sales. Tous droits réservés.',
     es: '© 2024 Premium Auto Sales. Todos los derechos reservados.'
   },
-  themeColor: 'blue'
+  themeColors: {
+    primary: '#2563eb', // blue-600
+    secondary: '#1e3a8a', // blue-900
+    accent: '#3b82f6' // blue-500
+  }
 };
 
 export default function SiteInfoManager() {
+  const { updateSettings } = useSiteSettings();
   const [siteInfo, setSiteInfo] = useState<SiteInfo>(defaultSiteInfo);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -115,6 +125,9 @@ export default function SiteInfoManager() {
     try {
       // Always save to localStorage
       localStorage.setItem('siteInfo', JSON.stringify(siteInfo));
+      
+      // Update the context to trigger re-renders
+      updateSettings(siteInfo as any);
       
       // Try to save to API
       const response = await fetch('/api/admin/site-info', {
@@ -421,30 +434,106 @@ export default function SiteInfoManager() {
         </div>
       </div>
 
-      {/* Theme Color */}
+      {/* Theme Colors */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Theme Color</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {(['blue', 'red', 'green', 'purple'] as const).map(color => (
-            <button
-              key={color}
-              onClick={() => setSiteInfo(prev => ({ ...prev, themeColor: color }))}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                siteInfo.themeColor === color 
-                  ? 'border-gray-800 shadow-lg' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              <div className={`h-8 w-full rounded mb-2 ${
-                color === 'blue' ? 'bg-blue-600' :
-                color === 'red' ? 'bg-red-600' :
-                color === 'green' ? 'bg-green-600' :
-                'bg-purple-600'
-              }`} />
-              <span className="capitalize font-medium">{color}</span>
-            </button>
-          ))}
+        <h3 className="text-lg font-semibold mb-4">Theme Colors</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Primary Color
+            </label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="color"
+                value={siteInfo.themeColors.primary}
+                onChange={(e) => setSiteInfo(prev => ({ 
+                  ...prev, 
+                  themeColors: { ...prev.themeColors, primary: e.target.value }
+                }))}
+                className="h-10 w-20 border border-gray-300 rounded cursor-pointer"
+              />
+              <input
+                type="text"
+                value={siteInfo.themeColors.primary}
+                onChange={(e) => setSiteInfo(prev => ({ 
+                  ...prev, 
+                  themeColors: { ...prev.themeColors, primary: e.target.value }
+                }))}
+                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="#2563eb"
+              />
+              <div 
+                className="w-10 h-10 rounded border border-gray-300"
+                style={{ backgroundColor: siteInfo.themeColors.primary }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Secondary Color
+            </label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="color"
+                value={siteInfo.themeColors.secondary}
+                onChange={(e) => setSiteInfo(prev => ({ 
+                  ...prev, 
+                  themeColors: { ...prev.themeColors, secondary: e.target.value }
+                }))}
+                className="h-10 w-20 border border-gray-300 rounded cursor-pointer"
+              />
+              <input
+                type="text"
+                value={siteInfo.themeColors.secondary}
+                onChange={(e) => setSiteInfo(prev => ({ 
+                  ...prev, 
+                  themeColors: { ...prev.themeColors, secondary: e.target.value }
+                }))}
+                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="#1e3a8a"
+              />
+              <div 
+                className="w-10 h-10 rounded border border-gray-300"
+                style={{ backgroundColor: siteInfo.themeColors.secondary }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Accent Color
+            </label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="color"
+                value={siteInfo.themeColors.accent}
+                onChange={(e) => setSiteInfo(prev => ({ 
+                  ...prev, 
+                  themeColors: { ...prev.themeColors, accent: e.target.value }
+                }))}
+                className="h-10 w-20 border border-gray-300 rounded cursor-pointer"
+              />
+              <input
+                type="text"
+                value={siteInfo.themeColors.accent}
+                onChange={(e) => setSiteInfo(prev => ({ 
+                  ...prev, 
+                  themeColors: { ...prev.themeColors, accent: e.target.value }
+                }))}
+                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="#3b82f6"
+              />
+              <div 
+                className="w-10 h-10 rounded border border-gray-300"
+                style={{ backgroundColor: siteInfo.themeColors.accent }}
+              />
+            </div>
+          </div>
         </div>
+        <p className="text-sm text-gray-500 mt-2">
+          Tip: Primary is for headers and buttons, Secondary for dark backgrounds, Accent for highlights
+        </p>
       </div>
 
       {/* Social Media */}

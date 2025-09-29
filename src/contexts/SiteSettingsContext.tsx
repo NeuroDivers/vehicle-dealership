@@ -31,7 +31,11 @@ interface SiteSettings {
     fr: string;
     es: string;
   };
-  themeColor: 'blue' | 'red' | 'green' | 'purple';
+  themeColors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
 }
 
 const defaultSettings: SiteSettings = {
@@ -59,7 +63,11 @@ const defaultSettings: SiteSettings = {
     fr: '© 2024 Premium Auto Sales. Tous droits réservés.',
     es: '© 2024 Premium Auto Sales. Todos los derechos reservados.'
   },
-  themeColor: 'blue'
+  themeColors: {
+    primary: '#2563eb', // blue-600
+    secondary: '#1e3a8a', // blue-900
+    accent: '#3b82f6' // blue-500
+  }
 };
 
 const SiteSettingsContext = createContext<{
@@ -99,30 +107,12 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   };
 
   const getThemeColors = () => {
-    const themes = {
-      blue: {
-        primary: 'rgb(37, 99, 235)', // blue-600
-        secondary: 'rgb(30, 64, 175)', // blue-800
-        accent: 'rgb(59, 130, 246)' // blue-500
-      },
-      red: {
-        primary: 'rgb(220, 38, 38)', // red-600
-        secondary: 'rgb(153, 27, 27)', // red-800
-        accent: 'rgb(239, 68, 68)' // red-500
-      },
-      green: {
-        primary: 'rgb(22, 163, 74)', // green-600
-        secondary: 'rgb(21, 128, 61)', // green-800
-        accent: 'rgb(34, 197, 94)' // green-500
-      },
-      purple: {
-        primary: 'rgb(147, 51, 234)', // purple-600
-        secondary: 'rgb(107, 33, 168)', // purple-800
-        accent: 'rgb(168, 85, 247)' // purple-500
-      }
+    // Return the custom colors directly
+    return {
+      primary: settings.themeColors.primary,
+      secondary: settings.themeColors.secondary,
+      accent: settings.themeColors.accent
     };
-
-    return themes[settings.themeColor] || themes.blue;
   };
 
   return (
