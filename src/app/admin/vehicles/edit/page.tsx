@@ -148,69 +148,80 @@ export default function EditVehicle() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
-      e.target.value = '';
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
-    if (!allowedTypes.includes(file.type)) {
-      alert('Please upload a valid image file (JPEG, PNG, WebP, or AVIF)');
+    // Check if adding these files would exceed the limit
+    if (formData.imagesList.length + files.length > 10) {
+      alert(`You can only have up to 10 images. You currently have ${formData.imagesList.length} images.`);
       e.target.value = '';
       return;
     }
 
     setUploadingImage(true);
+    const vehicleId = searchParams.get('id');
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
     
     try {
-      // Create FormData for upload to Cloudflare Images
-      const uploadData = new FormData();
-      uploadData.append('images', file); // Note: 'images' not 'file' to match worker expectation
-      
-      // Upload to the vehicle's images endpoint on the Worker
-      const vehicleId = searchParams.get('id');
-      const imageUploadRes = await fetch(`${getVehicleEndpoint()}/${vehicleId}/images`, {
-        method: 'POST',
-        body: uploadData,
-      });
-      
-      if (!imageUploadRes.ok) {
-        const error = await imageUploadRes.json();
-        throw new Error(error.error || error.instructions ? error.instructions.join(' ') : 'Failed to upload image');
-      }
-      
-      const result = await imageUploadRes.json();
-      
-      // Add image info to form data - handle new Cloudflare Images response format
-      if (result.images && result.images.length > 0) {
-        const newImage = result.images[0];
-        // Use the thumbnail variant for display in the form
-        const imageUrl = newImage.variants?.thumbnail || newImage.variants?.public || newImage.id;
-        setFormData(prev => ({
-          ...prev,
-          imagesList: [...prev.imagesList, imageUrl],
-          newImages: [...(prev.newImages || []), newImage], // Store full object for saving with safety check
-        }));
-        console.log('Image uploaded successfully:', newImage);
-      } else if (result.urls && result.urls.length > 0) {
-        // Fallback for old format
-        setFormData(prev => ({
-          ...prev,
-          imagesList: [...prev.imagesList, result.urls[0]],
-          newImages: prev.newImages || [], // Ensure newImages is always an array
-        }));
-        console.log('Image uploaded successfully:', result.urls[0]);
+      // Process each file
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+          console.warn(`File ${file.name} is too large (>5MB), skipping`);
+          continue;
+        }
+
+        // Validate file type
+        if (!allowedTypes.includes(file.type)) {
+          console.warn(`File ${file.name} has invalid type, skipping`);
+          continue;
+        }
+
+        // Create FormData for upload to Cloudflare Images
+        const uploadData = new FormData();
+        uploadData.append('images', file);
+        
+        // Upload to the vehicle's images endpoint on the Worker
+        const imageUploadRes = await fetch(`${getVehicleEndpoint()}/${vehicleId}/images`, {
+          method: 'POST',
+          body: uploadData,
+        });
+        
+        if (!imageUploadRes.ok) {
+          const error = await imageUploadRes.json();
+          console.error(`Failed to upload ${file.name}:`, error);
+          continue;
+        }
+        
+        const result = await imageUploadRes.json();
+        
+        // Add image info to form data - handle new Cloudflare Images response format
+        if (result.images && result.images.length > 0) {
+          const newImage = result.images[0];
+          // Use the thumbnail variant for display in the form
+          const imageUrl = newImage.variants?.thumbnail || newImage.variants?.public || newImage.id;
+          setFormData(prev => ({
+            ...prev,
+            imagesList: [...prev.imagesList, imageUrl],
+            newImages: [...(prev.newImages || []), newImage], // Store full object for saving with safety check
+          }));
+          console.log('Image uploaded successfully:', newImage);
+        } else if (result.urls && result.urls.length > 0) {
+          // Fallback for old format
+          setFormData(prev => ({
+            ...prev,
+            imagesList: [...prev.imagesList, result.urls[0]],
+            newImages: prev.newImages || [], // Ensure newImages is always an array
+          }));
+          console.log('Image uploaded successfully:', result.urls[0]);
+        }
       }
       
     } catch (error) {
       console.error('Upload failed:', error);
-      alert(error instanceof Error ? error.message : 'Failed to upload image. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to upload images. Please try again.');
     } finally {
       setUploadingImage(false);
       e.target.value = '';
@@ -458,6 +469,7 @@ export default function EditVehicle() {
                   accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"
                   onChange={handleImageUpload}
                   disabled={uploadingImage || formData.imagesList.length >= 10}
+                  multiple
                   className="hidden"
                 />
                 <div className={`flex items-center space-x-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors ${
@@ -472,7 +484,7 @@ export default function EditVehicle() {
                     <>
                       <Upload className="h-5 w-5 text-gray-600" />
                       <span className="text-gray-600">
-                        {formData.imagesList.length >= 10 ? 'Maximum 10 images' : 'Upload Image'}
+                        {formData.imagesList.length >= 10 ? 'Maximum 10 images' : 'Upload Images'}
                       </span>
                     </>
                   )}
