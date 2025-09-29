@@ -3,7 +3,20 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Home, LogOut, Menu, X, User, Users, Car, BarChart3, MessageSquare } from 'lucide-react';
+import {
+  Home,
+  Car,
+  Users,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  User,
+  MessageSquare,
+  BarChart3,
+  FileText,
+  Image
+} from 'lucide-react';
 import AuthGuard from '@/components/AuthGuard';
 
 export default function AdminLayout({
@@ -106,6 +119,24 @@ export default function AdminLayout({
                   <BarChart3 className="h-4 w-4" />
                   <span>Analytics</span>
                 </Link>
+                <Link
+                  href="/admin/reports"
+                  className={`px-3 py-2 rounded flex items-center space-x-1 ${
+                    pathname === '/admin/reports' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Reports</span>
+                </Link>
+                <Link
+                  href="/admin/images"
+                  className={`px-3 py-2 rounded flex items-center space-x-1 ${
+                    pathname === '/admin/images' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <Image className="h-4 w-4" />
+                  <span>Images</span>
+                </Link>
               </div>
             </div>
             
@@ -190,6 +221,20 @@ export default function AdminLayout({
                 onClick={() => setShowMobileMenu(false)}
               >
                 Analytics
+              </Link>
+              <Link
+                href="/admin/reports"
+                className="block px-3 py-2 rounded hover:bg-gray-700"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Reports
+              </Link>
+              <Link
+                href="/admin/images"
+                className="block px-3 py-2 rounded hover:bg-gray-700"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Images
               </Link>
               <Link
                 href="/"
