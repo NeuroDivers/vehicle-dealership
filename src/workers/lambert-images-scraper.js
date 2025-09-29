@@ -483,10 +483,10 @@ async function scrapeVehicleDetails(url, config) {
   if (!response.ok) {
     throw new Error(`Failed to fetch vehicle: ${response.status}`);
   }
-  
+
   const html = await response.text();
   const data = { url };
-  
+
   // Extract title
   const titleMatch = html.match(/<h[12][^>]*>([^<]+)<\/h[12]>/);
   if (titleMatch) {
@@ -498,23 +498,63 @@ async function scrapeVehicleDetails(url, config) {
       data.model = titleParts[3];
     }
   }
-  
+
   // Extract price
   const priceMatch = html.match(/\$\s*([0-9,\s]+)/);
   if (priceMatch) {
     data.price = parseInt(priceMatch[1].replace(/[,\s]/g, ''));
   }
-  
+
   // Extract VIN
   const vinMatch = html.match(/(VIN|NIV)[:\s]+([A-Z0-9]{17})/i);
   if (vinMatch) {
     data.vin = vinMatch[2];
   }
-  
-  // Extract other fields...
-  data.slug = url.split('/').filter(Boolean).pop();
+
+  // Extract stock number
+  const stockMatch = html.match(/(Stock|No\.|N°)[^\d]*(\d+)/i);
+  if (stockMatch) {
+    data.stock_number = stockMatch[2];
+  }
+
+  // Extract odometer
+  const odometerMatch = html.match(/(\d+(?:,\d+)?)\s*(km|miles?|kms?)/i);
+  if (odometerMatch) {
+    data.odometer = parseInt(odometerMatch[1].replace(/,/g, ''));
+  }
+
+  // Extract color
+  const colorMatch = html.match(/(Color|Couleur)[^\w]*([A-Za-z\s]+)/i);
+  if (colorMatch) {
+    data.color_exterior = colorMatch[2].trim();
+  }
+
+  // Extract fuel type
+  const fuelMatch = html.match(/(Gasoline|Essence|Diesel|Électrique|Electric|Hybride|Hybrid)/i);
+  if (fuelMatch) {
+    data.fuel_type = fuelMatch[1].toLowerCase();
+  }
+
+  // Extract body type
+  const bodyMatch = html.match(/(SUV|Hatchback|Sedan|Wagon|Truck|Van|Coupe|Convertible)/i);
+  if (bodyMatch) {
+    data.body_type = bodyMatch[1];
+  }
+
+  // Extract description (look for longer text blocks)
+  const descMatches = html.match(/<p[^>]*>([^<]{50,})<\/p>/gi);
+  if (descMatches) {
+    data.description = descMatches.map(match =>
+      match.replace(/<[^>]+>/g, '').trim()
+    ).join(' ').substring(0, 1000);
+  }
+
+  // Extract images
   data.images = extractImages(html, config.baseUrl);
-  
+
+  // Set slug
+  data.slug = url.split('/').filter(Boolean).pop();
+
   return data;
 }
 
