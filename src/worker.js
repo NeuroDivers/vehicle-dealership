@@ -722,15 +722,8 @@ async function handleVehicles(request, env) {
   }
 }
 
-// Import bcryptjs for password hashing
-import bcrypt from 'bcryptjs';
-
-// Authentication functions (inline for Worker compatibility)
-function generateToken() {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-}
+// Import native crypto authentication (no external dependencies!)
+import { hashPassword, verifyPassword, generateToken, createToken, verifyToken } from './lib/crypto-auth.js';
 
 async function handleLogin(request, env) {
   try {
@@ -755,34 +748,24 @@ async function handleLogin(request, env) {
       });
     }
     
-    // Verify password
-    console.log('Attempting to verify password for:', email);
-    
-    // TEMPORARY: Simple password check for testing
-    // In production, use bcrypt
+    // Verify password using native crypto
     let isValid = false;
     
-    // For admin@dealership.com, accept 'admin123'
-    if (email === 'admin@dealership.com' && password === 'admin123') {
+    // Check if using new crypto format (contains ':')
+    if (user.password_hash && user.password_hash.includes(':')) {
+      // New crypto format
+      isValid = await verifyPassword(password, user.password_hash);
+    } else if (email === 'admin@dealership.com' && password === 'admin123') {
+      // Temporary fallback for admin
       isValid = true;
-    } else {
-      // Try bcrypt for other users
-      try {
-        // Handle both $2a$ and $2b$ prefixes
-        let passwordHash = user.password_hash;
-        if (passwordHash && passwordHash.startsWith('$2b$')) {
-          passwordHash = '$2a$' + passwordHash.slice(4);
-        }
-        
-        if (passwordHash && passwordHash.startsWith('$2a$')) {
-          isValid = await bcrypt.compare(password, passwordHash);
-        }
-      } catch (err) {
-        console.error('Bcrypt error:', err);
-      }
+      
+      // Update admin to use new crypto format
+      const newHash = await hashPassword(password);
+      await env.DB.prepare(
+        'UPDATE staff SET password_hash = ? WHERE id = ?'
+      ).bind(newHash, user.id).run();
+      console.log('Admin password updated to new crypto format');
     }
-    
-    console.log('Password verification result:', isValid);
     
     if (!isValid) {
       return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
@@ -934,8 +917,8 @@ async function handleStaff(request, env, method) {
           });
         }
         
-        // Hash password
-        const hashedPassword = await bcrypt.hash(newStaff.password, 10);
+        // Hash password using native crypto
+        const hashedPassword = await hashPassword(newStaff.password);
         
         // Insert staff member
         const newStaffId = crypto.randomUUID();
@@ -992,7 +975,7 @@ async function handleStaff(request, env, method) {
         }
         if (updateData.password) {
           updates.push('password_hash = ?');
-          values.push(await bcrypt.hash(updateData.password, 10));
+          values.push(await hashPassword(updateData.password));
         }
         
         if (updates.length === 0) {
