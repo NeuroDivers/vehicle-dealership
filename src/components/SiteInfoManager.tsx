@@ -95,6 +95,23 @@ export default function SiteInfoManager() {
       const localInfo = localStorage.getItem('siteInfo');
       if (localInfo) {
         const parsed = JSON.parse(localInfo);
+        // Migrate old format to new format if needed
+        if (!parsed.themeColors && parsed.themeColor) {
+          // Old format had themeColor as a string
+          const colorMap: any = {
+            blue: { primary: '#2563eb', secondary: '#1e3a8a', accent: '#3b82f6' },
+            red: { primary: '#dc2626', secondary: '#991b1b', accent: '#ef4444' },
+            green: { primary: '#16a34a', secondary: '#15803d', accent: '#22c55e' },
+            purple: { primary: '#9333ea', secondary: '#6b21a8', accent: '#a855f7' }
+          };
+          parsed.themeColors = colorMap[parsed.themeColor] || colorMap.blue;
+          delete parsed.themeColor;
+          // Save migrated version
+          localStorage.setItem('siteInfo', JSON.stringify(parsed));
+        } else if (!parsed.themeColors) {
+          // No theme colors at all, use defaults
+          parsed.themeColors = defaultSiteInfo.themeColors;
+        }
         setSiteInfo(parsed);
         setLogoPreview(parsed.logo || '');
       }
@@ -103,10 +120,16 @@ export default function SiteInfoManager() {
       const response = await fetch('/api/admin/site-info');
       if (response.ok) {
         const data = await response.json();
-        setSiteInfo(data.siteInfo || defaultSiteInfo);
-        setLogoPreview(data.siteInfo?.logo || '');
-        // Save to localStorage
-        localStorage.setItem('siteInfo', JSON.stringify(data.siteInfo || defaultSiteInfo));
+        if (data.siteInfo) {
+          // Apply same migration logic
+          if (!data.siteInfo.themeColors) {
+            data.siteInfo.themeColors = defaultSiteInfo.themeColors;
+          }
+          setSiteInfo(data.siteInfo);
+          setLogoPreview(data.siteInfo.logo || '');
+          // Save to localStorage
+          localStorage.setItem('siteInfo', JSON.stringify(data.siteInfo));
+        }
       }
     } catch (error) {
       console.error('Failed to load site info:', error);
@@ -114,12 +137,14 @@ export default function SiteInfoManager() {
       const localInfo = localStorage.getItem('siteInfo');
       if (localInfo) {
         const parsed = JSON.parse(localInfo);
+        if (!parsed.themeColors) {
+          parsed.themeColors = defaultSiteInfo.themeColors;
+        }
         setSiteInfo(parsed);
         setLogoPreview(parsed.logo || '');
       }
     }
   };
-
   const saveSiteInfo = async () => {
     setLoading(true);
     try {

@@ -94,7 +94,29 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('siteInfo');
     if (stored) {
       try {
-        setSettings(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        // Migrate old format to new format if needed
+        if (!parsed.themeColors && parsed.themeColor) {
+          // Old format had themeColor as a string
+          const colorMap: any = {
+            blue: { primary: '#2563eb', secondary: '#1e3a8a', accent: '#3b82f6' },
+            red: { primary: '#dc2626', secondary: '#991b1b', accent: '#ef4444' },
+            green: { primary: '#16a34a', secondary: '#15803d', accent: '#22c55e' },
+            purple: { primary: '#9333ea', secondary: '#6b21a8', accent: '#a855f7' }
+          };
+          parsed.themeColors = colorMap[parsed.themeColor] || colorMap.blue;
+          delete parsed.themeColor;
+        } else if (!parsed.themeColors) {
+          // No theme colors at all, use defaults
+          parsed.themeColors = {
+            primary: '#2563eb',
+            secondary: '#1e3a8a',
+            accent: '#3b82f6'
+          };
+        }
+        setSettings(parsed);
+        // Save migrated version back to localStorage
+        localStorage.setItem('siteInfo', JSON.stringify(parsed));
       } catch (e) {
         console.error('Failed to parse site settings:', e);
       }
@@ -107,11 +129,11 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   };
 
   const getThemeColors = () => {
-    // Return the custom colors directly
+    // Return the custom colors with fallbacks
     return {
-      primary: settings.themeColors.primary,
-      secondary: settings.themeColors.secondary,
-      accent: settings.themeColors.accent
+      primary: settings.themeColors?.primary || '#2563eb',
+      secondary: settings.themeColors?.secondary || '#1e3a8a',
+      accent: settings.themeColors?.accent || '#3b82f6'
     };
   };
 
