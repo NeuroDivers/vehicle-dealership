@@ -9,15 +9,16 @@ binding = "DB"
 database_name = "vehicle-dealership-analytics"
 database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
 
-# R2 Storage for vehicle images
-# Uncomment and configure after creating R2 bucket in Cloudflare dashboard
-# [[r2_buckets]]
-# binding = "R2_BUCKET"
-# bucket_name = "vehicle-images"
-
-# Environment variables
+# Cloudflare Images configuration
+# Add these after enabling Cloudflare Images in your dashboard
+# Get Account ID from: Dashboard > Right sidebar
+# Get Account Hash from: Dashboard > Images > Account Hash
+# Create API Token at: Dashboard > My Profile > API Tokens > Create Token (with Images:Edit permission)
 [vars]
 ENVIRONMENT = "production"
+# CF_ACCOUNT_ID = "your-account-id"
+# CF_ACCOUNT_HASH = "your-account-hash"
+# CF_IMAGES_TOKEN = "your-api-token"
 
 # CORS settings for frontend integration
 [env.production.vars]

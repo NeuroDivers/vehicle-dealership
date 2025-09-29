@@ -627,72 +627,100 @@ async function handleLeads(request, env) {
   }
 }
 
-// Vehicle Image Upload Handler for R2
+// Vehicle Image Upload Handler for Cloudflare Images
 async function handleVehicleImageUpload(request, env) {
   try {
     const url = new URL(request.url);
     const pathParts = url.pathname.split('/');
     const vehicleId = pathParts[3]; // /api/vehicles/{id}/images
     
-    // For now, return a message about R2 configuration
-    // In production, you'll need to:
-    // 1. Create an R2 bucket in Cloudflare dashboard
-    // 2. Add R2_BUCKET binding to wrangler.toml
-    // 3. Uncomment the actual upload code below
-    
-    return new Response(JSON.stringify({ 
-      error: 'R2 bucket not configured. Please set up R2 in Cloudflare dashboard and add binding to wrangler.toml',
-      instructions: [
-        '1. Go to Cloudflare dashboard > R2',
-        '2. Create a new bucket (e.g., "vehicle-images")',
-        '3. Add to wrangler.toml: [[r2_buckets]] binding = "R2_BUCKET" bucket_name = "vehicle-images"',
-        '4. Redeploy the worker'
-      ]
-    }), {
-      status: 503,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-    
-    /* Uncomment this when R2 is configured:
-    if (!env.R2_BUCKET) {
-      return new Response(JSON.stringify({ error: 'R2 bucket not configured' }), {
-        status: 500,
+    // Check if Cloudflare Images is configured
+    if (!env.CF_ACCOUNT_ID || !env.CF_IMAGES_TOKEN) {
+      return new Response(JSON.stringify({ 
+        error: 'Cloudflare Images not configured. Please set up Cloudflare Images and add credentials.',
+        instructions: [
+          '1. Go to Cloudflare dashboard > Images',
+          '2. Enable Cloudflare Images ($5/month)',
+          '3. Get your Account ID from the dashboard',
+          '4. Create an API token with Images:Edit permission',
+          '5. Add to wrangler.toml: [vars] CF_ACCOUNT_ID = "your-id" CF_IMAGES_TOKEN = "your-token"',
+          '6. Redeploy the worker'
+        ]
+      }), {
+        status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
     
+    // Get the uploaded images from form data
     const formData = await request.formData();
     const files = formData.getAll('images');
-    const uploadedUrls = [];
+    const uploadedImages = [];
     
     for (const file of files) {
       if (file instanceof File) {
-        const timestamp = Date.now();
-        const filename = `vehicles/${vehicleId}/${timestamp}-${file.name}`;
+        // Prepare form data for Cloudflare Images API
+        const imageFormData = new FormData();
+        imageFormData.append('file', file);
         
-        await env.R2_BUCKET.put(filename, file.stream(), {
-          httpMetadata: {
-            contentType: file.type,
-          },
-          customMetadata: {
-            vehicleId: vehicleId,
-            originalName: file.name,
-            uploadedAt: new Date().toISOString()
+        // Add metadata
+        imageFormData.append('metadata', JSON.stringify({
+          vehicleId: vehicleId,
+          uploadedAt: new Date().toISOString()
+        }));
+        
+        // Set a custom ID for the image (optional)
+        const imageId = `vehicle-${vehicleId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        imageFormData.append('id', imageId);
+        
+        // Upload to Cloudflare Images
+        const uploadResponse = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/images/v1`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${env.CF_IMAGES_TOKEN}`
+            },
+            body: imageFormData
           }
-        });
+        );
         
-        // Use your R2 public URL or generate signed URL
-        const publicUrl = `https://your-bucket.r2.dev/${filename}`;
-        uploadedUrls.push(publicUrl);
+        if (!uploadResponse.ok) {
+          const error = await uploadResponse.json();
+          console.error('Cloudflare Images upload error:', error);
+          continue; // Skip this image and try the next
+        }
+        
+        const uploadResult = await uploadResponse.json();
+        
+        if (uploadResult.success) {
+          // Get the image variants URLs
+          const imageData = uploadResult.result;
+          
+          // Store multiple variants for different use cases
+          const imageInfo = {
+            id: imageData.id,
+            filename: imageData.filename,
+            uploaded: imageData.uploaded,
+            variants: {
+              thumbnail: `https://imagedelivery.net/${env.CF_ACCOUNT_HASH}/${imageData.id}/thumbnail`,
+              public: `https://imagedelivery.net/${env.CF_ACCOUNT_HASH}/${imageData.id}/public`,
+              gallery: `https://imagedelivery.net/${env.CF_ACCOUNT_HASH}/${imageData.id}/gallery`
+            }
+          };
+          
+          uploadedImages.push(imageInfo);
+        }
       }
     }
     
-    if (uploadedUrls.length > 0) {
+    // Update vehicle record with new images
+    if (uploadedImages.length > 0) {
       const vehicle = await env.DB.prepare('SELECT images FROM vehicles WHERE id = ?').bind(vehicleId).first();
       
       if (vehicle) {
         const existingImages = vehicle.images ? JSON.parse(vehicle.images) : [];
-        const allImages = [...existingImages, ...uploadedUrls];
+        const allImages = [...existingImages, ...uploadedImages];
         
         await env.DB.prepare('UPDATE vehicles SET images = ? WHERE id = ?')
           .bind(JSON.stringify(allImages), vehicleId)
@@ -702,12 +730,11 @@ async function handleVehicleImageUpload(request, env) {
     
     return new Response(JSON.stringify({ 
       success: true, 
-      urls: uploadedUrls,
-      message: `Uploaded ${uploadedUrls.length} images`
+      images: uploadedImages,
+      message: `Successfully uploaded ${uploadedImages.length} images`
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
-    */
   } catch (error) {
     console.error('Image upload error:', error);
     return new Response(JSON.stringify({ error: 'Failed to upload images' }), {
