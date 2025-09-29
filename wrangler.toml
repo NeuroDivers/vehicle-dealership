@@ -22,7 +22,7 @@ ENVIRONMENT = "production"
 
 # CORS settings for frontend integration
 [env.production.vars]
-CORS_ORIGIN = "*""
+CORS_ORIGIN = "*"
 
 [env.development.vars]
 CORS_ORIGIN = "http://localhost:3000"
