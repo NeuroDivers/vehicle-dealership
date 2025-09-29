@@ -28,8 +28,7 @@ export default function EditVehicle() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [formData, setFormData] = useState<Vehicle & { imagesList: string[] }>({
-    id: '',
+  const [formData, setFormData] = useState({
     make: '',
     model: '',
     year: new Date().getFullYear(),
@@ -38,9 +37,10 @@ export default function EditVehicle() {
     bodyType: 'Sedan',
     color: '',
     description: '',
+    imagesList: [] as string[],
+    originalImages: null as any,
+    newImages: [] as any[],
     isSold: 0,
-    images: '',
-    imagesList: [],
   });
 
   useEffect(() => {
@@ -57,10 +57,29 @@ export default function EditVehicle() {
           alert('Vehicle not found');
           router.push('/admin/vehicles');
         } else {
-          const images = data.images ? (typeof data.images === 'string' ? JSON.parse(data.images) : data.images) : [];
+          // Parse images and extract URLs
+          let imageUrls: string[] = [];
+          if (data.images) {
+            const parsedImages = typeof data.images === 'string' ? JSON.parse(data.images) : data.images;
+            
+            // Handle both old format (array of strings) and new Cloudflare Images format
+            imageUrls = parsedImages.map((img: any) => {
+              if (typeof img === 'string') {
+                return img; // Old format - direct URL
+              } else if (img.variants) {
+                // New Cloudflare Images format - use thumbnail for edit form
+                return img.variants.thumbnail || img.variants.public || img.variants.gallery;
+              } else if (img.url) {
+                return img.url; // Other object format
+              }
+              return img;
+            }).filter((url: any) => url);
+          }
+          
           setFormData({
             ...data,
-            imagesList: images,
+            imagesList: imageUrls,
+            originalImages: data.images, // Keep original format for saving
           });
         }
         setFetching(false);
@@ -77,12 +96,28 @@ export default function EditVehicle() {
     setLoading(true);
 
     try {
+      // Combine original images with new uploads
+      let finalImages: any[] = [];
+      
+      // Parse original images if they exist
+      if (formData.originalImages) {
+        const original = typeof formData.originalImages === 'string' 
+          ? JSON.parse(formData.originalImages) 
+          : formData.originalImages;
+        finalImages = [...original];
+      }
+      
+      // Add new images
+      if (formData.newImages.length > 0) {
+        finalImages = [...finalImages, ...formData.newImages];
+      }
+      
       const res = await fetch(getVehicleEndpoint(`/${vehicleId}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          images: JSON.stringify(formData.imagesList),
+          images: JSON.stringify(finalImages),
         }),
       });
 
@@ -157,6 +192,7 @@ export default function EditVehicle() {
         setFormData(prev => ({
           ...prev,
           imagesList: [...prev.imagesList, imageUrl],
+          newImages: [...prev.newImages, newImage], // Store full object for saving
         }));
         console.log('Image uploaded successfully:', newImage);
       } else if (result.urls && result.urls.length > 0) {
@@ -178,10 +214,36 @@ export default function EditVehicle() {
   };
 
   const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      imagesList: prev.imagesList.filter((_, i) => i !== index),
-    }));
+    setFormData(prev => {
+      // Determine if this is an original or new image
+      const originalCount = prev.originalImages 
+        ? (typeof prev.originalImages === 'string' 
+          ? JSON.parse(prev.originalImages).length 
+          : prev.originalImages.length)
+        : 0;
+      
+      if (index < originalCount) {
+        // Removing from original images
+        const original = typeof prev.originalImages === 'string' 
+          ? JSON.parse(prev.originalImages) 
+          : prev.originalImages;
+        const updatedOriginal = original.filter((_: any, i: number) => i !== index);
+        
+        return {
+          ...prev,
+          imagesList: prev.imagesList.filter((_, i) => i !== index),
+          originalImages: updatedOriginal,
+        };
+      } else {
+        // Removing from new images
+        const newImageIndex = index - originalCount;
+        return {
+          ...prev,
+          imagesList: prev.imagesList.filter((_, i) => i !== index),
+          newImages: prev.newImages.filter((_, i) => i !== newImageIndex),
+        };
+      }
+    });
   };
 
   if (loading) {
