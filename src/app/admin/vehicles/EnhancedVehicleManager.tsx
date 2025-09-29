@@ -570,7 +570,7 @@ export default function EnhancedVehicleManager() {
                     if (typeof img === 'string') {
                       firstImageUrl = img;
                     } else if (img && img.variants) {
-                      firstImageUrl = img.variants.thumbnail || img.variants.public || img.variants.gallery;
+                      firstImageUrl = img.variants.public || img.variants.gallery;
                     } else if (img && img.url) {
                       firstImageUrl = img.url;
                     } else if (img && img.id) {

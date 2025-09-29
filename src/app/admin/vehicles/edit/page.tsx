@@ -68,8 +68,8 @@ export default function EditVehicle() {
                 if (typeof img === 'string') {
                   return img; // Old format - direct URL
                 } else if (img && img.variants) {
-                  // New Cloudflare Images format - use thumbnail for edit form
-                  return img.variants.thumbnail || img.variants.public || img.variants.gallery;
+                  // New Cloudflare Images format - use public variant (thumbnail doesn't exist)
+                  return img.variants.public || img.variants.gallery;
                 } else if (img && img.url) {
                   return img.url; // Other object format
                 } else if (img && img.id) {
@@ -204,8 +204,8 @@ export default function EditVehicle() {
         // Add image info to form data - handle new Cloudflare Images response format
         if (result.images && result.images.length > 0) {
           const newImage = result.images[0];
-          // Use the thumbnail variant for display in the form
-          const imageUrl = newImage.variants?.thumbnail || newImage.variants?.public || newImage.id;
+          // Use the public variant for display in the form (thumbnail doesn't exist)
+          const imageUrl = newImage.variants?.public || newImage.id;
           setFormData(prev => ({
             ...prev,
             imagesList: [...prev.imagesList, imageUrl],
