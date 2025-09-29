@@ -845,7 +845,6 @@ async function handleLogout(request, env) {
 }
 
 async function handleStaff(request, env, method) {
-  // Simplified staff handler - implement full CRUD as needed
   const token = request.headers.get('Authorization')?.replace('Bearer ', '');
   const session = await verifySession(token, env);
   
@@ -856,20 +855,174 @@ async function handleStaff(request, env, method) {
     });
   }
   
-  if (method === 'GET') {
-    const { results } = await env.DB.prepare(
-      'SELECT id, email, name, role, phone, is_active, last_login, created_at FROM staff ORDER BY name'
-    ).all();
-    
-    return new Response(JSON.stringify(results), {
+  // Only admin and manager can manage staff
+  if (!['admin', 'manager'].includes(session.role)) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
   
-  return new Response(JSON.stringify({ error: 'Method not implemented' }), {
-    status: 501,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-  });
+  const url = new URL(request.url);
+  const pathParts = url.pathname.split('/');
+  const staffId = pathParts.length > 3 ? pathParts[3] : null;
+  
+  try {
+    switch (method) {
+      case 'GET':
+        if (staffId) {
+          // Get single staff member
+          const staff = await env.DB.prepare(
+            'SELECT id, email, name, role, phone, is_active, last_login, created_at FROM staff WHERE id = ?'
+          ).bind(staffId).first();
+          
+          if (!staff) {
+            return new Response(JSON.stringify({ error: 'Staff member not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          
+          return new Response(JSON.stringify(staff), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } else {
+          // Get all staff
+          const { results } = await env.DB.prepare(
+            'SELECT id, email, name, role, phone, is_active, last_login, created_at FROM staff ORDER BY name'
+          ).all();
+          
+          return new Response(JSON.stringify(results), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+      case 'POST':
+        // Create new staff member
+        const newStaff = await request.json();
+        
+        if (!newStaff.email || !newStaff.name || !newStaff.password) {
+          return new Response(JSON.stringify({ error: 'Email, name, and password required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Hash password
+        const hashedPassword = await bcrypt.hash(newStaff.password, 10);
+        
+        // Insert staff member
+        const newStaffId = crypto.randomUUID();
+        await env.DB.prepare(
+          `INSERT INTO staff (id, email, name, password_hash, role, phone, is_active)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          newStaffId,
+          newStaff.email,
+          newStaff.name,
+          hashedPassword,
+          newStaff.role || 'staff',
+          newStaff.phone || null,
+          1
+        ).run();
+        
+        return new Response(JSON.stringify({ success: true, id: newStaffId }), {
+          status: 201,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+        
+      case 'PUT':
+        // Update staff member
+        if (!staffId) {
+          return new Response(JSON.stringify({ error: 'Staff ID required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        const updateData = await request.json();
+        const updates = [];
+        const values = [];
+        
+        if (updateData.name) {
+          updates.push('name = ?');
+          values.push(updateData.name);
+        }
+        if (updateData.email) {
+          updates.push('email = ?');
+          values.push(updateData.email);
+        }
+        if (updateData.role) {
+          updates.push('role = ?');
+          values.push(updateData.role);
+        }
+        if (updateData.phone !== undefined) {
+          updates.push('phone = ?');
+          values.push(updateData.phone);
+        }
+        if (updateData.is_active !== undefined) {
+          updates.push('is_active = ?');
+          values.push(updateData.is_active ? 1 : 0);
+        }
+        if (updateData.password) {
+          updates.push('password_hash = ?');
+          values.push(await bcrypt.hash(updateData.password, 10));
+        }
+        
+        if (updates.length === 0) {
+          return new Response(JSON.stringify({ error: 'No updates provided' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(staffId);
+        
+        await env.DB.prepare(
+          `UPDATE staff SET ${updates.join(', ')} WHERE id = ?`
+        ).bind(...values).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+        
+      case 'DELETE':
+        // Delete staff member
+        if (!staffId) {
+          return new Response(JSON.stringify({ error: 'Staff ID required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Don't allow deleting yourself
+        if (staffId === session.user_id) {
+          return new Response(JSON.stringify({ error: 'Cannot delete your own account' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        await env.DB.prepare('DELETE FROM staff WHERE id = ?').bind(staffId).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+        
+      default:
+        return new Response('Method Not Allowed', {
+          status: 405,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
+  } catch (error) {
+    console.error('Staff handler error:', error);
+    return new Response(JSON.stringify({ error: 'Operation failed' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
 }
 
 // Main request handler

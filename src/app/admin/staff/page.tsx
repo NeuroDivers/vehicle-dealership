@@ -59,51 +59,34 @@ export default function StaffManagement() {
   const fetchStaff = async () => {
     setLoading(true);
     try {
-      // In a real implementation, this would fetch from your API
-      // For now, using mock data
-      const mockStaff: StaffMember[] = [
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev'}/api/staff`,
         {
-          id: '1',
-          name: 'John Admin',
-          email: 'admin@dealership.com',
-          phone: '555-0100',
-          role: 'admin',
-          isActive: true,
-          lastLogin: new Date().toISOString(),
-          createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '2',
-          name: 'Sarah Manager',
-          email: 'sarah@dealership.com',
-          phone: '555-0101',
-          role: 'manager',
-          isActive: true,
-          lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '3',
-          name: 'Mike Sales',
-          email: 'mike@dealership.com',
-          phone: '555-0102',
-          role: 'sales',
-          isActive: true,
-          lastLogin: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '4',
-          name: 'Lisa Sales',
-          email: 'lisa@dealership.com',
-          phone: '555-0103',
-          role: 'sales',
-          isActive: false,
-          lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
-      ];
-      setStaff(mockStaff);
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Map the data to match our interface
+        const mappedStaff = data.map((member: any) => ({
+          id: member.id,
+          name: member.name,
+          email: member.email,
+          phone: member.phone || '',
+          role: member.role,
+          isActive: member.is_active === 1,
+          lastLogin: member.last_login,
+          createdAt: member.created_at
+        }));
+        setStaff(mappedStaff);
+      } else {
+        console.error('Failed to fetch staff');
+        setStaff([]);
+      }
     } catch (error) {
       console.error('Failed to fetch staff:', error);
       setStaff([]);
@@ -118,22 +101,48 @@ export default function StaffManagement() {
       return;
     }
     
-    // In a real implementation, this would call your API
-    console.log('Adding staff:', formData);
-    
-    // Reset form and close modal
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      role: 'staff',
-      password: '',
-      confirmPassword: ''
-    });
-    setShowAddModal(false);
-    
-    // Refresh staff list
-    await fetchStaff();
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev'}/api/staff`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            role: formData.role,
+            password: formData.password
+          })
+        }
+      );
+      
+      if (response.ok) {
+        // Reset form and close modal
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          role: 'staff',
+          password: '',
+          confirmPassword: ''
+        });
+        setShowAddModal(false);
+        
+        // Refresh staff list
+        await fetchStaff();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to add staff member');
+      }
+    } catch (error) {
+      console.error('Error adding staff:', error);
+      alert('Failed to add staff member');
+    }
   };
 
   const handleEditStaff = async () => {
