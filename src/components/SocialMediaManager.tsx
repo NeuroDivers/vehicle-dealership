@@ -18,6 +18,7 @@ interface Vehicle {
   model: string;
   year: number;
   price: number;
+  images?: string[];
 }
 
 interface SocialMediaSettings {
