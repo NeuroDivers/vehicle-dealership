@@ -111,7 +111,7 @@ export default function AdminLayout({
             
             <div className="flex items-center space-x-4">
               {user && (
-                <div className="hidden md:flex items-center space-x-2 text-sm">
+                <div className="hidden md:flex items-center space-x-2">
                   <User className="h-4 w-4" />
                   <span>{user.name}</span>
                   <span className="text-gray-400">({user.role})</span>

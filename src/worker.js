@@ -346,6 +346,82 @@ async function handleSearchQueries(request, env) {
 // Leads Management Handlers
 async function handleLeads(request, env) {
   const url = new URL(request.url);
+  const pathParts = url.pathname.split('/');
+  const leadId = pathParts[3]; // /api/leads/{id}
+  
+  // Handle PUT for updating a specific lead
+  if (request.method === 'PUT' && leadId) {
+    try {
+      const updates = await request.json();
+      
+      // Build dynamic update query
+      const updateFields = [];
+      const values = [];
+      
+      if (updates.status !== undefined) {
+        updateFields.push('status = ?');
+        values.push(updates.status);
+      }
+      if (updates.assigned_to !== undefined) {
+        updateFields.push('assigned_to = ?');
+        values.push(updates.assigned_to);
+      }
+      if (updates.notes !== undefined) {
+        updateFields.push('notes = ?');
+        values.push(updates.notes);
+      }
+      if (updates.follow_up_date !== undefined) {
+        updateFields.push('follow_up_date = ?');
+        values.push(updates.follow_up_date);
+      }
+      
+      if (updateFields.length === 0) {
+        return new Response(JSON.stringify({ error: 'No fields to update' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      values.push(leadId); // Add leadId for WHERE clause
+      
+      const query = `UPDATE leads SET ${updateFields.join(', ')} WHERE id = ?`;
+      await env.DB.prepare(query).bind(...values).run();
+      
+      return new Response(JSON.stringify({ success: true, message: 'Lead updated' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Lead update error:', error);
+      return new Response(JSON.stringify({ error: 'Failed to update lead' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  }
+  
+  // Handle GET for a specific lead
+  if (request.method === 'GET' && leadId) {
+    try {
+      const lead = await env.DB.prepare('SELECT * FROM leads WHERE id = ?').bind(leadId).first();
+      
+      if (!lead) {
+        return new Response(JSON.stringify({ error: 'Lead not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      return new Response(JSON.stringify(lead), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Lead fetch error:', error);
+      return new Response(JSON.stringify({ error: 'Failed to fetch lead' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  }
   
   if (request.method === 'POST') {
     try {
