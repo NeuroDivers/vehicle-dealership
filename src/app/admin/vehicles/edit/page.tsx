@@ -63,23 +63,25 @@ export default function EditVehicle() {
             const parsedImages = typeof data.images === 'string' ? JSON.parse(data.images) : data.images;
             
             // Handle both old format (array of strings) and new Cloudflare Images format
-            imageUrls = parsedImages.map((img: any) => {
-              if (typeof img === 'string') {
-                return img; // Old format - direct URL
-              } else if (img.variants) {
-                // New Cloudflare Images format - use thumbnail for edit form
-                return img.variants.thumbnail || img.variants.public || img.variants.gallery;
-              } else if (img.url) {
-                return img.url; // Other object format
-              }
-              return img;
-            }).filter((url: any) => url);
+            if (Array.isArray(parsedImages)) {
+              imageUrls = parsedImages.map((img: any) => {
+                if (typeof img === 'string') {
+                  return img; // Old format - direct URL
+                } else if (img && img.variants) {
+                  // New Cloudflare Images format - use thumbnail for edit form
+                  return img.variants.thumbnail || img.variants.public || img.variants.gallery;
+                } else if (img && img.url) {
+                  return img.url; // Other object format
+                }
+                return img;
+              }).filter((url: any) => url);
+            }
           }
           
           setFormData({
             ...data,
             imagesList: imageUrls,
-            originalImages: data.images, // Keep original format for saving
+            originalImages: data.images || [], // Keep original format for saving, default to empty array
             newImages: [], // Initialize newImages as empty array
           });
         }
@@ -201,6 +203,7 @@ export default function EditVehicle() {
         setFormData(prev => ({
           ...prev,
           imagesList: [...prev.imagesList, result.urls[0]],
+          newImages: prev.newImages || [], // Ensure newImages is always an array
         }));
         console.log('Image uploaded successfully:', result.urls[0]);
       }
