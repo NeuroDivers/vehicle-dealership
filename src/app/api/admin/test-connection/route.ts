@@ -74,7 +74,7 @@ async function testOpenAIConnection(apiKey: string) {
   } catch (error) {
     return NextResponse.json({
       success: false,
-      error: `Connection failed: ${error.message}`
+      error: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     });
   }
 }
@@ -116,7 +116,7 @@ async function testTwitterConnection(settings: any) {
   } catch (error) {
     return NextResponse.json({
       success: false,
-      error: `Twitter connection failed: ${error.message}`
+      error: `Twitter connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     });
   }
 }
@@ -165,7 +165,7 @@ async function testFacebookConnection(settings: any) {
   } catch (error) {
     return NextResponse.json({
       success: false,
-      error: `Facebook connection failed: ${error.message}`
+      error: `Facebook connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     });
   }
 }
@@ -206,7 +206,7 @@ async function testInstagramConnection(settings: any) {
   } catch (error) {
     return NextResponse.json({
       success: false,
-      error: `Instagram connection failed: ${error.message}`
+      error: `Instagram connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     });
   }
 }
@@ -250,7 +250,7 @@ async function testLinkedInConnection(settings: any) {
   } catch (error) {
     return NextResponse.json({
       success: false,
-      error: `LinkedIn connection failed: ${error.message}`
+      error: `LinkedIn connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     });
   }
 }

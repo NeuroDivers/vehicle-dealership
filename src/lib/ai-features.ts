@@ -25,14 +25,14 @@ Write a compelling 2-3 paragraph description that highlights the vehicle's featu
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 300,
       temperature: 0.7,
     });
 
-    return response.choices[0]?.message?.content?.trim() || 'Description not available.';
+    return response.choices[0]?.message?.content?.trim() || 
+      `Experience the ${vehicle.year} ${vehicle.make} ${vehicle.model} - a reliable and stylish ${vehicle.bodyType} that combines performance and comfort.`;
   } catch (error) {
     console.error('Failed to generate vehicle description:', error);
-    return `Experience the ${year} ${make} ${model} - a reliable and stylish ${bodyType} that combines performance and comfort.`;
+    return `Experience the ${vehicle.year} ${vehicle.make} ${vehicle.model} - a reliable and stylish ${vehicle.bodyType} that combines performance and comfort.`;
   }
 }
 
@@ -88,7 +88,7 @@ Make it compelling and include relevant hashtags.`;
     return response.choices[0]?.message?.content?.trim() || '';
   } catch (error) {
     console.error('Failed to generate social caption:', error);
-    return `🚗 New ${year} ${make} ${model} available! 💰 $${price?.toLocaleString()} #CarDeals`;
+    return `🚗 New ${vehicle.year} ${vehicle.make} ${vehicle.model} available! 💰 $${vehicle.price?.toLocaleString()} #CarDeals`;
   }
 }
 
