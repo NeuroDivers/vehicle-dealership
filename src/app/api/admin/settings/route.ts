@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Mock database for settings (in production, use a real database)
-let adminSettings = {
+let adminSettings: Record<string, any> = {
   // AI Features
   aiEnabled: false,
   aiDescriptions: false,
@@ -33,24 +33,24 @@ let adminSettings = {
   linkedinOrganizationId: '',
 };
 
-// Dev-controlled global settings (take priority over admin settings)
 const devOverrides = {
   // Set to true to globally disable features for all admins
   aiGloballyDisabled: false,
   socialGloballyDisabled: false,
+};
 
-  // Which features require dev approval
-  featuresRequireDevApproval: {
-    aiEnabled: false, // If true, only dev can enable AI features
-    socialEnabled: false, // If true, only dev can enable social features
+// Dev override settings
+const devSettings: Record<string, any> = {
+  globalFeatureRestrictions: {
+    aiEnabled: false, // true = only dev can enable AI features
+    socialEnabled: false, // true = only dev can enable social features
   },
-
-  // API key restrictions
-  restrictApiKeys: false, // If true, only dev can modify API keys
+  restrictApiKeys: false, // true = only dev can modify API keys
+  restrictFeatureEnabling: false, // true = only dev can enable/disable features
 };
 
 // Permission levels
-const userPermissions = {
+const userPermissions: Record<string, any> = {
   // In production, this would be per-user and stored in database
   currentUserLevel: 'admin', // 'dev', 'admin', or 'user'
   canModifyKeys: true, // Whether this user can modify API keys
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     const visibleSettings = { ...adminSettings };
 
     // If not dev and keys are restricted, hide sensitive data
-    if (userLevel !== 'dev' && devOverrides.restrictApiKeys) {
+    if (userLevel !== 'dev' && devSettings.restrictApiKeys) {
       // Hide API keys from non-dev users
       const keyFields = [
         'openaiApiKey', 'twitterApiKey', 'twitterApiSecret', 'twitterAccessToken',
@@ -135,8 +135,8 @@ function canUserModifySettings(userLevel: string, newSettings: any): boolean {
   // Admin can modify features if not restricted
   if (userLevel === 'admin') {
     // Check if trying to modify restricted features
-    const restrictedFeatures = Object.keys(devOverrides.featuresRequireDevApproval)
-      .filter(key => devOverrides.featuresRequireDevApproval[key]);
+    const restrictedFeatures = Object.keys(devSettings.globalFeatureRestrictions)
+      .filter(key => devSettings.globalFeatureRestrictions[key]);
 
     for (const feature of restrictedFeatures) {
       if (newSettings[feature] !== undefined && newSettings[feature] !== adminSettings[feature]) {
@@ -164,15 +164,15 @@ function applyDevOverrides(settings: any, userLevel: string): any {
   }
 
   // Apply feature approval restrictions
-  Object.keys(devOverrides.featuresRequireDevApproval).forEach(feature => {
-    if (devOverrides.featuresRequireDevApproval[feature] && userLevel !== 'dev') {
+  Object.keys(devSettings.globalFeatureRestrictions).forEach(feature => {
+    if (devSettings.globalFeatureRestrictions[feature] && userLevel !== 'dev') {
       // Non-dev users can't change these features
       delete result[feature];
     }
   });
 
   // Restrict API key modifications
-  if (devOverrides.restrictApiKeys && userLevel !== 'dev') {
+  if (devSettings.restrictApiKeys && userLevel !== 'dev') {
     const keyFields = [
       'openaiApiKey', 'twitterApiKey', 'twitterApiSecret', 'twitterAccessToken',
       'twitterAccessTokenSecret', 'facebookAccessToken', 'instagramAccessToken',

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Permission levels configuration
 // In production, this would be stored in a database per user
-const permissionLevels = {
+const permissionLevels: Record<string, any> = {
   dev: {
     level: 'dev',
     canModifyKeys: true,
