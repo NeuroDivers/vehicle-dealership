@@ -49,7 +49,7 @@ export default function AIChatWidget() {
     setIsLoading(true);
 
     // Add user message
-    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    const newMessages: Message[] = [...messages, { role: 'user' as const, content: userMessage }];
     setMessages(newMessages);
 
     try {

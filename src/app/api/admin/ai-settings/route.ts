@@ -71,30 +71,6 @@ export async function POST(request: NextRequest) {
       // Create new settings
       await prisma.siteSettings.create({
         data: {
-          siteName: 'Vehicle Dealership',
-          primaryColor: '#3B82F6',
-          secondaryColor: '#10B981',
-          accentColor: '#F59E0B',
-          contactEmail: 'info@dealership.com',
-          contactPhone: '555-0123',
-          address: '123 Main St',
-          city: 'City',
-          province: 'Province',
-          postalCode: '12345',
-          country: 'Country',
-          businessHours: JSON.stringify({
-            monday: '9:00 AM - 6:00 PM',
-            tuesday: '9:00 AM - 6:00 PM',
-            wednesday: '9:00 AM - 6:00 PM',
-            thursday: '9:00 AM - 6:00 PM',
-            friday: '9:00 AM - 6:00 PM',
-            saturday: '10:00 AM - 4:00 PM',
-            sunday: 'Closed'
-          }),
-          socialMedia: JSON.stringify({}),
-          aboutText: '',
-          showPrices: true,
-          disclaimer: '',
           aiSettings: JSON.stringify(settings)
         }
       });
