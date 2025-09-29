@@ -33,6 +33,7 @@ export default function LoginPage() {
         // Store token in localStorage
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('userEmail', email); // Store email for dev check
         
         // Redirect to admin dashboard
         router.push('/admin');

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AIFeatureManager from '@/components/AIFeatureManager';
+import SiteInfoManager from '@/components/SiteInfoManager';
 
 interface Stats {
   totalVehicles: number;
@@ -12,7 +13,7 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'financing' | 'analytics' | 'staff' | 'settings' | 'ai'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'financing' | 'analytics' | 'staff' | 'settings' | 'ai' | 'site'>('overview');
   const [stats, setStats] = useState<Stats>({
     totalVehicles: 0,
     soldVehicles: 0,
@@ -20,8 +21,13 @@ export default function AdminDashboard() {
     averagePrice: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [isDevUser, setIsDevUser] = useState(false);
 
   useEffect(() => {
+    // Check if user is dev
+    const userEmail = localStorage.getItem('userEmail');
+    setIsDevUser(userEmail === 'nick@neurodivers.ca');
+    
     // Use Cloudflare Worker API in production
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
     fetch(`${apiUrl}/api/vehicles`)
@@ -104,17 +110,17 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-lg shadow mb-6">
         <div className="border-b">
           <nav className="flex space-x-8 px-6">
-            {(['overview', 'ai', 'vehicles', 'settings'] as const).map(tab => (
+            {(isDevUser ? ['overview', 'site', 'vehicles', 'settings', 'ai'] as const : ['overview', 'site', 'vehicles', 'settings'] as const).map(tab => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => setActiveTab(tab as any)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${
                   activeTab === tab
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {tab === 'ai' ? '🤖 AI Features' : tab}
+                {tab === 'ai' ? '🤖 AI Features' : tab === 'site' ? '🏢 Site Info' : tab}
               </button>
             ))}
           </nav>
@@ -177,8 +183,13 @@ export default function AdminDashboard() {
       </div>
       )}
 
-      {/* AI Features Tab */}
-      {activeTab === 'ai' && (
+      {/* Site Info Tab */}
+      {activeTab === 'site' && (
+        <SiteInfoManager />
+      )}
+
+      {/* AI Features Tab - Only for Dev */}
+      {activeTab === 'ai' && isDevUser && (
         <AIFeatureManager />
       )}
     </div>
