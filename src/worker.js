@@ -653,12 +653,23 @@ async function handleVehicleImageUpload(request, env) {
     }
     
     // Get the uploaded images from form data
+    console.log('Content-Type:', request.headers.get('Content-Type'));
     const formData = await request.formData();
+    
+    // Debug: Log all form data entries
+    console.log('FormData entries:');
+    for (const [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
+    }
+    
     const files = formData.getAll('images');
+    console.log('Files received:', files.length);
     const uploadedImages = [];
     
     for (const file of files) {
+      console.log('Processing file:', file, 'Is File?', file instanceof File);
       if (file instanceof File) {
+        console.log(`Uploading file: ${file.name}, size: ${file.size}, type: ${file.type}`);
         // Prepare form data for Cloudflare Images API
         const imageFormData = new FormData();
         imageFormData.append('file', file);
@@ -686,8 +697,16 @@ async function handleVehicleImageUpload(request, env) {
         );
         
         if (!uploadResponse.ok) {
-          const error = await uploadResponse.json();
-          console.error('Cloudflare Images upload error:', error);
+          const errorText = await uploadResponse.text();
+          console.error('Cloudflare Images upload failed:');
+          console.error('Status:', uploadResponse.status);
+          console.error('Response:', errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            console.error('Error details:', JSON.stringify(errorJson, null, 2));
+          } catch (e) {
+            console.error('Raw error:', errorText);
+          }
           continue; // Skip this image and try the next
         }
         
@@ -697,15 +716,13 @@ async function handleVehicleImageUpload(request, env) {
           // Get the image variants URLs
           const imageData = uploadResult.result;
           
-          // Store multiple variants for different use cases
+          // Store only the public variant (the only one configured in the account)
           const imageInfo = {
             id: imageData.id,
             filename: imageData.filename,
             uploaded: imageData.uploaded,
             variants: {
-              thumbnail: `https://imagedelivery.net/${env.CF_ACCOUNT_HASH}/${imageData.id}/thumbnail`,
-              public: `https://imagedelivery.net/${env.CF_ACCOUNT_HASH}/${imageData.id}/public`,
-              gallery: `https://imagedelivery.net/${env.CF_ACCOUNT_HASH}/${imageData.id}/gallery`
+              public: `https://imagedelivery.net/${env.CF_ACCOUNT_HASH}/${imageData.id}/public`
             }
           };
           

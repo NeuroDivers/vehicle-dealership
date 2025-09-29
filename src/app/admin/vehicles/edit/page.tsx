@@ -17,17 +17,44 @@ interface Vehicle {
   color: string;
   description?: string;
   isSold: number;
-  images?: string;
 }
 
 export default function EditVehicle() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const vehicleId = searchParams.get('id');
-  
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
+  const router = useRouter();
+  const vehicleId = searchParams.get('id')?.split('?')[0];
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  
+  // Convert AVIF to JPEG using canvas (browser-based conversion)
+  const convertAvifToJpeg = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            // Create new file with .jpg extension
+            const newFileName = file.name.replace(/\.avif$/i, '.jpg');
+            const newFile = new File([blob], newFileName, { type: 'image/jpeg' });
+            resolve(newFile);
+          } else {
+            reject(new Error('Failed to convert image'));
+          }
+        }, 'image/jpeg', 0.9); // 90% quality
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
   const [formData, setFormData] = useState({
     make: '',
     model: '',
@@ -88,7 +115,7 @@ export default function EditVehicle() {
             newImages: [], // Initialize newImages as empty array
           });
         }
-        setFetching(false);
+        setLoading(false);
       })
       .catch(err => {
         console.error('Failed to fetch vehicle:', err);
@@ -162,8 +189,7 @@ export default function EditVehicle() {
     }
 
     setUploadingImage(true);
-    // Clean the vehicle ID to remove any extra query params
-    const vehicleId = searchParams.get('id')?.split('?')[0];
+    // Note: Cloudflare Images doesn't support AVIF, so we'll convert it
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
     
     if (!vehicleId) {
@@ -192,9 +218,22 @@ export default function EditVehicle() {
           continue;
         }
 
+        // Convert AVIF to JPEG if needed (Cloudflare Images doesn't support AVIF)
+        let fileToUpload = file;
+        if (file.type === 'image/avif') {
+          console.log(`Converting AVIF file ${file.name} to JPEG...`);
+          try {
+            fileToUpload = await convertAvifToJpeg(file);
+            console.log(`Converted to: ${fileToUpload.name}`);
+          } catch (error) {
+            console.error(`Failed to convert AVIF file ${file.name}:`, error);
+            continue;
+          }
+        }
+
         // Create FormData for upload to Cloudflare Images
         const uploadData = new FormData();
-        uploadData.append('images', file);
+        uploadData.append('images', fileToUpload);
         
         // Upload to the vehicle's images endpoint on the Worker
         const uploadUrl = `${getVehicleEndpoint()}/${vehicleId}/images`;
@@ -285,7 +324,6 @@ export default function EditVehicle() {
       if (newImage && newImage.id) {
         try {
           // Call the worker to delete the image from Cloudflare
-          const vehicleId = searchParams.get('id')?.split('?')[0];
           const deleteRes = await fetch(`${getVehicleEndpoint()}/${vehicleId}/images/${newImage.id}`, {
             method: 'DELETE',
           });
