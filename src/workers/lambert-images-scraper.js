@@ -165,12 +165,13 @@ async function uploadToCloudflareImages(imageUrls, vehicleSlug, env) {
         const result = await uploadResponse.json();
         
         // Cloudflare Images provides multiple variants
+        const accountHash = env.CF_ACCOUNT_HASH || 'fxSXhaLsNKtcGJIGPzWBwA';
         uploadedImages.push({
           id: result.result.id,
           original: imageUrls[i],
-          thumbnail: `https://imagedelivery.net/${accountId}/${result.result.id}/thumbnail`,
-          display: `https://imagedelivery.net/${accountId}/${result.result.id}/display`,
-          full: `https://imagedelivery.net/${accountId}/${result.result.id}/public`
+          thumbnail: `https://imagedelivery.net/${accountHash}/${result.result.id}/thumbnail`,
+          gallery: `https://imagedelivery.net/${accountHash}/${result.result.id}/gallery`,
+          public: `https://imagedelivery.net/${accountHash}/${result.result.id}/public`
         });
       }
       

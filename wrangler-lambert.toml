@@ -1,0 +1,26 @@
+name = "lambert-scraper"
+main = "src/workers/lambert-images-scraper.js"
+compatibility_date = "2024-01-01"
+
+# Your account ID
+account_id = "8b7422cf5f9eb567299ee65028cf52f0"
+
+# D1 Database binding - using your main analytics database
+[[d1_databases]]
+binding = "DB"
+database_name = "vehicle-dealership-analytics"
+database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
+
+# Environment variables for Cloudflare Images
+[vars]
+CF_ACCOUNT_ID = "8b7422cf5f9eb567299ee65028cf52f0"
+
+# Secrets (set these via wrangler secret)
+# CF_IMAGES_TOKEN - set via: wrangler secret put CF_IMAGES_TOKEN
+
+# Optional: Cron triggers for scheduled scraping
+[triggers]
+crons = [
+  # "0 2 * * *"    # Daily at 2 AM UTC - uncomment to enable
+  # "0 14 * * *"   # Daily at 2 PM UTC - uncomment to enable
+]

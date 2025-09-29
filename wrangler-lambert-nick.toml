@@ -1,0 +1,15 @@
+name = "lambert-scraper"
+main = "src/workers/lambert-images-scraper.js"
+compatibility_date = "2024-01-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+# Environment variables for Cloudflare Images
+[vars]
+CF_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
+CF_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
+
+# D1 Database binding - Nick's existing database
+[[d1_databases]]
+binding = "DB"
+database_name = "vehicle-dealership-analytics"
+database_id = "d70754b6-fec7-483a-b103-c1c78916c497"

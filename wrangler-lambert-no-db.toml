@@ -1,0 +1,11 @@
+name = "lambert-scraper"
+main = "src/workers/lambert-images-scraper.js"
+compatibility_date = "2024-01-01"
+account_id = "777f8cabbe88e62f6ade4fb16ad852a7"
+
+# Environment variables for Cloudflare Images
+[vars]
+CF_ACCOUNT_ID = "777f8cabbe88e62f6ade4fb16ad852a7"
+
+# Note: D1 Database binding will be added via dashboard after deployment
+# Database to bind: vehicle-dealership-analytics (d70754b6-fec7-483a-b103-c1c78916c497)

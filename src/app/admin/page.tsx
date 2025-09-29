@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AIFeatureManager from '@/components/AIFeatureManager';
 import SiteInfoManager from '@/components/SiteInfoManager';
+import LambertScraperPanel from '@/components/admin/LambertScraperPanel';
 
 interface Stats {
   totalVehicles: number;
@@ -13,7 +14,7 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'financing' | 'analytics' | 'staff' | 'settings' | 'ai' | 'site'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'financing' | 'analytics' | 'staff' | 'settings' | 'ai' | 'site' | 'lambert'>('overview');
   const [stats, setStats] = useState<Stats>({
     totalVehicles: 0,
     soldVehicles: 0,
@@ -109,18 +110,21 @@ export default function AdminDashboard() {
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow mb-6">
         <div className="border-b">
-          <nav className="flex space-x-8 px-6">
-            {(isDevUser ? ['overview', 'site', 'vehicles', 'settings', 'ai'] as const : ['overview', 'site', 'vehicles', 'settings'] as const).map(tab => (
+          <nav className="flex space-x-8 px-6 overflow-x-auto">
+            {(isDevUser ? ['overview', 'site', 'vehicles', 'lambert', 'settings', 'ai'] as const : ['overview', 'site', 'vehicles', 'lambert', 'settings'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize whitespace-nowrap ${
                   activeTab === tab
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {tab === 'ai' ? '🤖 AI Features' : tab === 'site' ? '🏢 Site Info' : tab}
+                {tab === 'ai' ? '🤖 AI Features' : 
+                 tab === 'site' ? '🏢 Site Info' : 
+                 tab === 'lambert' ? '🚗 Lambert Scraper' : 
+                 tab}
               </button>
             ))}
           </nav>
@@ -173,6 +177,13 @@ export default function AdminDashboard() {
             <span>⚙️</span>
             <span>Settings & API Keys</span>
           </Link>
+          <button
+            onClick={() => setActiveTab('lambert')}
+            className="bg-purple-600 text-white text-center py-3 px-6 rounded-lg hover:bg-purple-700 transition flex items-center justify-center space-x-2"
+          >
+            <span>🚗</span>
+            <span>Lambert Scraper</span>
+          </button>
           <Link
             href="/"
             className="bg-gray-600 text-white text-center py-3 px-6 rounded-lg hover:bg-gray-700 transition flex items-center justify-center space-x-2"
@@ -251,6 +262,11 @@ export default function AdminDashboard() {
       {/* AI Features Tab - Only for Dev */}
       {activeTab === 'ai' && isDevUser && (
         <AIFeatureManager />
+      )}
+
+      {/* Lambert Scraper Tab */}
+      {activeTab === 'lambert' && (
+        <LambertScraperPanel />
       )}
     </div>
   );
