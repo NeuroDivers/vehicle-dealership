@@ -19,6 +19,7 @@ model Vehicle {
   odometer    Int
   bodyType    String
   color       String
+  fuelType    String   @default("gasoline") // gasoline, diesel, electric, hybrid, plugin-hybrid
   description String?
   images      String   @default("[]") // JSON array of image URLs
   isSold      Boolean  @default(false)

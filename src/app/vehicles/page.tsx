@@ -16,6 +16,7 @@ interface Vehicle {
   odometer: number;
   bodyType: string;
   color: string;
+  fuelType?: string;
   description?: string;
   isSold?: number;
   images?: string;
@@ -27,6 +28,7 @@ export default function VehiclesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     bodyType: '',
+    fuelType: '',
     minPrice: '',
     maxPrice: '',
     minYear: '',
@@ -34,6 +36,16 @@ export default function VehiclesPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Check URL params for fuel type filter (for Electric vehicles link)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fuelTypeParam = urlParams.get('fuelType');
+    if (fuelTypeParam) {
+      setFilters(prev => ({ ...prev, fuelType: fuelTypeParam }));
+      setShowFilters(true);
+    }
+  }, []);
 
   useEffect(() => {
     fetch(getVehicleEndpoint())
@@ -66,6 +78,9 @@ export default function VehiclesPage() {
       // Body type filter
       if (filters.bodyType && vehicle.bodyType !== filters.bodyType) return false;
 
+      // Fuel type filter
+      if (filters.fuelType && vehicle.fuelType !== filters.fuelType) return false;
+
       // Price filters
       if (filters.minPrice && vehicle.price < parseInt(filters.minPrice)) return false;
       if (filters.maxPrice && vehicle.price > parseInt(filters.maxPrice)) return false;
@@ -81,6 +96,12 @@ export default function VehiclesPage() {
   // Get unique body types for filter dropdown
   const bodyTypes = useMemo(() => {
     const types = new Set(vehicles.map(v => v.bodyType));
+    return Array.from(types).sort();
+  }, [vehicles]);
+
+  // Get unique fuel types for filter dropdown
+  const fuelTypes = useMemo(() => {
+    const types = new Set(vehicles.map(v => v.fuelType || 'gasoline'));
     return Array.from(types).sort();
   }, [vehicles]);
 
@@ -112,12 +133,12 @@ export default function VehiclesPage() {
       }
     }, 1000); // Track after 1 second of no typing
     
-    setSearchTimeout(timeout);
   };
 
   const clearFilters = () => {
     setFilters({
       bodyType: '',
+      fuelType: '',
       minPrice: '',
       maxPrice: '',
       minYear: '',
@@ -150,13 +171,13 @@ export default function VehiclesPage() {
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative max-w-2xl">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
             <input
               type="text"
               placeholder="Search vehicles..."
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -189,7 +210,7 @@ export default function VehiclesPage() {
         {/* Filters Panel */}
         {showFilters && (
           <div className="bg-white rounded-lg shadow p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Body Type</label>
                 <select
@@ -201,6 +222,22 @@ export default function VehiclesPage() {
                   {bodyTypes.map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Type</label>
+                <select
+                  value={filters.fuelType}
+                  onChange={(e) => setFilters({...filters, fuelType: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Fuels</option>
+                  <option value="gasoline">Gasoline</option>
+                  <option value="diesel">Diesel</option>
+                  <option value="electric">Electric</option>
+                  <option value="hybrid">Hybrid</option>
+                  <option value="plugin-hybrid">Plug-in Hybrid</option>
                 </select>
               </div>
               

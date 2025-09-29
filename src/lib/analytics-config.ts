@@ -8,8 +8,8 @@ export const ANALYTICS_CONFIG = {
   // Set to true to use D1 database, false for local in-memory storage
   USE_D1_DATABASE: process.env.NEXT_PUBLIC_USE_D1_ANALYTICS === 'true',
   
-  // D1 Worker URL (set this after deploying the worker)
-  D1_API_BASE_URL: process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.your-subdomain.workers.dev',
+  // D1 Worker URL - Using the existing deployed worker
+  D1_API_BASE_URL: process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev',
   
   // Local API base URL
   LOCAL_API_BASE_URL: '',
