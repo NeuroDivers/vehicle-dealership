@@ -159,7 +159,8 @@ export default function EditVehicle() {
     }
 
     setUploadingImage(true);
-    const vehicleId = searchParams.get('id');
+    // Clean the vehicle ID to remove any extra query params
+    const vehicleId = searchParams.get('id')?.split('?')[0];
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
     
     try {

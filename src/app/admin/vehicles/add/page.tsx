@@ -144,63 +144,67 @@ export default function AddVehicle() {
     if (lower.includes('van')) return 'Van';
     if (lower.includes('coupe')) return 'Coupe';
     if (lower.includes('convertible')) return 'Convertible';
-    if (lower.includes('wagon')) return 'Wagon';
     if (lower.includes('hatchback')) return 'Hatchback';
     return 'Sedan'; // Default
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
-      e.target.value = '';
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
-    if (!allowedTypes.includes(file.type)) {
-      alert('Please upload a valid image file (JPEG, PNG, WebP, or AVIF)');
+    // Check if adding these files would exceed the limit
+    if (formData.images.length + files.length > 10) {
+      alert(`You can only have up to 10 images. You currently have ${formData.images.length} images.`);
       e.target.value = '';
       return;
     }
 
     setUploadingImage(true);
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
     
     try {
       // For new vehicles, we'll store images temporarily and upload them after the vehicle is created
-      // Convert file to base64 for temporary storage
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
+      const processedImages: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         
-        // Add base64 image to form data temporarily
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+          console.warn(`File ${file.name} is too large (>5MB), skipping`);
+          continue;
+        }
+
+        // Validate file type
+        if (!allowedTypes.includes(file.type)) {
+          console.warn(`File ${file.name} has invalid type, skipping`);
+          continue;
+        }
+        
+        // Convert file to base64 for temporary storage
+        const base64String = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        
+        processedImages.push(base64String);
+      }
+      
+      // Add all processed images to form data
+      if (processedImages.length > 0) {
         setFormData(prev => ({
           ...prev,
-          images: [...prev.images, base64String],
+          images: [...prev.images, ...processedImages],
         }));
-        
-        console.log('Image prepared for upload');
-        setUploadingImage(false);
-        e.target.value = '';
-      };
-      reader.onerror = () => {
-        console.error('Failed to read file');
-        alert('Failed to read image file. Please try again.');
-        setUploadingImage(false);
-        e.target.value = '';
-      };
-      reader.readAsDataURL(file);
-      
-      // Note: Actual upload to Cloudflare Images will happen after vehicle is created
-      // since we need the vehicle ID for proper organization
+        console.log(`${processedImages.length} images prepared for upload`);
+      }
       
     } catch (error) {
-      console.error('Upload preparation failed:', error);
-      alert(error instanceof Error ? error.message : 'Failed to prepare image. Please try again.');
+      console.error('Upload failed:', error);
+      alert('Failed to prepare images. Please try again.');
+    } finally {
       setUploadingImage(false);
       e.target.value = '';
     }
@@ -434,6 +438,7 @@ export default function AddVehicle() {
                   accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"
                   onChange={handleImageUpload}
                   disabled={uploadingImage || formData.images.length >= 10}
+                  multiple
                   className="hidden"
                 />
                 <div className={`flex items-center space-x-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors ${
@@ -448,7 +453,7 @@ export default function AddVehicle() {
                     <>
                       <Upload className="h-5 w-5 text-gray-600" />
                       <span className="text-gray-600">
-                        {formData.images.length >= 10 ? 'Maximum 10 images' : 'Upload Image'}
+                        {formData.images.length >= 10 ? 'Maximum 10 images' : 'Upload Images'}
                       </span>
                     </>
                   )}
