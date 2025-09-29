@@ -166,6 +166,15 @@ export default function EditVehicle() {
     const vehicleId = searchParams.get('id')?.split('?')[0];
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
     
+    if (!vehicleId) {
+      console.error('No vehicle ID found');
+      alert('Error: Vehicle ID not found');
+      setUploadingImage(false);
+      return;
+    }
+    
+    console.log('Uploading images for vehicle:', vehicleId);
+    
     try {
       // Process each file
       for (let i = 0; i < files.length; i++) {
@@ -188,7 +197,10 @@ export default function EditVehicle() {
         uploadData.append('images', file);
         
         // Upload to the vehicle's images endpoint on the Worker
-        const imageUploadRes = await fetch(`${getVehicleEndpoint()}/${vehicleId}/images`, {
+        const uploadUrl = `${getVehicleEndpoint()}/${vehicleId}/images`;
+        console.log('Uploading to:', uploadUrl);
+        
+        const imageUploadRes = await fetch(uploadUrl, {
           method: 'POST',
           body: uploadData,
         });

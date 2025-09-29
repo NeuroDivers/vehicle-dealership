@@ -34,6 +34,6 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 ## Vehicle Dealership Website
 
-Last updated: 2025-09-29 01:35 AM - Fixed image upload issues and multiple selection
+Last updated: 2025-09-29 02:00 AM - Added image deletion from Cloudflare, worker redeployed
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
