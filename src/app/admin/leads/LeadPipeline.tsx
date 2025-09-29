@@ -18,7 +18,8 @@ import {
   CheckCircle,
   AlertCircle,
   TrendingUp,
-  UserPlus
+  UserPlus,
+  Search
 } from 'lucide-react';
 
 interface Lead {
