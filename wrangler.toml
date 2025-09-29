@@ -16,9 +16,9 @@ database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
 # Create API Token at: Dashboard > My Profile > API Tokens > Create Token (with Images:Edit permission)
 [vars]
 ENVIRONMENT = "production"
-# CF_ACCOUNT_ID = "your-account-id"
-# CF_ACCOUNT_HASH = "your-account-hash"
-# CF_IMAGES_TOKEN = "your-api-token"
+CF_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
+CF_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
+CF_IMAGES_TOKEN = "hxqfnYpHcT8FrQYyiRiOiOmkPtGkTuhdf6aCfYVT"
 
 # CORS settings for frontend integration
 [env.production.vars]
