@@ -80,6 +80,7 @@ export default function EditVehicle() {
             ...data,
             imagesList: imageUrls,
             originalImages: data.images, // Keep original format for saving
+            newImages: [], // Initialize newImages as empty array
           });
         }
         setFetching(false);
@@ -107,8 +108,8 @@ export default function EditVehicle() {
         finalImages = [...original];
       }
       
-      // Add new images
-      if (formData.newImages.length > 0) {
+      // Add new images (with safety check)
+      if (formData.newImages && formData.newImages.length > 0) {
         finalImages = [...finalImages, ...formData.newImages];
       }
       
@@ -192,7 +193,7 @@ export default function EditVehicle() {
         setFormData(prev => ({
           ...prev,
           imagesList: [...prev.imagesList, imageUrl],
-          newImages: [...prev.newImages, newImage], // Store full object for saving
+          newImages: [...(prev.newImages || []), newImage], // Store full object for saving with safety check
         }));
         console.log('Image uploaded successfully:', newImage);
       } else if (result.urls && result.urls.length > 0) {
@@ -240,7 +241,7 @@ export default function EditVehicle() {
         return {
           ...prev,
           imagesList: prev.imagesList.filter((_, i) => i !== index),
-          newImages: prev.newImages.filter((_, i) => i !== newImageIndex),
+          newImages: prev.newImages ? prev.newImages.filter((_, i) => i !== newImageIndex) : [],
         };
       }
     });
