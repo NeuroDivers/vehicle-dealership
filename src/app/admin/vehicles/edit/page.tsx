@@ -114,6 +114,7 @@ export default function EditVehicle() {
             imagesList: imageUrls,
             originalImages: data.images || [], // Keep original format for saving, default to empty array
             newImages: [], // Initialize newImages as empty array
+            deletedImages: [], // Initialize deletedImages as empty array
           });
         }
         setLoading(false);
@@ -307,6 +308,8 @@ export default function EditVehicle() {
   };
 
   const removeImage = async (index: number) => {
+    console.log('removeImage called with index:', index);
+    
     // Get the image to be removed
     const imageToRemove = formData.imagesList[index];
     
@@ -346,8 +349,8 @@ export default function EditVehicle() {
       }
     }
     
-    // Delete from Cloudflare if we have an ID
-    if (imageIdToDelete) {
+    // Delete from Cloudflare if we have an ID and it's not already in deletedImages
+    if (imageIdToDelete && !formData.deletedImages?.includes(imageIdToDelete)) {
       try {
         console.log('Deleting image from Cloudflare:', imageIdToDelete);
         const deleteRes = await fetch(`${getVehicleEndpoint()}/${vehicleId}/images/${imageIdToDelete}`, {
@@ -363,6 +366,8 @@ export default function EditVehicle() {
       } catch (error) {
         console.error('Error deleting image from Cloudflare:', error);
       }
+    } else {
+      console.log('Skipping delete - no ID or already deleted:', imageIdToDelete);
     }
     
     // Update local state
@@ -376,8 +381,8 @@ export default function EditVehicle() {
         
         // Add to deleted images list if it has an ID
         const deletedList = imageIdToDelete 
-          ? [...prev.deletedImages, imageIdToDelete]
-          : prev.deletedImages;
+          ? [...(prev.deletedImages || []), imageIdToDelete]
+          : prev.deletedImages || [];
         
         return {
           ...prev,
