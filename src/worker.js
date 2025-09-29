@@ -725,6 +725,160 @@ async function handleVehicles(request, env) {
 // Import native crypto authentication (no external dependencies!)
 import { hashPassword, verifyPassword, generateToken, createToken, verifyToken } from './lib/crypto-auth.js';
 
+// Analytics Dashboard Handler
+async function handleAnalyticsDashboard(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    
+    // Calculate date range
+    const now = new Date();
+    let startDate = new Date();
+    
+    switch(timeRange) {
+      case '24h':
+        startDate.setHours(now.getHours() - 24);
+        break;
+      case '7d':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(now.getDate() - 90);
+        break;
+      default:
+        startDate.setDate(now.getDate() - 7);
+    }
+    
+    // Fetch vehicle views
+    const vehicleViews = await env.DB.prepare(`
+      SELECT 
+        COUNT(*) as totalViews,
+        COUNT(DISTINCT vehicle_id) as uniqueVehicles,
+        COUNT(DISTINCT ip) as uniqueVisitors
+      FROM vehicle_views 
+      WHERE datetime(timestamp) >= datetime(?)
+    `).bind(startDate.toISOString()).first();
+    
+    // Top viewed vehicles
+    const topVehicles = await env.DB.prepare(`
+      SELECT 
+        vehicle_id,
+        make,
+        model,
+        year,
+        COUNT(*) as viewCount
+      FROM vehicle_views 
+      WHERE datetime(timestamp) >= datetime(?)
+      GROUP BY vehicle_id, make, model, year
+      ORDER BY viewCount DESC
+      LIMIT 10
+    `).bind(startDate.toISOString()).all();
+    
+    // Search analytics
+    const searchStats = await env.DB.prepare(`
+      SELECT 
+        COUNT(*) as totalSearches,
+        COUNT(DISTINCT query) as uniqueQueries,
+        AVG(result_count) as avgResults
+      FROM search_queries 
+      WHERE datetime(timestamp) >= datetime(?)
+    `).bind(startDate.toISOString()).first();
+    
+    // Popular searches
+    const popularSearches = await env.DB.prepare(`
+      SELECT 
+        query,
+        COUNT(*) as count,
+        AVG(result_count) as avgResults
+      FROM search_queries 
+      WHERE datetime(timestamp) >= datetime(?)
+      GROUP BY query
+      ORDER BY count DESC
+      LIMIT 10
+    `).bind(startDate.toISOString()).all();
+    
+    // Lead statistics
+    const leadStats = await env.DB.prepare(`
+      SELECT 
+        COUNT(*) as totalLeads,
+        COUNT(CASE WHEN status = 'new' THEN 1 END) as newLeads,
+        COUNT(CASE WHEN status = 'contacted' THEN 1 END) as contactedLeads,
+        COUNT(CASE WHEN status = 'qualified' THEN 1 END) as qualifiedLeads,
+        COUNT(CASE WHEN status = 'closed' THEN 1 END) as closedLeads,
+        AVG(lead_score) as avgLeadScore
+      FROM leads 
+      WHERE datetime(timestamp) >= datetime(?)
+    `).bind(startDate.toISOString()).first();
+    
+    // Staff performance
+    const staffPerformance = await env.DB.prepare(`
+      SELECT 
+        assigned_to,
+        COUNT(*) as totalLeads,
+        COUNT(CASE WHEN status = 'closed' THEN 1 END) as closedLeads,
+        AVG(lead_score) as avgScore
+      FROM leads 
+      WHERE assigned_to IS NOT NULL 
+        AND datetime(timestamp) >= datetime(?)
+      GROUP BY assigned_to
+      ORDER BY closedLeads DESC
+    `).bind(startDate.toISOString()).all();
+    
+    // Daily trends
+    const dailyTrends = await env.DB.prepare(`
+      SELECT 
+        DATE(timestamp) as date,
+        COUNT(*) as views
+      FROM vehicle_views 
+      WHERE datetime(timestamp) >= datetime(?)
+      GROUP BY DATE(timestamp)
+      ORDER BY date DESC
+      LIMIT 30
+    `).bind(startDate.toISOString()).all();
+    
+    // Referrer stats
+    const referrerStats = await env.DB.prepare(`
+      SELECT 
+        CASE 
+          WHEN referrer LIKE '%google%' THEN 'Google'
+          WHEN referrer LIKE '%facebook%' THEN 'Facebook'
+          WHEN referrer LIKE '%instagram%' THEN 'Instagram'
+          WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
+          ELSE 'Other'
+        END as source,
+        COUNT(*) as count
+      FROM vehicle_views 
+      WHERE datetime(timestamp) >= datetime(?)
+      GROUP BY source
+      ORDER BY count DESC
+    `).bind(startDate.toISOString()).all();
+    
+    return new Response(JSON.stringify({
+      overview: {
+        vehicleViews: vehicleViews || { totalViews: 0, uniqueVehicles: 0, uniqueVisitors: 0 },
+        searchStats: searchStats || { totalSearches: 0, uniqueQueries: 0, avgResults: 0 },
+        leadStats: leadStats || { totalLeads: 0, newLeads: 0, contactedLeads: 0, qualifiedLeads: 0, closedLeads: 0, avgLeadScore: 0 }
+      },
+      topVehicles: topVehicles?.results || [],
+      popularSearches: popularSearches?.results || [],
+      staffPerformance: staffPerformance?.results || [],
+      dailyTrends: dailyTrends?.results || [],
+      referrerStats: referrerStats?.results || []
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Analytics dashboard error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch analytics' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 async function handleLogin(request, env) {
   try {
     const { email, password } = await request.json();
@@ -1084,6 +1238,8 @@ const workerHandler = {
         return await handleVehicleViews(request, env);
       } else if (path.startsWith('/api/analytics/search-queries')) {
         return await handleSearchQueries(request, env);
+      } else if (path.startsWith('/api/analytics/dashboard')) {
+        return await handleAnalyticsDashboard(request, env);
       } else if (path.startsWith('/api/leads')) {
         return await handleLeads(request, env);
       } else {
