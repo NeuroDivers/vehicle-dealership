@@ -22,7 +22,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/vehicles')
+    // Use Cloudflare Worker API in production
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+    fetch(`${apiUrl}/api/vehicles`)
       .then(res => res.json())
       .then(data => {
         const vehicles = Array.isArray(data) ? data : [];
