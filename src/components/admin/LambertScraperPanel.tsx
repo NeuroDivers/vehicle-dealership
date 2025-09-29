@@ -51,8 +51,10 @@ export default function LambertScraperPanel() {
 
   const loadStats = async () => {
     try {
-      // In production, fetch from your API
-      const response = await fetch('/api/admin/lambert/stats');
+      // Use the admin API worker in production
+      const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
+                     'https://vehicle-admin-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/admin/lambert/stats`);
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -74,7 +76,9 @@ export default function LambertScraperPanel() {
 
   const loadRecentVehicles = async () => {
     try {
-      const response = await fetch('/api/admin/lambert/recent');
+      const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
+                     'https://vehicle-admin-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/admin/lambert/recent`);
       if (response.ok) {
         const data = await response.json();
         setRecentVehicles(data);
@@ -105,7 +109,9 @@ export default function LambertScraperPanel() {
     setStats(prev => ({ ...prev, status: 'running' }));
     
     try {
-      const response = await fetch('/api/admin/lambert/scrape', {
+      const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
+                     'https://vehicle-admin-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/admin/lambert/scrape`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -142,7 +148,9 @@ export default function LambertScraperPanel() {
     setIsSyncing(true);
     
     try {
-      const response = await fetch('/api/admin/lambert/sync', {
+      const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
+                     'https://vehicle-admin-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/admin/lambert/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -164,7 +172,9 @@ export default function LambertScraperPanel() {
 
   const exportData = async () => {
     try {
-      const response = await fetch('/api/admin/lambert/export');
+      const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
+                     'https://vehicle-admin-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/admin/lambert/export`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
