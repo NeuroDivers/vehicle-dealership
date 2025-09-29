@@ -217,7 +217,7 @@ export async function handleStaff(request, env, method) {
       case 'PUT':
         // Update staff member
         const url = new URL(request.url);
-        const staffId = url.pathname.split('/').pop();
+        const updateStaffId = url.pathname.split('/').pop();
         const updateData = await request.json();
         
         // Build update query
@@ -257,7 +257,7 @@ export async function handleStaff(request, env, method) {
         }
         
         updates.push('updated_at = CURRENT_TIMESTAMP');
-        values.push(staffId);
+        values.push(updateStaffId);
         
         await env.DB.prepare(
           `UPDATE staff SET ${updates.join(', ')} WHERE id = ?`
@@ -272,7 +272,7 @@ export async function handleStaff(request, env, method) {
           session.user_id,
           'update',
           'staff',
-          staffId,
+          updateStaffId,
           JSON.stringify(updateData),
           request.headers.get('CF-Connecting-IP') || 'unknown'
         ).run();
