@@ -362,15 +362,42 @@ async function discoverVehicleUrls(config) {
       if (!response.ok) break;
       
       const html = await response.text();
-      const regex = /href="(\/cars\/[^"]+\/)"/g;
-      let match;
       
-      while ((match = regex.exec(html)) !== null) {
-        const path = match[1];
-        if (!path.includes('?') && path.split('/').length === 4) {
-          urls.add(`${config.baseUrl}${path}`);
+      // Extract vehicle links using multiple patterns
+      const patterns = [
+        /href="(https?:\/\/[^"]*\/cars\/[^"\/]+\/)"/g,  // Full URLs
+        /href="(\/cars\/[^"\/]+\/)"/g                     // Relative URLs
+      ];
+      
+      let foundOnPage = 0;
+      for (const regex of patterns) {
+        let match;
+        while ((match = regex.exec(html)) !== null) {
+          const url = match[1];
+          
+          // Skip non-vehicle URLs
+          if (url.includes('?') || 
+              url.includes('#') || 
+              url.endsWith('/feed/') ||
+              url.includes('/page/')) {
+            continue;
+          }
+          
+          // Check if it's a vehicle detail page
+          if (url.match(/\/cars\/[a-z0-9-]+\/?$/i)) {
+            const fullUrl = url.startsWith('http') ? url : `${config.baseUrl}${url}`;
+            if (!urls.has(fullUrl)) {
+              urls.add(fullUrl);
+              foundOnPage++;
+            }
+          }
         }
       }
+      
+      console.log(`Page ${page}: Found ${foundOnPage} vehicles`);
+      
+      // If no vehicles found on this page, stop
+      if (foundOnPage === 0) break;
       
       page++;
     } catch (error) {
