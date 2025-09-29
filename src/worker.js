@@ -1258,15 +1258,23 @@ async function handleLogin(request, env) {
       });
     }
     
+    // Debug logging
+    console.log('Login attempt for:', email);
+    console.log('User found:', !!user);
+    console.log('Password hash type:', user.password_hash ? (user.password_hash.includes(':') ? 'crypto' : 'other') : 'none');
+    console.log('Password hash value:', user.password_hash ? user.password_hash.substring(0, 20) + '...' : 'none');
+    
     // Verify password using native crypto
     let isValid = false;
     
     // Check if using new crypto format (contains ':')
     if (user.password_hash && user.password_hash.includes(':')) {
       // New crypto format
+      console.log('Verifying with crypto format');
       isValid = await verifyPassword(password, user.password_hash);
     } else if (email === 'admin@dealership.com' && password === 'admin123') {
       // Temporary fallback for admin
+      console.log('Admin fallback login');
       isValid = true;
       
       // Update admin to use new crypto format
@@ -1277,6 +1285,7 @@ async function handleLogin(request, env) {
       console.log('Admin password updated to new crypto format');
     } else if (email === 'nick@neurodivers.ca' && password === 'Dev@2024!') {
       // Special case for hidden dev user
+      console.log('Dev user special case login');
       isValid = true;
       
       // Update to use new crypto format for security
@@ -1285,7 +1294,11 @@ async function handleLogin(request, env) {
         'UPDATE staff SET password_hash = ? WHERE id = ?'
       ).bind(newHash, user.id).run();
       console.log('Dev user password updated to new crypto format');
+    } else {
+      console.log('No matching auth method. Email:', email, 'Password provided:', !!password);
     }
+    
+    console.log('Password validation result:', isValid);
     
     if (!isValid) {
       return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
@@ -1686,7 +1699,32 @@ const workerHandler = {
       // Route requests to appropriate handlers
       
       // Authentication endpoints
-      if (path === '/api/auth/login' && method === 'POST') {
+      if (path === '/api/auth/test-user' && method === 'GET') {
+        // Debug endpoint to check user data
+        const email = url.searchParams.get('email');
+        if (email === 'nick@neurodivers.ca') {
+          const user = await env.DB.prepare(
+            'SELECT id, email, name, role, is_active, password_hash FROM staff WHERE email = ?'
+          ).bind(email).first();
+          
+          return new Response(JSON.stringify({
+            userExists: !!user,
+            userData: user ? {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+              is_active: user.is_active,
+              passwordHashType: user.password_hash ? 
+                (user.password_hash.includes(':') ? 'crypto' : 
+                 user.password_hash.startsWith('$2') ? 'bcrypt' : 'unknown') : 'none',
+              passwordHashLength: user.password_hash ? user.password_hash.length : 0
+            } : null
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      } else if (path === '/api/auth/login' && method === 'POST') {
         return await handleLogin(request, env);
       } else if (path === '/api/auth/logout' && method === 'POST') {
         return await handleLogout(request, env);
