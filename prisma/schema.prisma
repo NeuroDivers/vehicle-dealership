@@ -23,6 +23,15 @@ model Vehicle {
   description String?
   images      String   @default("[]") // JSON array of image URLs
   isSold      Boolean  @default(false)
+  
+  // Partner tracking fields
+  source      String   @default("internal") // internal, lambert, partner
+  partnerName String?  // e.g., "Automobile Lambert"
+  partnerUrl  String?  // Original URL on partner site
+  partnerVin  String?  // VIN from partner
+  partnerStock String? // Stock number from partner
+  lastSynced  DateTime? // Last sync from partner
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
