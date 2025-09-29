@@ -13,13 +13,11 @@ interface SiteInfo {
   postalCode: string;
   country: string;
   businessHours: {
-    monday: string;
-    tuesday: string;
-    wednesday: string;
-    thursday: string;
-    friday: string;
-    saturday: string;
-    sunday: string;
+    [key: string]: {
+      en: string;
+      fr: string;
+      es: string;
+    };
   };
   socialMedia: {
     facebook?: string;
@@ -28,10 +26,16 @@ interface SiteInfo {
     youtube?: string;
     linkedin?: string;
   };
+  copyright: {
+    en: string;
+    fr: string;
+    es: string;
+  };
+  themeColor: 'blue' | 'red' | 'green' | 'purple';
 }
 
 const defaultSiteInfo: SiteInfo = {
-  siteName: 'Vehicle Dealership',
+  siteName: 'Premium Auto Sales',
   logo: '',
   contactEmail: 'info@dealership.com',
   contactPhone: '555-0123',
@@ -41,13 +45,13 @@ const defaultSiteInfo: SiteInfo = {
   postalCode: '12345',
   country: 'Canada',
   businessHours: {
-    monday: '9:00 AM - 6:00 PM',
-    tuesday: '9:00 AM - 6:00 PM',
-    wednesday: '9:00 AM - 6:00 PM',
-    thursday: '9:00 AM - 6:00 PM',
-    friday: '9:00 AM - 6:00 PM',
-    saturday: '10:00 AM - 4:00 PM',
-    sunday: 'Closed'
+    monday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
+    tuesday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
+    wednesday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
+    thursday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
+    friday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
+    saturday: { en: '10:00 AM - 4:00 PM', fr: '10h00 - 16h00', es: '10:00 AM - 4:00 PM' },
+    sunday: { en: 'Closed', fr: 'Fermé', es: 'Cerrado' }
   },
   socialMedia: {
     facebook: '',
@@ -55,7 +59,13 @@ const defaultSiteInfo: SiteInfo = {
     twitter: '',
     youtube: '',
     linkedin: ''
-  }
+  },
+  copyright: {
+    en: '© 2024 Premium Auto Sales. All rights reserved.',
+    fr: '© 2024 Premium Auto Sales. Tous droits réservés.',
+    es: '© 2024 Premium Auto Sales. Todos los derechos reservados.'
+  },
+  themeColor: 'blue'
 };
 
 export default function SiteInfoManager() {
@@ -138,12 +148,25 @@ export default function SiteInfoManager() {
     }
   };
 
-  const updateBusinessHours = (day: keyof typeof siteInfo.businessHours, value: string) => {
+  const updateBusinessHours = (day: string, lang: 'en' | 'fr' | 'es', value: string) => {
     setSiteInfo(prev => ({
       ...prev,
       businessHours: {
         ...prev.businessHours,
-        [day]: value
+        [day]: {
+          ...prev.businessHours[day],
+          [lang]: value
+        }
+      }
+    }));
+  };
+
+  const updateCopyright = (lang: 'en' | 'fr' | 'es', value: string) => {
+    setSiteInfo(prev => ({
+      ...prev,
+      copyright: {
+        ...prev.copyright,
+        [lang]: value
       }
     }));
   };
@@ -324,21 +347,102 @@ export default function SiteInfoManager() {
 
       {/* Business Hours */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Business Hours</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Object.entries(siteInfo.businessHours).map(([day, hours]) => (
-            <div key={day}>
-              <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
-                {day}
-              </label>
-              <input
-                type="text"
-                value={hours}
-                onChange={(e) => updateBusinessHours(day as keyof typeof siteInfo.businessHours, e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 9:00 AM - 6:00 PM"
-              />
+        <h3 className="text-lg font-semibold mb-4">Business Hours (Multilingual)</h3>
+        {Object.entries(siteInfo.businessHours).map(([day, hours]) => (
+          <div key={day} className="mb-4 p-4 border rounded-lg">
+            <h4 className="font-medium capitalize mb-2">{day}</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">English</label>
+                <input
+                  type="text"
+                  value={hours.en}
+                  onChange={(e) => updateBusinessHours(day, 'en', e.target.value)}
+                  className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="9:00 AM - 6:00 PM"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Français</label>
+                <input
+                  type="text"
+                  value={hours.fr}
+                  onChange={(e) => updateBusinessHours(day, 'fr', e.target.value)}
+                  className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="9h00 - 18h00"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Español</label>
+                <input
+                  type="text"
+                  value={hours.es}
+                  onChange={(e) => updateBusinessHours(day, 'es', e.target.value)}
+                  className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="9:00 AM - 6:00 PM"
+                />
+              </div>
             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Copyright Text */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4">Copyright Text (Multilingual)</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">English</label>
+            <input
+              type="text"
+              value={siteInfo.copyright.en}
+              onChange={(e) => updateCopyright('en', e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Français</label>
+            <input
+              type="text"
+              value={siteInfo.copyright.fr}
+              onChange={(e) => updateCopyright('fr', e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Español</label>
+            <input
+              type="text"
+              value={siteInfo.copyright.es}
+              onChange={(e) => updateCopyright('es', e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Theme Color */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4">Theme Color</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {(['blue', 'red', 'green', 'purple'] as const).map(color => (
+            <button
+              key={color}
+              onClick={() => setSiteInfo(prev => ({ ...prev, themeColor: color }))}
+              className={`p-4 rounded-lg border-2 transition-all ${
+                siteInfo.themeColor === color 
+                  ? 'border-gray-800 shadow-lg' 
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <div className={`h-8 w-full rounded mb-2 ${
+                color === 'blue' ? 'bg-blue-600' :
+                color === 'red' ? 'bg-red-600' :
+                color === 'green' ? 'bg-green-600' :
+                'bg-purple-600'
+              }`} />
+              <span className="capitalize font-medium">{color}</span>
+            </button>
           ))}
         </div>
       </div>
