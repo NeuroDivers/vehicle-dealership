@@ -3,12 +3,22 @@
 
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client only if API key is available
+let openai: OpenAI | null = null;
+
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 // Generate AI-powered vehicle descriptions
 export async function generateVehicleDescription(vehicle: any): Promise<string> {
+  if (!openai) {
+    console.warn('OpenAI API key not configured');
+    return `Experience the ${vehicle.year} ${vehicle.make} ${vehicle.model} - a reliable and stylish ${vehicle.bodyType} that combines performance and comfort.`;
+  }
+
   try {
     const { make, model, year, price, odometer, bodyType, color } = vehicle;
 
@@ -38,6 +48,11 @@ Write a compelling 2-3 paragraph description that highlights the vehicle's featu
 
 // Translate text to different languages
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
+  if (!openai) {
+    console.warn('OpenAI API key not configured');
+    return text; // Return original text if AI not available
+  }
+
   try {
     const prompt = `Translate the following text to ${targetLanguage}. Maintain a professional, automotive sales tone:
 
@@ -61,6 +76,11 @@ Provide only the translation, no additional comments.`;
 
 // Generate social media captions optimized for engagement
 export async function generateSocialCaption(vehicle: any, platform: string): Promise<string> {
+  if (!openai) {
+    console.warn('OpenAI API key not configured');
+    return `🚗 New ${vehicle.year} ${vehicle.make} ${vehicle.model} available! 💰 $${vehicle.price?.toLocaleString()} #CarDeals`;
+  }
+
   try {
     const { make, model, year, price } = vehicle;
 
@@ -94,6 +114,11 @@ Make it compelling and include relevant hashtags.`;
 
 // Analyze vehicle images and generate descriptions
 export async function describeVehicleImage(imageUrl: string): Promise<string> {
+  if (!openai) {
+    console.warn('OpenAI API key not configured');
+    return 'Vehicle image description not available.';
+  }
+
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4-vision-preview',
@@ -124,6 +149,11 @@ export async function describeVehicleImage(imageUrl: string): Promise<string> {
 
 // Generate follow-up email content for leads
 export async function generateLeadFollowUp(lead: any, vehicle: any): Promise<string> {
+  if (!openai) {
+    console.warn('OpenAI API key not configured');
+    return `Dear ${lead.name},\n\nThank you for your interest in the ${vehicle.year} ${vehicle.make} ${vehicle.model}. We would love to help you with your vehicle purchase.\n\nPlease feel free to contact us to schedule a test drive or discuss financing options.\n\nBest regards,\nYour Dealership Team`;
+  }
+
   try {
     const prompt = `Generate a personalized follow-up email for a car dealership lead:
 
@@ -151,19 +181,27 @@ Keep it concise (under 200 words).`;
 
     return response.choices[0]?.message?.content?.trim() || '';
   } catch (error) {
-    console.error('Failed to generate follow-up email:', error);
     return `Dear ${lead.name}, thank you for your interest in our ${vehicle.year} ${vehicle.make} ${vehicle.model}. We'd love to discuss this vehicle with you further.`;
   }
 }
 
 // Analyze lead quality and provide insights
 export async function analyzeLeadQuality(lead: any): Promise<{
-  quality: 'high' | 'medium' | 'low';
-  reasons: string[];
+  score: number;
+  insights: string[];
   recommendations: string[];
 }> {
+  if (!openai) {
+    console.warn('OpenAI API key not configured');
+    return {
+      score: 50,
+      insights: ['AI analysis not available', 'Manual review recommended'],
+      recommendations: ['Follow up within 24 hours', 'Provide vehicle information', 'Offer test drive']
+    };
+  }
+
   try {
-    const prompt = `Analyze this car dealership lead and provide quality assessment:
+    const prompt = `Analyze this car dealership lead and provide insights:
 
 Lead Data:
 - Name: ${lead.name}
@@ -191,19 +229,19 @@ Be specific and actionable.`;
     const analysis = response.choices[0]?.message?.content?.trim() || '';
 
     // Parse the response (simplified parsing)
-    const quality = analysis.toLowerCase().includes('high') ? 'high' :
-                   analysis.toLowerCase().includes('low') ? 'low' : 'medium';
+    const scoreMatch = analysis.match(/score[:\s]+(\d+)/i);
+    const score = scoreMatch ? parseInt(scoreMatch[1]) : 50;
 
     return {
-      quality,
-      reasons: ['Based on lead analysis'],
+      score,
+      insights: ['Based on lead analysis'],
       recommendations: ['Follow up promptly', 'Provide detailed information']
     };
   } catch (error) {
     console.error('Failed to analyze lead quality:', error);
     return {
-      quality: 'medium',
-      reasons: ['Analysis unavailable'],
+      score: 50,
+      insights: ['Analysis unavailable'],
       recommendations: ['Standard follow-up procedure']
     };
   }
