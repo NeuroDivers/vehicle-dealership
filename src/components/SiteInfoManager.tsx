@@ -83,7 +83,14 @@ export default function SiteInfoManager() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string>('');
+  const [activeLanguageTab, setActiveLanguageTab] = useState<'en' | 'fr' | 'es'>('en');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Auto-update copyright year
+  const currentYear = new Date().getFullYear();
+  const updateCopyrightYear = (text: string) => {
+    return text.replace(/© \d{4}/, `© ${currentYear}`);
+  };
 
   useEffect(() => {
     loadSiteInfo();
@@ -385,75 +392,77 @@ export default function SiteInfoManager() {
 
       {/* Business Hours */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Business Hours (Multilingual)</h3>
-        {Object.entries(siteInfo.businessHours).map(([day, hours]) => (
-          <div key={day} className="mb-4 p-4 border rounded-lg">
-            <h4 className="font-medium capitalize mb-2">{day}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">English</label>
-                <input
-                  type="text"
-                  value={hours.en}
-                  onChange={(e) => updateBusinessHours(day, 'en', e.target.value)}
-                  className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="9:00 AM - 6:00 PM"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Français</label>
-                <input
-                  type="text"
-                  value={hours.fr}
-                  onChange={(e) => updateBusinessHours(day, 'fr', e.target.value)}
-                  className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="9h00 - 18h00"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Español</label>
-                <input
-                  type="text"
-                  value={hours.es}
-                  onChange={(e) => updateBusinessHours(day, 'es', e.target.value)}
-                  className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="9:00 AM - 6:00 PM"
-                />
-              </div>
+        <h3 className="text-lg font-semibold mb-4">Business Hours</h3>
+        
+        {/* Language Tabs */}
+        <div className="flex space-x-2 mb-4 border-b">
+          {(['en', 'fr', 'es'] as const).map(lang => (
+            <button
+              key={lang}
+              onClick={() => setActiveLanguageTab(lang)}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeLanguageTab === lang
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {lang === 'en' ? 'English' : lang === 'fr' ? 'Français' : 'Español'}
+            </button>
+          ))}
+        </div>
+        
+        <div className="space-y-3">
+          {Object.entries(siteInfo.businessHours).map(([day, hours]) => (
+            <div key={day} className="flex items-center space-x-4">
+              <span className="w-24 font-medium capitalize">{day}:</span>
+              <input
+                type="text"
+                value={hours[activeLanguageTab]}
+                onChange={(e) => updateBusinessHours(day, activeLanguageTab, e.target.value)}
+                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={activeLanguageTab === 'en' ? '9:00 AM - 6:00 PM' : 
+                           activeLanguageTab === 'fr' ? '9h00 - 18h00' : 
+                           '9:00 AM - 6:00 PM'}
+              />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Copyright Text */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Copyright Text (Multilingual)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <h3 className="text-lg font-semibold mb-4">Copyright Text</h3>
+        <p className="text-sm text-gray-600 mb-3">The year will automatically update to {currentYear}</p>
+        
+        <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">English</label>
             <input
               type="text"
-              value={siteInfo.copyright.en}
+              value={updateCopyrightYear(siteInfo.copyright.en)}
               onChange={(e) => updateCopyright('en', e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={`© ${currentYear} Your Company. All rights reserved.`}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Français</label>
             <input
               type="text"
-              value={siteInfo.copyright.fr}
+              value={updateCopyrightYear(siteInfo.copyright.fr)}
               onChange={(e) => updateCopyright('fr', e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={`© ${currentYear} Votre Entreprise. Tous droits réservés.`}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Español</label>
             <input
               type="text"
-              value={siteInfo.copyright.es}
+              value={updateCopyrightYear(siteInfo.copyright.es)}
               onChange={(e) => updateCopyright('es', e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={`© ${currentYear} Su Empresa. Todos los derechos reservados.`}
             />
           </div>
         </div>

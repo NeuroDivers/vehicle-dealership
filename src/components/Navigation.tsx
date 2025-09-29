@@ -3,15 +3,30 @@
 import Link from 'next/link';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { useEffect, useState } from 'react';
+import { Phone, Zap, Globe } from 'lucide-react';
 
 export default function Navigation() {
   const { settings, getThemeColors } = useSiteSettings();
   const [mounted, setMounted] = useState(false);
+  const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('en');
+  const [showLangDropdown, setShowLangDropdown] = useState(false);
   const themeColors = getThemeColors();
 
   useEffect(() => {
     setMounted(true);
+    const storedLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
+    if (storedLang) {
+      setCurrentLang(storedLang);
+    }
   }, []);
+
+  const changeLang = (lang: 'en' | 'fr' | 'es') => {
+    setCurrentLang(lang);
+    localStorage.setItem('language', lang);
+    setShowLangDropdown(false);
+    // Trigger a re-render of components that use language
+    window.dispatchEvent(new Event('languageChange'));
+  };
 
   if (!mounted) {
     return null; // Prevent hydration mismatch
@@ -37,19 +52,81 @@ export default function Navigation() {
             </span>
           </Link>
           
-          <div className="flex space-x-8">
-            <Link href="/" className="text-gray-700 hover:text-blue-600 transition">
+          <div className="flex items-center space-x-6">
+            <Link href="/" className="text-gray-700 hover:opacity-80 transition"
+                 style={{ color: themeColors.primary }}>
               Home
             </Link>
-            <Link href="/vehicles" className="text-gray-700 hover:text-blue-600 transition">
+            <Link href="/vehicles" className="text-gray-700 hover:opacity-80 transition"
+                 style={{ color: themeColors.primary }}>
               Vehicles
             </Link>
-            <Link href="/about" className="text-gray-700 hover:text-blue-600 transition">
+            <Link href="/vehicles?fuelType=electric" 
+                 className="flex items-center space-x-1 text-gray-700 hover:opacity-80 transition"
+                 style={{ color: themeColors.accent }}>
+              <Zap className="h-4 w-4" />
+              <span>Electric</span>
+            </Link>
+            <Link href="/about" className="text-gray-700 hover:opacity-80 transition"
+                 style={{ color: themeColors.primary }}>
               About
             </Link>
-            <Link href="/contact" className="text-gray-700 hover:text-blue-600 transition">
+            <Link href="/contact" className="text-gray-700 hover:opacity-80 transition"
+                 style={{ color: themeColors.primary }}>
               Contact
             </Link>
+            
+            {/* Language Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setShowLangDropdown(!showLangDropdown)}
+                className="flex items-center space-x-1 px-3 py-1 rounded-lg hover:bg-gray-100 transition"
+              >
+                <Globe className="h-4 w-4" style={{ color: themeColors.primary }} />
+                <span className="text-sm font-medium">
+                  {currentLang.toUpperCase()}
+                </span>
+              </button>
+              
+              {showLangDropdown && (
+                <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border z-50">
+                  <button
+                    onClick={() => changeLang('en')}
+                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                      currentLang === 'en' ? 'font-semibold' : ''
+                    }`}
+                  >
+                    English
+                  </button>
+                  <button
+                    onClick={() => changeLang('fr')}
+                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                      currentLang === 'fr' ? 'font-semibold' : ''
+                    }`}
+                  >
+                    Français
+                  </button>
+                  <button
+                    onClick={() => changeLang('es')}
+                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                      currentLang === 'es' ? 'font-semibold' : ''
+                    }`}
+                  >
+                    Español
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* CTA Button */}
+            <a
+              href={`tel:${settings.contactPhone}`}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg text-white font-semibold transition hover:opacity-90"
+              style={{ backgroundColor: themeColors.accent }}
+            >
+              <Phone className="h-4 w-4" />
+              <span>{settings.contactPhone}</span>
+            </a>
           </div>
         </div>
       </div>
