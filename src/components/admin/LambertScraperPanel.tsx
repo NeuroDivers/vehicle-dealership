@@ -176,23 +176,47 @@ export default function LambertScraperPanel() {
     setIsSyncing(true);
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
-                     'https://vehicle-admin-api.nick-damato0011527.workers.dev';
-      const response = await fetch(`${apiUrl}/api/admin/lambert/sync`, {
+      // First, run the scraper to get fresh data
+      const lambertUrl = process.env.NEXT_PUBLIC_LAMBERT_WORKER_URL || 
+                        'https://lambert-scraper.nick-damato0011527.workers.dev';
+      
+      console.log('Fetching Lambert vehicles for sync...');
+      const scrapeResponse = await fetch(`${lambertUrl}/api/lambert/scrape-with-images`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
       
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Synced ${result.synced} vehicles to main inventory!`);
+      if (!scrapeResponse.ok) {
+        throw new Error('Failed to fetch Lambert vehicles');
+      }
+      
+      const scrapeResult = await scrapeResponse.json();
+      
+      if (!scrapeResult.vehicles || scrapeResult.vehicles.length === 0) {
+        alert('No vehicles found to sync.');
+        return;
+      }
+      
+      // Now sync the vehicles to main inventory via admin API
+      const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
+                     'https://vehicle-admin-api.nick-damato0011527.workers.dev';
+      
+      const syncResponse = await fetch(`${apiUrl}/api/admin/lambert/sync-vehicles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehicles: scrapeResult.vehicles })
+      });
+      
+      if (syncResponse.ok) {
+        const syncResult = await syncResponse.json();
+        alert(`✅ Successfully synced ${syncResult.synced || scrapeResult.vehicles.length} Lambert vehicles to main inventory!`);
         await loadStats();
       } else {
-        throw new Error('Sync failed');
+        throw new Error('Failed to sync vehicles to main inventory');
       }
     } catch (error) {
       console.error('Sync error:', error);
-      alert('Failed to sync to main inventory.');
+      alert('Failed to sync to main inventory. Please check the console for details.');
     } finally {
       setIsSyncing(false);
     }

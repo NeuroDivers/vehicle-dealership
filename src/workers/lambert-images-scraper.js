@@ -38,60 +38,76 @@ export default {
     }
 
     try {
+      const pathname = url.pathname;
+      
       // Quick test endpoint
-      if (url.pathname === '/api/lambert/test' && request.method === 'GET') {
+      if (pathname === '/api/lambert/test' && request.method === 'GET') {
         const config = {
           baseUrl: 'https://www.automobile-lambert.com',
           listingPath: '/cars/',
-          maxPages: 1,  // Just test first page
-          perPage: 20,
-          scrapeDelay: 0,
-          downloadImages: false
+          maxPages: 1,
+          perPage: 20
         };
         
         const vehicleUrls = await discoverVehicleUrls(config);
+        
+        // Try to scrape one vehicle as a test
+        let sampleVehicle = null;
+        if (vehicleUrls.length > 0) {
+          try {
+            sampleVehicle = await scrapeVehicleDetails(vehicleUrls[0], config);
+          } catch (error) {
+            console.error('Test scrape error:', error);
+          }
+        }
         
         return jsonResponse({
           success: true,
           message: 'Test successful',
           vehiclesFound: vehicleUrls.length,
           sampleUrls: vehicleUrls.slice(0, 3),
+          sampleVehicle,
           timestamp: new Date().toISOString()
         }, corsHeaders);
       }
-
-      if (url.pathname === '/api/lambert/sync-to-main' && request.method === 'POST') {
+      if (pathname === '/api/lambert/sync-to-main' && request.method === 'POST') {
         const result = await syncLambertToMainInventory(env);
         return jsonResponse(result, corsHeaders);
       }
-      if (url.pathname === '/api/lambert/scrape-with-images' && request.method === 'POST') {
-        // For now, do a simple scrape without image uploads to avoid timeouts
+      
+      if (pathname === '/api/lambert/scrape-with-images' && request.method === 'POST') {
         const config = {
           baseUrl: 'https://www.automobile-lambert.com',
           listingPath: '/cars/',
-          maxPages: 3,  // Limit to 3 pages for faster response
+          maxPages: 1,  // Reduce to 1 page to avoid timeout
           perPage: 20,
-          scrapeDelay: 500,  // Faster scraping
+          scrapeDelay: 100,  // Faster scraping
           downloadImages: false  // Skip image uploads for now
         };
         
-        console.log('Starting Lambert scrape (simplified)...');
+        console.log('Starting Lambert scrape (optimized)...');
         
         try {
           const vehicleUrls = await discoverVehicleUrls(config);
           console.log(`Found ${vehicleUrls.length} vehicles to scrape`);
           
           const vehicles = [];
-          for (let i = 0; i < Math.min(vehicleUrls.length, 30); i++) { // Limit to 30 vehicles
+          const maxVehicles = Math.min(vehicleUrls.length, 10); // Reduce to 10 vehicles max
+          
+          for (let i = 0; i < maxVehicles; i++) {
             try {
               await sleep(config.scrapeDelay);
               const vehicleData = await scrapeVehicleDetails(vehicleUrls[i], config);
-              vehicles.push(vehicleData);
-              console.log(`Scraped vehicle ${i + 1}/${vehicleUrls.length}`);
+              if (vehicleData) {
+                vehicles.push(vehicleData);
+                console.log(`Scraped vehicle ${i + 1}/${maxVehicles}`);
+              }
             } catch (error) {
-              console.error(`Error scraping ${vehicleUrls[i]}:`, error);
+              console.error(`Error scraping vehicle ${i + 1}:`, error.message);
             }
           }
+          
+          console.log(`Successfully scraped ${vehicles.length} vehicles`);
           
           return jsonResponse({
             success: true,

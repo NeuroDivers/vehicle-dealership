@@ -144,6 +144,114 @@ export default {
         return jsonResponse(result, corsHeaders);
       }
 
+      // Route: POST /api/admin/lambert/sync-vehicles - Direct sync with provided vehicles
+      if (url.pathname === '/api/admin/lambert/sync-vehicles' && request.method === 'POST') {
+        const { vehicles } = await request.json();
+        
+        if (!vehicles || vehicles.length === 0) {
+          return jsonResponse({ error: 'No vehicles provided' }, corsHeaders, 400);
+        }
+        
+        let synced = 0;
+        let errors = [];
+        
+        // Save each vehicle to the main Vehicle table
+        for (const vehicle of vehicles) {
+          try {
+            // Generate a unique ID for the vehicle
+            const vehicleId = `lam_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Check if vehicle already exists by VIN or URL
+            let existingVehicle = null;
+            if (vehicle.vin) {
+              existingVehicle = await env.DB.prepare(
+                'SELECT id FROM Vehicle WHERE partnerVin = ? LIMIT 1'
+              ).bind(vehicle.vin).first();
+            }
+            
+            if (!existingVehicle && vehicle.url) {
+              existingVehicle = await env.DB.prepare(
+                'SELECT id FROM Vehicle WHERE partnerUrl = ? LIMIT 1'
+              ).bind(vehicle.url).first();
+            }
+            
+            if (existingVehicle) {
+              // Update existing vehicle
+              await env.DB.prepare(`
+                UPDATE Vehicle SET
+                  make = ?, model = ?, year = ?, price = ?,
+                  odometer = ?, bodyType = ?, color = ?,
+                  fuelType = ?, description = ?, images = ?,
+                  partnerName = 'Automobile Lambert',
+                  partnerUrl = ?, partnerVin = ?, partnerStock = ?,
+                  lastSynced = CURRENT_TIMESTAMP,
+                  updatedAt = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `).bind(
+                vehicle.make || '',
+                vehicle.model || '',
+                vehicle.year || null,
+                vehicle.price || null,
+                vehicle.odometer || null,
+                vehicle.body_type || '',
+                vehicle.color_exterior || '',
+                vehicle.fuel_type || 'gasoline',
+                vehicle.description || '',
+                JSON.stringify(vehicle.images || []),
+                vehicle.url || '',
+                vehicle.vin || '',
+                vehicle.stock_number || '',
+                existingVehicle.id
+              ).run();
+            } else {
+              // Insert new vehicle
+              await env.DB.prepare(`
+                INSERT INTO Vehicle (
+                  id, make, model, year, price, odometer, bodyType, color,
+                  fuelType, description, images, isSold, source,
+                  partnerName, partnerUrl, partnerVin, partnerStock, lastSynced,
+                  createdAt, updatedAt
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `).bind(
+                vehicleId,
+                vehicle.make || '',
+                vehicle.model || '',
+                vehicle.year || null,
+                vehicle.price || null,
+                vehicle.odometer || null,
+                vehicle.body_type || '',
+                vehicle.color_exterior || '',
+                vehicle.fuel_type || 'gasoline',
+                vehicle.description || '',
+                JSON.stringify(vehicle.images || []),
+                false,
+                'lambert',
+                'Automobile Lambert',
+                vehicle.url || '',
+                vehicle.vin || '',
+                vehicle.stock_number || '',
+                new Date().toISOString(),
+                new Date().toISOString(),
+                new Date().toISOString()
+              ).run();
+            }
+            
+            synced++;
+          } catch (error) {
+            console.error('Error syncing vehicle:', error);
+            errors.push({ vehicle: vehicle.title || vehicle.url, error: error.message });
+          }
+        }
+        
+        return jsonResponse({
+          success: true,
+          synced,
+          total: vehicles.length,
+          errors,
+          timestamp: new Date().toISOString()
+        }, corsHeaders);
+      }
+
       // Route: GET /api/admin/lambert/export
       if (url.pathname === '/api/admin/lambert/export' && request.method === 'GET') {
         const csv = await exportLambertCSV(env.DB);
