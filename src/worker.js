@@ -1695,8 +1695,9 @@ async function cleanupSoldVehicleImages(env) {
                 }
               );
               console.log(`Cleaned up image ${image.id} for sold vehicle ${vehicle.id}`);
-            } catch (error) {
-              console.error(`Failed to delete image ${image.id}:`, error);
+              } catch (error) {
+                console.error(`Failed to delete image ${image.id}:`, error);
+              }
             }
           }
         }
