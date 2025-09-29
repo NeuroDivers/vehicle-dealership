@@ -64,10 +64,11 @@ export default function EditVehicle() {
     bodyType: 'Sedan',
     color: '',
     description: '',
+    isSold: 0,
     imagesList: [] as string[],
     originalImages: null as any,
     newImages: [] as any[],
-    isSold: 0,
+    deletedImages: [] as string[], // Track IDs of deleted images
   });
 
   useEffect(() => {
@@ -316,26 +317,51 @@ export default function EditVehicle() {
         : formData.originalImages.length)
       : 0;
     
-    // If it's a newly uploaded image, delete it from Cloudflare
-    if (index >= originalCount && formData.newImages) {
-      const newImageIndex = index - originalCount;
-      const newImage = formData.newImages[newImageIndex];
+    let imageIdToDelete: string | null = null;
+    
+    if (index < originalCount) {
+      // This is an original image - extract its ID
+      const original = typeof formData.originalImages === 'string' 
+        ? JSON.parse(formData.originalImages) 
+        : formData.originalImages;
+      const originalImage = original[index];
       
-      if (newImage && newImage.id) {
-        try {
-          // Call the worker to delete the image from Cloudflare
-          const deleteRes = await fetch(`${getVehicleEndpoint()}/${vehicleId}/images/${newImage.id}`, {
-            method: 'DELETE',
-          });
-          
-          if (!deleteRes.ok) {
-            console.error('Failed to delete image from Cloudflare');
-          } else {
-            console.log('Image deleted from Cloudflare:', newImage.id);
+      if (originalImage) {
+        if (typeof originalImage === 'string') {
+          // Try to extract ID from URL if it's a Cloudflare Images URL
+          const match = originalImage.match(/\/([^\/]+)\/public$/);
+          if (match) {
+            imageIdToDelete = match[1];
           }
-        } catch (error) {
-          console.error('Error deleting image from Cloudflare:', error);
+        } else if (originalImage.id) {
+          imageIdToDelete = originalImage.id;
         }
+      }
+    } else {
+      // This is a newly uploaded image
+      const newImageIndex = index - originalCount;
+      const newImage = formData.newImages?.[newImageIndex];
+      if (newImage && newImage.id) {
+        imageIdToDelete = newImage.id;
+      }
+    }
+    
+    // Delete from Cloudflare if we have an ID
+    if (imageIdToDelete) {
+      try {
+        console.log('Deleting image from Cloudflare:', imageIdToDelete);
+        const deleteRes = await fetch(`${getVehicleEndpoint()}/${vehicleId}/images/${imageIdToDelete}`, {
+          method: 'DELETE',
+        });
+        
+        if (!deleteRes.ok) {
+          const error = await deleteRes.text();
+          console.error('Failed to delete image from Cloudflare:', error);
+        } else {
+          console.log('Image deleted from Cloudflare:', imageIdToDelete);
+        }
+      } catch (error) {
+        console.error('Error deleting image from Cloudflare:', error);
       }
     }
     
@@ -348,10 +374,16 @@ export default function EditVehicle() {
           : prev.originalImages;
         const updatedOriginal = original.filter((_: any, i: number) => i !== index);
         
+        // Add to deleted images list if it has an ID
+        const deletedList = imageIdToDelete 
+          ? [...prev.deletedImages, imageIdToDelete]
+          : prev.deletedImages;
+        
         return {
           ...prev,
           imagesList: prev.imagesList.filter((_, i) => i !== index),
           originalImages: updatedOriginal,
+          deletedImages: deletedList,
         };
       } else {
         // Removing from new images
