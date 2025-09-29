@@ -72,21 +72,22 @@ CREATE INDEX IF NOT EXISTS idx_search_queries_result_count ON search_queries(res
 
 -- Create vehicles table
 CREATE TABLE IF NOT EXISTS vehicles (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  make TEXT NOT NULL,
-  model TEXT NOT NULL,
-  year INTEGER NOT NULL,
-  price REAL NOT NULL,
-  odometer INTEGER NOT NULL,
-  bodyType TEXT NOT NULL,
-  color TEXT NOT NULL,
-  description TEXT,
-  images TEXT,
-  isSold INTEGER DEFAULT 0,
-  stockNumber TEXT,
-  vin TEXT,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    make TEXT NOT NULL,
+    model TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    price REAL NOT NULL,
+    odometer INTEGER NOT NULL,
+    bodyType TEXT NOT NULL,
+    color TEXT NOT NULL,
+    description TEXT,
+    images TEXT,
+    isSold INTEGER DEFAULT 0,
+    soldDate TEXT,
+    stockNumber TEXT,
+    vin TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create index on isSold for filtering
