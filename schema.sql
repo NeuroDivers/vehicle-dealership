@@ -23,13 +23,18 @@ CREATE TABLE IF NOT EXISTS search_queries (
     query TEXT NOT NULL,
     result_count INTEGER NOT NULL DEFAULT 0,
     timestamp TEXT NOT NULL,
-    user_agent TEXT,
-    url TEXT,
-    ip TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Leads Management Table
+-- Create password_resets table for password reset tokens
+CREATE TABLE IF NOT EXISTS password_resets (
+    email TEXT PRIMARY KEY,
+    token TEXT NOT NULL UNIQUE,
+    expires TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create leads table for lead management
 CREATE TABLE IF NOT EXISTS leads (
     id TEXT PRIMARY KEY,
     vehicle_id TEXT NOT NULL,

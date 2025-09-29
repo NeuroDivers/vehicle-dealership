@@ -84,10 +84,20 @@ export default function LeadPipeline() {
       );
       if (response.ok) {
         const data = await response.json();
-        setLeads(data);
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setLeads(data);
+        } else if (data && Array.isArray(data.results)) {
+          setLeads(data.results);
+        } else {
+          setLeads([]);
+        }
+      } else {
+        setLeads([]);
       }
     } catch (error) {
       console.error('Failed to fetch leads:', error);
+      setLeads([]);
     } finally {
       setLoading(false);
     }
@@ -106,10 +116,20 @@ export default function LeadPipeline() {
       );
       if (response.ok) {
         const data = await response.json();
-        setStaff(data);
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setStaff(data);
+        } else if (data && Array.isArray(data.results)) {
+          setStaff(data.results);
+        } else {
+          setStaff([]);
+        }
+      } else {
+        setStaff([]);
       }
     } catch (error) {
       console.error('Failed to fetch staff:', error);
+      setStaff([]);
     }
   };
 

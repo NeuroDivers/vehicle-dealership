@@ -1083,6 +1083,119 @@ async function handleLogout(request, env) {
   }
 }
 
+// Password Reset Handlers
+async function handleForgotPassword(request, env) {
+  try {
+    const { email } = await request.json();
+    
+    // Check if user exists
+    const user = await env.DB.prepare('SELECT * FROM staff WHERE email = ?').bind(email).first();
+    
+    if (!user) {
+      // Don't reveal if email exists for security
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Generate reset token
+    const token = generateToken();
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+    
+    // Store reset token in database
+    await env.DB.prepare(`
+      INSERT INTO password_resets (email, token, expires) 
+      VALUES (?, ?, ?)
+      ON CONFLICT(email) DO UPDATE SET token = ?, expires = ?
+    `).bind(email, token, expires, token, expires).run();
+    
+    // In production, send email here via Zoho
+    // For now, log the reset link
+    console.log(`Password reset link: /admin/reset-password?token=${token}`);
+    
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to process request' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function handleValidateResetToken(request, env) {
+  try {
+    const { token } = await request.json();
+    
+    const reset = await env.DB.prepare(`
+      SELECT * FROM password_resets 
+      WHERE token = ? AND datetime(expires) > datetime('now')
+    `).bind(token).first();
+    
+    if (!reset) {
+      return new Response(JSON.stringify({ valid: false }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    return new Response(JSON.stringify({ valid: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Validate token error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to validate token' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function handleResetPassword(request, env) {
+  try {
+    const { token, password } = await request.json();
+    
+    // Validate token
+    const reset = await env.DB.prepare(`
+      SELECT * FROM password_resets 
+      WHERE token = ? AND datetime(expires) > datetime('now')
+    `).bind(token).first();
+    
+    if (!reset) {
+      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Hash new password
+    const salt = generateToken().substring(0, 16);
+    const passwordHash = await hashPassword(password, salt);
+    
+    // Update user password
+    await env.DB.prepare(`
+      UPDATE staff 
+      SET password_hash = ?, salt = ?
+      WHERE email = ?
+    `).bind(passwordHash, salt, reset.email).run();
+    
+    // Delete used token
+    await env.DB.prepare('DELETE FROM password_resets WHERE token = ?').bind(token).run();
+    
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to reset password' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 async function handleStaff(request, env, method) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '');
   const session = await verifySession(token, env);
@@ -1282,6 +1395,12 @@ const workerHandler = {
         return await handleLogin(request, env);
       } else if (path === '/api/auth/logout' && method === 'POST') {
         return await handleLogout(request, env);
+      } else if (path === '/api/auth/forgot-password' && method === 'POST') {
+        return await handleForgotPassword(request, env);
+      } else if (path === '/api/auth/validate-reset-token' && method === 'POST') {
+        return await handleValidateResetToken(request, env);
+      } else if (path === '/api/auth/reset-password' && method === 'POST') {
+        return await handleResetPassword(request, env);
       } else if (path === '/api/auth/verify' && method === 'GET') {
         const token = request.headers.get('Authorization')?.replace('Bearer ', '');
         const session = await verifySession(token, env);

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Eye, EyeOff, Lock, Mail, Car } from 'lucide-react';
 
 export default function LoginPage() {
@@ -129,18 +130,27 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        <div className="mt-6 text-center">
+          <Link
+            href="/admin/forgot-password"
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            Forgot your password?
+          </Link>
+        </div>
 
         {/* Demo Credentials */}
         <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-sm text-gray-600 text-center">
             Demo Credentials:
           </p>
-          <p className="text-sm text-gray-800 text-center mt-1">
+          <p className="text-sm text-gray-800 text-center">
             Email: admin@dealership.com
           </p>
           <p className="text-sm text-gray-800 text-center">
