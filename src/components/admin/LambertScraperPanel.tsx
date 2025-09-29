@@ -109,27 +109,55 @@ export default function LambertScraperPanel() {
     setStats(prev => ({ ...prev, status: 'running' }));
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
-                     'https://vehicle-admin-api.nick-damato0011527.workers.dev';
-      const response = await fetch(`${apiUrl}/api/admin/lambert/scrape`, {
+      // Call Lambert scraper directly to avoid worker-to-worker issues
+      const lambertUrl = process.env.NEXT_PUBLIC_LAMBERT_WORKER_URL || 
+                        'https://lambert-scraper.nick-damato0011527.workers.dev';
+      
+      console.log('Calling Lambert scraper directly...');
+      const response = await fetch(`${lambertUrl}/api/lambert/scrape-with-images`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
       
       if (response.ok) {
         const result = await response.json();
+        
+        // Update stats with real data
+        const vehiclesFound = result.stats?.vehiclesFound || 0;
+        const newVehicles = result.stats?.new || vehiclesFound;
+        
         setStats({
-          ...result.stats,
+          vehiclesFound,
+          imagesUploaded: result.stats?.imagesUploaded || 0,
+          syncedToMain: result.stats?.syncedToMain || 0,
+          newVehicles,
+          updatedVehicles: result.stats?.updated || 0,
           lastRun: new Date().toISOString(),
           status: 'success'
         });
         
-        // Reload vehicles
-        await loadRecentVehicles();
+        // If we have sample vehicles, update the recent vehicles list
+        if (result.vehicles && result.vehicles.length > 0) {
+          const formattedVehicles = result.vehicles.map((v: any, index: number) => ({
+            id: `lam_${index}`,
+            title: v.title || `${v.year} ${v.make} ${v.model}`,
+            price: v.price || 0,
+            year: v.year,
+            make: v.make,
+            model: v.model,
+            vin: v.vin,
+            stock: v.stock_number,
+            images: v.images || [],
+            status: 'new' as const,
+            lastSynced: new Date().toISOString()
+          }));
+          setRecentVehicles(formattedVehicles);
+        }
         
-        alert(`Scraping completed! Found ${result.stats.vehiclesFound} vehicles, uploaded ${result.stats.imagesUploaded} images.`);
+        alert(`✅ Scraping completed! Found ${vehiclesFound} real vehicles from Lambert!`);
       } else {
-        throw new Error('Scraping failed');
+        const errorText = await response.text();
+        throw new Error(`Scraping failed: ${errorText}`);
       }
     } catch (error) {
       console.error('Scraping error:', error);
@@ -286,6 +314,25 @@ export default function LambertScraperPanel() {
             >
               <RefreshCw className={`h-4 w-4 ${isScrapingRunning ? 'animate-spin' : ''}`} />
               <span>{isScrapingRunning ? 'Scraping...' : 'Run Scraper'}</span>
+            </button>
+            
+            <button
+              onClick={async () => {
+                const lambertUrl = process.env.NEXT_PUBLIC_LAMBERT_WORKER_URL || 
+                                  'https://lambert-scraper.nick-damato0011527.workers.dev';
+                try {
+                  const response = await fetch(`${lambertUrl}/api/lambert/test`);
+                  const data = await response.json();
+                  alert(`✅ Connection successful! Lambert has ${data.vehiclesFound} vehicles on first page.`);
+                } catch (error) {
+                  alert('❌ Connection failed. Check console for details.');
+                  console.error(error);
+                }
+              }}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>Test Connection</span>
             </button>
             
             <button

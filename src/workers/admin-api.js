@@ -48,9 +48,8 @@ export default {
           
           const scraperResponse = await fetch(`${lambertWorkerUrl}/api/lambert/scrape-with-images`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // Increase timeout for scraping operation
-            signal: AbortSignal.timeout(120000) // 2 minutes timeout
+            headers: { 'Content-Type': 'application/json' }
+            // Note: AbortSignal.timeout not supported in Workers
           });
           
           console.log('Lambert scraper response status:', scraperResponse.status);
