@@ -52,7 +52,7 @@ const devSettings: Record<string, any> = {
 // Permission levels
 const userPermissions: Record<string, any> = {
   // In production, this would be per-user and stored in database
-  currentUserLevel: 'admin', // 'dev', 'admin', or 'user'
+  currentUserLevel: 'dev', // 'dev', 'admin', or 'user' - Set to dev for nick@neurodivers.ca
   canModifyKeys: true, // Whether this user can modify API keys
   canEnableFeatures: true, // Whether this user can enable/disable features
 };

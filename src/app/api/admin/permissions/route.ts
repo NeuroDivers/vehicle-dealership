@@ -24,15 +24,18 @@ const permissionLevels: Record<string, any> = {
   },
   user: {
     level: 'user',
-    canModifyKeys: false,
     canEnableFeatures: false,
     description: 'Read-only access'
   }
 };
 
-// Current user permissions (in production, this would be determined by authentication)
-const currentUserPermissions = permissionLevels.admin; // Default to admin
-
+// Mock user permission check (in production, get from session)
+function getUserPermissionLevel(): string {
+  // In production, this would come from the authenticated user's session
+  // For dev user nick@neurodivers.ca, return 'dev'
+  // This should be integrated with your auth system
+  return 'dev'; // Default to dev for full access during development
+}
 // Dev override settings
 const devSettings = {
   globalFeatureRestrictions: {
@@ -45,16 +48,19 @@ const devSettings = {
 
 export async function GET(request: NextRequest) {
   try {
-    // In production, determine user from session/token
-    const userPermissions = { ...currentUserPermissions };
+    // Get current user's permission level
+    const userLevel = getUserPermissionLevel();
+    const userPermissions = { ...permissionLevels[userLevel] };
 
-    // Apply any dev overrides that affect this user
-    if (devSettings.restrictApiKeys) {
-      userPermissions.canModifyKeys = false;
-    }
+    // Apply any dev overrides that affect this user (only if not dev)
+    if (userLevel !== 'dev') {
+      if (devSettings.restrictApiKeys) {
+        userPermissions.canModifyKeys = false;
+      }
 
-    if (devSettings.restrictFeatureEnabling) {
-      userPermissions.canEnableFeatures = false;
+      if (devSettings.restrictFeatureEnabling) {
+        userPermissions.canEnableFeatures = false;
+      }
     }
 
     return NextResponse.json(userPermissions);
@@ -73,7 +79,8 @@ export async function POST(request: NextRequest) {
     const { action, targetUserId, newPermissions } = body;
 
     // Only dev users can modify permissions
-    if (currentUserPermissions.level !== 'dev') {
+    const userLevel = getUserPermissionLevel();
+    if (userLevel !== 'dev') {
       return NextResponse.json(
         { error: 'Only developers can modify permissions' },
         { status: 403 }

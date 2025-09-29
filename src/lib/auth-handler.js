@@ -58,32 +58,27 @@ export async function handleLogin(request, env) {
     const token = generateToken();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     
-    // Create session
+    // Store session in database
     await env.DB.prepare(
-      `INSERT INTO sessions (id, staff_id, token, expires_at, ip_address, user_agent)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).bind(
-      crypto.randomUUID(),
-      user.id,
-      token,
-      expiresAt.toISOString(),
-      request.headers.get('CF-Connecting-IP') || 'unknown',
-      request.headers.get('User-Agent') || 'unknown'
-    ).run();
+      'INSERT INTO sessions (token, staff_id, expires_at) VALUES (?, ?, ?)'
+    ).bind(token, user.id, expiresAt.toISOString()).run();
     
     // Update last login
     await env.DB.prepare(
-      'UPDATE staff SET last_login = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(user.id).run();
+      'UPDATE staff SET last_login = ? WHERE id = ?'
+    ).bind(new Date().toISOString(), user.id).run();
     
-    // Return user data and token
+    // Ensure dev role is properly passed
+    const userRole = user.role === 'dev' ? 'dev' : (user.role || 'staff');
+    
     return new Response(JSON.stringify({
+      success: true,
       token,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: userRole
       }
     }), {
       status: 200,
