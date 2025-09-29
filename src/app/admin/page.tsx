@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getVehicleEndpoint } from '@/lib/api-config';
-import { Car, TrendingUp, Users, DollarSign, BarChart3, UserCheck, MessageSquare } from 'lucide-react';
+import { Car, TrendingUp, Users, DollarSign, BarChart3, UserCheck, MessageSquare, Settings } from 'lucide-react';
 
 interface Stats {
   totalVehicles: number;
@@ -135,6 +135,13 @@ export default function AdminDashboard() {
           >
             <UserCheck className="h-4 w-4" />
             <span>Staff Management</span>
+          </Link>
+          <Link
+            href="/admin/settings"
+            className="bg-red-600 text-white text-center py-3 px-6 rounded-lg hover:bg-red-700 transition flex items-center justify-center space-x-2"
+          >
+            <Settings className="h-4 w-4" />
+            <span>Settings & API Keys</span>
           </Link>
           <Link
             href="/"

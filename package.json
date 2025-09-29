@@ -13,9 +13,12 @@
     "db:query": "wrangler d1 execute vehicle-dealership-analytics --command"
   },
   "dependencies": {
+    "@google-cloud/translate": "^9.2.0",
+    "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "lucide-react": "^0.544.0",
     "next": "14.2.33",
+    "openai": "^5.23.1",
     "react": "^18",
     "react-dom": "^18"
   },
