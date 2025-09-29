@@ -48,15 +48,16 @@ export default {
           
           const scraperResponse = await fetch(`${lambertWorkerUrl}/api/lambert/scrape-with-images`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            // Increase timeout for scraping operation
+            signal: AbortSignal.timeout(120000) // 2 minutes timeout
           });
           
-          const responseText = await scraperResponse.text();
           console.log('Lambert scraper response status:', scraperResponse.status);
-          console.log('Lambert scraper response:', responseText);
           
           if (!scraperResponse.ok) {
-            console.error('Lambert scraper failed with status:', scraperResponse.status);
+            const errorText = await scraperResponse.text();
+            console.error('Lambert scraper failed with status:', scraperResponse.status, 'Error:', errorText);
             // Return mock data for now to avoid errors
             return jsonResponse({
               success: true,
@@ -67,10 +68,14 @@ export default {
                 newVehicles: 3,
                 updatedVehicles: 7,
               },
-              message: 'Using mock data - Lambert scraper needs configuration',
+              message: 'Lambert scraper returned an error - using mock data',
+              error: errorText,
               timestamp: new Date().toISOString()
             }, corsHeaders);
           }
+          
+          const responseText = await scraperResponse.text();
+          console.log('Lambert scraper response length:', responseText.length);
           
           let result;
           try {
@@ -95,12 +100,13 @@ export default {
           return jsonResponse({
             success: true,
             stats: {
-              vehiclesFound: result.stats?.vehiclesFound || 46,
+              vehiclesFound: result.stats?.vehiclesFound || 0,
               imagesUploaded: result.stats?.imagesUploaded || 0,
               syncedToMain: result.stats?.syncedToMain || 0,
-              newVehicles: result.stats?.new || 3,
-              updatedVehicles: result.stats?.updated || 7,
+              newVehicles: result.stats?.new || result.stats?.vehiclesFound || 0,
+              updatedVehicles: result.stats?.updated || 0,
             },
+            message: result.stats?.vehiclesFound > 0 ? 'Successfully scraped Lambert inventory' : 'Scraping completed',
             timestamp: new Date().toISOString()
           }, corsHeaders);
         } catch (error) {
