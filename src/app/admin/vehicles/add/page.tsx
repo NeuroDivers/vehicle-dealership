@@ -171,36 +171,36 @@ export default function AddVehicle() {
     setUploadingImage(true);
     
     try {
-      // Create FormData for upload
-      const formData = new FormData();
-      formData.append('file', file);
+      // For new vehicles, we'll store images temporarily and upload them after the vehicle is created
+      // Convert file to base64 for temporary storage
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        
+        // Add base64 image to form data temporarily
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, base64String],
+        }));
+        
+        console.log('Image prepared for upload');
+        setUploadingImage(false);
+        e.target.value = '';
+      };
+      reader.onerror = () => {
+        console.error('Failed to read file');
+        alert('Failed to read image file. Please try again.');
+        setUploadingImage(false);
+        e.target.value = '';
+      };
+      reader.readAsDataURL(file);
       
-      // Upload directly to Worker API
-      const imageUploadRes = await fetch(`${getVehicleEndpoint().replace('/api/vehicles', '')}/api/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!imageUploadRes.ok) {
-        const error = await imageUploadRes.json();
-        throw new Error(error.error || 'Failed to upload image');
-      }
-      
-      const { url } = await imageUploadRes.json();
-      
-      // Add image URL to form data
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, url],
-      }));
-      
-      // Success feedback
-      console.log('Image uploaded successfully:', url);
+      // Note: Actual upload to Cloudflare Images will happen after vehicle is created
+      // since we need the vehicle ID for proper organization
       
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert(error instanceof Error ? error.message : 'Failed to upload image. Please try again.');
-    } finally {
+      console.error('Upload preparation failed:', error);
+      alert(error instanceof Error ? error.message : 'Failed to prepare image. Please try again.');
       setUploadingImage(false);
       e.target.value = '';
     }

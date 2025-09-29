@@ -131,31 +131,42 @@ export default function EditVehicle() {
     setUploadingImage(true);
     
     try {
-      // Create FormData for upload
+      // Create FormData for upload to Cloudflare Images
       const uploadData = new FormData();
-      uploadData.append('file', file);
+      uploadData.append('images', file); // Note: 'images' not 'file' to match worker expectation
       
-      // Upload directly to Worker API
-      const imageUploadRes = await fetch(`${getVehicleEndpoint().replace('/api/vehicles', '')}/api/upload`, {
+      // Upload to the vehicle's images endpoint on the Worker
+      const vehicleId = searchParams.get('id');
+      const imageUploadRes = await fetch(`${getVehicleEndpoint()}/${vehicleId}/images`, {
         method: 'POST',
         body: uploadData,
       });
       
       if (!imageUploadRes.ok) {
         const error = await imageUploadRes.json();
-        throw new Error(error.error || 'Failed to upload image');
+        throw new Error(error.error || error.instructions ? error.instructions.join(' ') : 'Failed to upload image');
       }
       
-      const { url } = await imageUploadRes.json();
+      const result = await imageUploadRes.json();
       
-      // Add image URL to form data
-      setFormData(prev => ({
-        ...prev,
-        imagesList: [...prev.imagesList, url],
-      }));
-      
-      // Success feedback
-      console.log('Image uploaded successfully:', url);
+      // Add image info to form data - handle new Cloudflare Images response format
+      if (result.images && result.images.length > 0) {
+        const newImage = result.images[0];
+        // Use the thumbnail variant for display in the form
+        const imageUrl = newImage.variants?.thumbnail || newImage.variants?.public || newImage.id;
+        setFormData(prev => ({
+          ...prev,
+          imagesList: [...prev.imagesList, imageUrl],
+        }));
+        console.log('Image uploaded successfully:', newImage);
+      } else if (result.urls && result.urls.length > 0) {
+        // Fallback for old format
+        setFormData(prev => ({
+          ...prev,
+          imagesList: [...prev.imagesList, result.urls[0]],
+        }));
+        console.log('Image uploaded successfully:', result.urls[0]);
+      }
       
     } catch (error) {
       console.error('Upload failed:', error);
