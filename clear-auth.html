@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .danger {
+            background: #f44336;
+        }
+        .danger:hover {
+            background: #da190b;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Authentication Helper</h1>
+        <p>Use this page to clear stuck authentication data</p>
+        
+        <button onclick="clearAuth()">Clear Authentication</button>
+        <button onclick="clearAll()" class="danger">Clear All Storage</button>
+        
+        <div id="message" class="message"></div>
+        
+        <p style="margin-top: 30px;">
+            <strong>After clearing:</strong><br>
+            Go to <a href="/admin/login">/admin/login</a>
+        </p>
+    </div>
+
+    <script>
+        function clearAuth() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('adminAuth');
+            sessionStorage.clear();
+            
+            showMessage('✅ Authentication data cleared!');
+        }
+        
+        function clearAll() {
+            if (confirm('This will clear ALL localStorage data. Are you sure?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                showMessage('✅ All storage cleared!');
+            }
+        }
+        
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message success';
+            msg.style.display = 'block';
+            
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Auto-clear on load
+        window.onload = function() {
+            console.log('Current localStorage:', {...localStorage});
+            console.log('Current sessionStorage:', {...sessionStorage});
+        }
+    </script>
+</body>
+</html>

@@ -43,6 +43,15 @@ export default function AdminLayout({
     router.push('/admin/login');
   };
 
+  // Don't show navigation on login page
+  if (pathname === '/admin/login') {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Admin Navigation */}
