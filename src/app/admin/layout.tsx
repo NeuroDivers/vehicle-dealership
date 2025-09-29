@@ -97,6 +97,15 @@ export default function AdminLayout({
                   <Users className="h-4 w-4" />
                   <span>Staff</span>
                 </Link>
+                <Link
+                  href="/admin/analytics"
+                  className={`px-3 py-2 rounded flex items-center space-x-1 ${
+                    pathname === '/admin/analytics' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Analytics</span>
+                </Link>
               </div>
             </div>
             
@@ -174,6 +183,13 @@ export default function AdminLayout({
                 onClick={() => setShowMobileMenu(false)}
               >
                 Staff
+              </Link>
+              <Link
+                href="/admin/analytics"
+                className="block px-3 py-2 rounded hover:bg-gray-700"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Analytics
               </Link>
               <Link
                 href="/"
