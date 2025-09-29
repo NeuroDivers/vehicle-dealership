@@ -211,6 +211,8 @@ export default function AddVehicle() {
   };
 
   const removeImage = (index: number) => {
+    // For new vehicles, images are stored as base64 and haven't been uploaded to Cloudflare yet
+    // So we only need to remove from local state
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),

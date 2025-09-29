@@ -744,6 +744,88 @@ async function handleVehicleImageUpload(request, env) {
   }
 }
 
+// Handle vehicle image deletion
+async function handleVehicleImageDelete(request, env) {
+  try {
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const vehicleId = pathParts[3]; // /api/vehicles/{id}/images/{imageId}
+    const imageId = pathParts[5]; // The image ID to delete
+    
+    // Check if Cloudflare Images is configured
+    if (!env.CF_ACCOUNT_ID || !env.CF_IMAGES_TOKEN) {
+      return new Response(JSON.stringify({ 
+        error: 'Cloudflare Images not configured',
+        message: 'Image deletion requires Cloudflare Images configuration'
+      }), {
+        status: 501,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Delete from Cloudflare Images
+    const deleteUrl = `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/images/v1/${imageId}`;
+    const deleteResponse = await fetch(deleteUrl, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${env.CF_IMAGES_TOKEN}`,
+      }
+    });
+    
+    if (!deleteResponse.ok) {
+      const errorData = await deleteResponse.json();
+      console.error('Cloudflare Images delete error:', errorData);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to delete image from Cloudflare',
+        details: errorData
+      }), {
+        status: deleteResponse.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Also update the vehicle record to remove this image from the list
+    if (vehicleId && vehicleId !== 'undefined') {
+      const vehicle = await env.DB.prepare('SELECT images FROM vehicles WHERE id = ?')
+        .bind(vehicleId)
+        .first();
+      
+      if (vehicle && vehicle.images) {
+        const images = JSON.parse(vehicle.images);
+        // Filter out the deleted image by ID
+        const updatedImages = images.filter(img => {
+          if (typeof img === 'string') {
+            return !img.includes(imageId);
+          }
+          return img.id !== imageId;
+        });
+        
+        await env.DB.prepare('UPDATE vehicles SET images = ? WHERE id = ?')
+          .bind(JSON.stringify(updatedImages), vehicleId)
+          .run();
+      }
+    }
+    
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: 'Image deleted successfully',
+      imageId: imageId
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+    
+  } catch (error) {
+    console.error('Image deletion error:', error);
+    return new Response(JSON.stringify({ 
+      error: 'Failed to delete image',
+      message: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 // Vehicle Management Handlers
 async function handleVehicles(request, env, method) {
   const url = new URL(request.url);
@@ -1612,6 +1694,10 @@ const workerHandler = {
         // Handle image uploads separately
         if (path.match(/\/api\/vehicles\/[\w-]+\/images$/) && method === 'POST') {
           return await handleVehicleImageUpload(request, env);
+        }
+        // Handle image deletion
+        if (path.match(/\/api\/vehicles\/[\w-]+\/images\/[\w-]+$/) && method === 'DELETE') {
+          return await handleVehicleImageDelete(request, env);
         }
         return await handleVehicles(request, env, method);
       } else if (path.startsWith('/api/analytics/vehicle-views')) {

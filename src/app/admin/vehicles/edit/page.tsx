@@ -232,15 +232,43 @@ export default function EditVehicle() {
     }
   };
 
-  const removeImage = (index: number) => {
-    setFormData(prev => {
-      // Determine if this is an original or new image
-      const originalCount = prev.originalImages 
-        ? (typeof prev.originalImages === 'string' 
-          ? JSON.parse(prev.originalImages).length 
-          : prev.originalImages.length)
-        : 0;
+  const removeImage = async (index: number) => {
+    // Get the image to be removed
+    const imageToRemove = formData.imagesList[index];
+    
+    // Determine if this is an original or new image
+    const originalCount = formData.originalImages 
+      ? (typeof formData.originalImages === 'string' 
+        ? JSON.parse(formData.originalImages).length 
+        : formData.originalImages.length)
+      : 0;
+    
+    // If it's a newly uploaded image, delete it from Cloudflare
+    if (index >= originalCount && formData.newImages) {
+      const newImageIndex = index - originalCount;
+      const newImage = formData.newImages[newImageIndex];
       
+      if (newImage && newImage.id) {
+        try {
+          // Call the worker to delete the image from Cloudflare
+          const vehicleId = searchParams.get('id')?.split('?')[0];
+          const deleteRes = await fetch(`${getVehicleEndpoint()}/${vehicleId}/images/${newImage.id}`, {
+            method: 'DELETE',
+          });
+          
+          if (!deleteRes.ok) {
+            console.error('Failed to delete image from Cloudflare');
+          } else {
+            console.log('Image deleted from Cloudflare:', newImage.id);
+          }
+        } catch (error) {
+          console.error('Error deleting image from Cloudflare:', error);
+        }
+      }
+    }
+    
+    // Update local state
+    setFormData(prev => {
       if (index < originalCount) {
         // Removing from original images
         const original = typeof prev.originalImages === 'string' 
