@@ -188,6 +188,66 @@ export default function AdminDashboard() {
         <SiteInfoManager />
       )}
 
+      {/* Vehicles Tab */}
+      {activeTab === 'vehicles' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-2xl font-bold mb-6">Vehicle Management</h2>
+          <div className="space-y-4">
+            <Link
+              href="/admin/vehicles"
+              className="block bg-blue-600 text-white text-center py-3 px-6 rounded-lg hover:bg-blue-700 transition"
+            >
+              Manage Vehicle Inventory
+            </Link>
+            <Link
+              href="/admin/vehicles/add"
+              className="block bg-green-600 text-white text-center py-3 px-6 rounded-lg hover:bg-green-700 transition"
+            >
+              Add New Vehicle
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Tab */}
+      {activeTab === 'settings' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-2xl font-bold mb-6">System Settings</h2>
+          <div className="space-y-4">
+            <div className="border rounded-lg p-4">
+              <h3 className="font-semibold mb-2">API Configuration</h3>
+              <p className="text-gray-600 text-sm mb-3">Configure API endpoints and keys</p>
+              <Link
+                href="/admin/settings"
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Manage API Settings →
+              </Link>
+            </div>
+            <div className="border rounded-lg p-4">
+              <h3 className="font-semibold mb-2">Database</h3>
+              <p className="text-gray-600 text-sm mb-3">Database connection and maintenance</p>
+              <button className="text-blue-600 hover:text-blue-800">
+                View Database Status →
+              </button>
+            </div>
+            <div className="border rounded-lg p-4">
+              <h3 className="font-semibold mb-2">Cache</h3>
+              <p className="text-gray-600 text-sm mb-3">Clear cache and optimize performance</p>
+              <button 
+                onClick={() => {
+                  localStorage.clear();
+                  alert('Cache cleared successfully!');
+                }}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              >
+                Clear Cache
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* AI Features Tab - Only for Dev */}
       {activeTab === 'ai' && isDevUser && (
         <AIFeatureManager />

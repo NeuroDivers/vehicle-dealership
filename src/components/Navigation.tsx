@@ -54,11 +54,11 @@ export default function Navigation() {
           
           <div className="flex items-center space-x-6">
             <Link href="/" className="text-gray-700 hover:opacity-80 transition"
-                 style={{ color: themeColors.primary }}>
+                 style={{ color: themeColors.headerText }}>
               Home
             </Link>
             <Link href="/vehicles" className="text-gray-700 hover:opacity-80 transition"
-                 style={{ color: themeColors.primary }}>
+                 style={{ color: themeColors.headerText }}>
               Vehicles
             </Link>
             <Link href="/vehicles?fuelType=electric" 
@@ -68,11 +68,11 @@ export default function Navigation() {
               <span>Electric</span>
             </Link>
             <Link href="/about" className="text-gray-700 hover:opacity-80 transition"
-                 style={{ color: themeColors.primary }}>
+                 style={{ color: themeColors.headerText }}>
               About
             </Link>
             <Link href="/contact" className="text-gray-700 hover:opacity-80 transition"
-                 style={{ color: themeColors.primary }}>
+                 style={{ color: themeColors.headerText }}>
               Contact
             </Link>
             

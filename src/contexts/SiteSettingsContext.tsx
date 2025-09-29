@@ -35,6 +35,7 @@ interface SiteSettings {
     primary: string;
     secondary: string;
     accent: string;
+    headerText?: string;
   };
 }
 
@@ -66,7 +67,8 @@ const defaultSettings: SiteSettings = {
   themeColors: {
     primary: '#2563eb', // blue-600
     secondary: '#1e3a8a', // blue-900
-    accent: '#3b82f6' // blue-500
+    accent: '#3b82f6', // blue-500
+    headerText: '#000000' // black for header text
   }
 };
 
@@ -77,11 +79,12 @@ const SiteSettingsContext = createContext<{
     primary: string;
     secondary: string;
     accent: string;
+    headerText: string;
   };
 }>({
   settings: defaultSettings,
   updateSettings: () => {},
-  getThemeColors: () => ({ primary: '', secondary: '', accent: '' })
+  getThemeColors: () => ({ primary: '', secondary: '', accent: '', headerText: '' })
 });
 
 export const useSiteSettings = () => useContext(SiteSettingsContext);
@@ -133,7 +136,8 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     return {
       primary: settings.themeColors?.primary || '#2563eb',
       secondary: settings.themeColors?.secondary || '#1e3a8a',
-      accent: settings.themeColors?.accent || '#3b82f6'
+      accent: settings.themeColors?.accent || '#3b82f6',
+      headerText: settings.themeColors?.headerText || '#000000'
     };
   };
 

@@ -36,6 +36,7 @@ interface SiteInfo {
     primary: string;
     secondary: string;
     accent: string;
+    headerText: string;
   };
 }
 
@@ -73,7 +74,8 @@ const defaultSiteInfo: SiteInfo = {
   themeColors: {
     primary: '#2563eb', // blue-600
     secondary: '#1e3a8a', // blue-900
-    accent: '#3b82f6' // blue-500
+    accent: '#3b82f6', // blue-500
+    headerText: '#000000' // black for header text
   }
 };
 
@@ -434,37 +436,35 @@ export default function SiteInfoManager() {
         <h3 className="text-lg font-semibold mb-4">Copyright Text</h3>
         <p className="text-sm text-gray-600 mb-3">The year will automatically update to {currentYear}</p>
         
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">English</label>
-            <input
-              type="text"
-              value={updateCopyrightYear(siteInfo.copyright.en)}
-              onChange={(e) => updateCopyright('en', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder={`© ${currentYear} Your Company. All rights reserved.`}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Français</label>
-            <input
-              type="text"
-              value={updateCopyrightYear(siteInfo.copyright.fr)}
-              onChange={(e) => updateCopyright('fr', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder={`© ${currentYear} Votre Entreprise. Tous droits réservés.`}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Español</label>
-            <input
-              type="text"
-              value={updateCopyrightYear(siteInfo.copyright.es)}
-              onChange={(e) => updateCopyright('es', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder={`© ${currentYear} Su Empresa. Todos los derechos reservados.`}
-            />
-          </div>
+        {/* Language Tabs for Copyright */}
+        <div className="flex space-x-2 mb-4 border-b">
+          {(['en', 'fr', 'es'] as const).map(lang => (
+            <button
+              key={lang}
+              onClick={() => setActiveLanguageTab(lang)}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeLanguageTab === lang
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {lang === 'en' ? 'English' : lang === 'fr' ? 'Français' : 'Español'}
+            </button>
+          ))}
+        </div>
+        
+        <div>
+          <input
+            type="text"
+            value={updateCopyrightYear(siteInfo.copyright[activeLanguageTab])}
+            onChange={(e) => updateCopyright(activeLanguageTab, e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder={
+              activeLanguageTab === 'en' ? `© ${currentYear} Your Company. All rights reserved.` :
+              activeLanguageTab === 'fr' ? `© ${currentYear} Votre Entreprise. Tous droits réservés.` :
+              `© ${currentYear} Su Empresa. Todos los derechos reservados.`
+            }
+          />
         </div>
       </div>
 
@@ -564,9 +564,40 @@ export default function SiteInfoManager() {
               />
             </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Header Text Color
+            </label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="color"
+                value={siteInfo.themeColors.headerText || '#000000'}
+                onChange={(e) => setSiteInfo(prev => ({ 
+                  ...prev, 
+                  themeColors: { ...prev.themeColors, headerText: e.target.value }
+                }))}
+                className="h-10 w-20 border border-gray-300 rounded cursor-pointer"
+              />
+              <input
+                type="text"
+                value={siteInfo.themeColors.headerText || '#000000'}
+                onChange={(e) => setSiteInfo(prev => ({ 
+                  ...prev, 
+                  themeColors: { ...prev.themeColors, headerText: e.target.value }
+                }))}
+                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="#000000"
+              />
+              <div 
+                className="w-10 h-10 rounded border border-gray-300"
+                style={{ backgroundColor: siteInfo.themeColors.headerText || '#000000' }}
+              />
+            </div>
+          </div>
         </div>
         <p className="text-sm text-gray-500 mt-2">
-          Tip: Primary is for headers and buttons, Secondary for dark backgrounds, Accent for highlights
+          Tip: Primary for buttons, Secondary for dark backgrounds, Accent for highlights, Header Text for navigation
         </p>
       </div>
 
