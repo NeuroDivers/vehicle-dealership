@@ -84,14 +84,17 @@ export default {
     try {
       console.log('Starting Lambert sync...');
       
-      // Try to get real data from Lambert scraper
+      // Try to get real data from Lambert scraper using service binding
       try {
-        const lambertScraperUrl = 'https://lambert-scraper.nick-damato0011527.workers.dev/api/scrape';
-        console.log(`Calling Lambert scraper: ${lambertScraperUrl}`);
-        const scraperResponse = await fetch(lambertScraperUrl, {
+        console.log('Calling Lambert scraper via service binding...');
+        
+        // Use service binding instead of HTTP fetch
+        const scraperRequest = new Request('https://lambert-scraper/api/scrape', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });
+        
+        const scraperResponse = await env.LAMBERT_SCRAPER.fetch(scraperRequest);
         console.log(`Scraper response status: ${scraperResponse.status}`);
         
         if (scraperResponse.ok) {
