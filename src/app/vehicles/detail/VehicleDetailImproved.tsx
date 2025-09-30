@@ -346,33 +346,21 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                    'Apply for Financing'}
                 </span>
               </button>
-              <button
-                onClick={() => setShowContactForm(true)}
-                className="w-full text-white py-4 px-6 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition"
-                style={{ backgroundColor: themeColors.accent }}
-              >
-                {currentLang === 'fr' ? 'Plus d\'informations' : 
-                 currentLang === 'es' ? 'Más información' : 
-                 'Get More Information'}
-              </button>
-              <button
-                onClick={() => setShowContactForm(true)}
-                className="w-full border-2 py-4 px-6 rounded-lg font-semibold text-lg hover:bg-white transition"
-                style={{ borderColor: themeColors.primary, color: themeColors.primary }}
-              >
-                {currentLang === 'fr' ? 'Essai routier' : 
-                 currentLang === 'es' ? 'Prueba de manejo' : 
-                 'Schedule a Test Drive'}
-              </button>
-              <div className="flex items-center justify-center space-x-2 text-gray-600 mt-4">
-                <Phone className="h-4 w-4" />
-                <span>Or call us directly at</span>
+              
+              {/* Contact Info */}
+              <div className="text-center pt-4 border-t">
+                <p className="text-sm text-gray-600 mb-2">
+                  {currentLang === 'fr' ? 'Ou contactez-nous directement' : 
+                   currentLang === 'es' ? 'O contáctenos directamente' : 
+                   'Or contact us directly'}
+                </p>
                 <a 
                   href={`tel:${settings.contactPhone}`} 
-                  className="font-semibold"
+                  className="flex items-center justify-center space-x-2 text-lg font-semibold hover:underline"
                   style={{ color: themeColors.primary }}
                 >
-                  {settings.contactPhone}
+                  <Phone className="h-5 w-5" />
+                  <span>{settings.contactPhone}</span>
                 </a>
               </div>
             </div>

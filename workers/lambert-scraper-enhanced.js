@@ -48,30 +48,29 @@ export default {
       }
     }
     
-    // Scrape with image upload to Cloudflare
     if (url.pathname === '/api/scrape-with-images' && request.method === 'POST') {
       try {
         const vehicles = await this.scrapeLambertInventory();
         
         // Upload images to Cloudflare if token is available
-        if (env.CLOUDFLARE_IMAGES_TOKEN) {
+        if (env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN) {
           for (const vehicle of vehicles) {
             if (vehicle.images && vehicle.images.length > 0) {
               console.log(`Uploading ${vehicle.images.length} images for ${vehicle.make} ${vehicle.model}...`);
-              vehicle.cloudflareImages = await this.uploadImagesToCloudflare(
+              const uploadedImages = await this.uploadImagesToCloudflare(
                 vehicle.images,
-                vehicle.vin || vehicle.stockNumber,
+                vehicle.vin || `${vehicle.year}-${vehicle.make}-${vehicle.model}`.replace(/\s+/g, '-'),
                 env
               );
+              vehicle.images = uploadedImages;
             }
           }
         }
-        
         return new Response(JSON.stringify({
           success: true,
           vehicles: vehicles,
           count: vehicles.length,
-          imagesUploaded: env.CLOUDFLARE_IMAGES_TOKEN ? true : false,
+          imagesUploaded: env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN ? true : false,
           timestamp: new Date().toISOString()
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -457,7 +456,7 @@ export default {
   async uploadImagesToCloudflare(imageUrls, vehicleId, env) {
     const uploadedImages = [];
     const accountId = env.CLOUDFLARE_ACCOUNT_ID;
-    const apiToken = env.CLOUDFLARE_IMAGES_TOKEN;
+    const apiToken = env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN;
     const accountHash = env.CLOUDFLARE_IMAGES_ACCOUNT_HASH;
     
     if (!apiToken) {
