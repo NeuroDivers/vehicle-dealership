@@ -383,12 +383,10 @@ export default function VehiclesPage() {
                   {/* Vehicle Image */}
                   <div className="relative h-48 bg-gray-100">
                     {images.length > 0 ? (
-                      <Image
+                      <img
                         src={images[0]}
                         alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="w-full h-full object-cover"
                         onError={(e) => {
                           // Fallback to placeholder if image fails to load
                           const target = e.target as HTMLImageElement;
