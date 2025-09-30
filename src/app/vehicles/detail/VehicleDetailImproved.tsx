@@ -7,14 +7,16 @@ import Image from 'next/image';
 import { 
   ChevronLeft, ChevronRight, Car, MapPin, Phone, Mail, 
   Calendar, Fuel, Gauge, ArrowLeft, Palette, Shield,
-  CheckCircle, Info, Star, Heart, Share2, Printer
+  CheckCircle, Info, Star, Heart, Share2, Printer, DollarSign
 } from 'lucide-react';
 import Link from 'next/link';
 import { trackVehicleView } from '@/lib/analytics-config';
+import FinancingModal from '@/components/FinancingModal';
 
 export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
+  const [showFinancingModal, setShowFinancingModal] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const { settings, getThemeColors } = useSiteSettings();
   const themeColors = getThemeColors();
@@ -325,21 +327,42 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
 
           {/* CTA Section */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
-            <h2 className="text-xl font-semibold mb-4">Interested in this vehicle?</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              {currentLang === 'fr' ? 'Intéressé par ce véhicule?' : 
+               currentLang === 'es' ? '¿Interesado en este vehículo?' : 
+               'Interested in this vehicle?'}
+            </h2>
             <div className="space-y-3">
+              {/* Financing Button - Primary CTA */}
+              <button
+                onClick={() => setShowFinancingModal(true)}
+                className="w-full text-white py-4 px-6 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition flex items-center justify-center space-x-2"
+                style={{ backgroundColor: themeColors.primary }}
+              >
+                <DollarSign className="h-5 w-5" />
+                <span>
+                  {currentLang === 'fr' ? 'Demande de financement' : 
+                   currentLang === 'es' ? 'Solicitar financiamiento' : 
+                   'Apply for Financing'}
+                </span>
+              </button>
               <button
                 onClick={() => setShowContactForm(true)}
                 className="w-full text-white py-4 px-6 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition"
-                style={{ backgroundColor: themeColors.primary }}
+                style={{ backgroundColor: themeColors.accent }}
               >
-                Get More Information
+                {currentLang === 'fr' ? 'Plus d\'informations' : 
+                 currentLang === 'es' ? 'Más información' : 
+                 'Get More Information'}
               </button>
               <button
                 onClick={() => setShowContactForm(true)}
                 className="w-full border-2 py-4 px-6 rounded-lg font-semibold text-lg hover:bg-white transition"
                 style={{ borderColor: themeColors.primary, color: themeColors.primary }}
               >
-                Schedule a Test Drive
+                {currentLang === 'fr' ? 'Essai routier' : 
+                 currentLang === 'es' ? 'Prueba de manejo' : 
+                 'Schedule a Test Drive'}
               </button>
               <div className="flex items-center justify-center space-x-2 text-gray-600 mt-4">
                 <Phone className="h-4 w-4" />
@@ -356,6 +379,20 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
           </div>
         </div>
       </div>
+
+      {/* Financing Modal */}
+      <FinancingModal
+        isOpen={showFinancingModal}
+        onClose={() => setShowFinancingModal(false)}
+        vehicle={{
+          id: vehicle.id,
+          make: vehicle.make,
+          model: vehicle.model,
+          year: vehicle.year,
+          price: vehicle.price
+        }}
+        language={currentLang}
+      />
 
       {/* Contact Form Modal */}
       {showContactForm && (

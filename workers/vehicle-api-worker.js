@@ -160,6 +160,53 @@ export default {
         });
       }
 
+      // POST /api/leads - Create a new lead
+      if (url.pathname === '/api/leads' && request.method === 'POST') {
+        const leadData = await request.json();
+        
+        // Generate unique ID
+        const leadId = `lead_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Calculate lead score (simple scoring based on completeness)
+        let leadScore = 50; // Base score
+        if (leadData.message && leadData.message.length > 20) leadScore += 20;
+        if (leadData.preferred_contact) leadScore += 10;
+        if (leadData.inquiry_type === 'financing') leadScore += 20;
+        
+        await env.DB.prepare(`
+          INSERT INTO leads (
+            id, vehicle_id, vehicle_make, vehicle_model, vehicle_year, vehicle_price,
+            customer_name, customer_email, customer_phone, message,
+            inquiry_type, preferred_contact, lead_score, status, source, timestamp
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          leadId,
+          leadData.vehicle_id,
+          leadData.vehicle_make,
+          leadData.vehicle_model,
+          leadData.vehicle_year,
+          leadData.vehicle_price,
+          leadData.customer_name,
+          leadData.customer_email,
+          leadData.customer_phone,
+          leadData.message || null,
+          leadData.inquiry_type || 'general',
+          leadData.preferred_contact || 'email',
+          leadScore,
+          'new',
+          leadData.source || 'website',
+          leadData.timestamp || new Date().toISOString()
+        ).run();
+        
+        return new Response(JSON.stringify({
+          success: true,
+          leadId: leadId,
+          message: 'Lead created successfully'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       return new Response('Not found', { 
         status: 404,
         headers: corsHeaders 
