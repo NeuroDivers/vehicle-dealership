@@ -253,6 +253,48 @@ export default {
         });
       }
 
+      // GET /api/vendor-stats - Get real vendor statistics
+      if (url.pathname === '/api/vendor-stats' && request.method === 'GET') {
+        // Get Lambert stats
+        const lambertStats = await env.DB.prepare(`
+          SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN isSold = 0 OR isSold IS NULL THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN isSold = 1 THEN 1 ELSE 0 END) as sold,
+            SUM(CASE WHEN vendor_status = 'unlisted' THEN 1 ELSE 0 END) as unlisted
+          FROM vehicles 
+          WHERE vendor_id = 'lambert' OR vendor_name LIKE '%Lambert%'
+        `).first();
+
+        // Get Internal stats
+        const internalStats = await env.DB.prepare(`
+          SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN isSold = 0 OR isSold IS NULL THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN isSold = 1 THEN 1 ELSE 0 END) as sold,
+            SUM(CASE WHEN vendor_status = 'unlisted' THEN 1 ELSE 0 END) as unlisted
+          FROM vehicles 
+          WHERE vendor_id = 'internal' OR vendor_id IS NULL
+        `).first();
+
+        return new Response(JSON.stringify({
+          lambert: {
+            total_vehicles: lambertStats.total || 0,
+            active_vehicles: lambertStats.active || 0,
+            sold_vehicles: lambertStats.sold || 0,
+            unlisted_vehicles: lambertStats.unlisted || 0
+          },
+          internal: {
+            total_vehicles: internalStats.total || 0,
+            active_vehicles: internalStats.active || 0,
+            sold_vehicles: internalStats.sold || 0,
+            unlisted_vehicles: internalStats.unlisted || 0
+          }
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       // POST /api/leads - Create a new lead
       if (url.pathname === '/api/leads' && request.method === 'POST') {
         const leadData = await request.json();

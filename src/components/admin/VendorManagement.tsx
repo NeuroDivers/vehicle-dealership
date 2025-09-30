@@ -52,40 +52,44 @@ export default function VendorManagement() {
   }, []);
 
   const loadVendors = async () => {
-    // Mock data for now - replace with API call
-    setVendors([
-      {
-        vendor_id: 'lambert',
-        vendor_name: 'Lambert Auto',
-        vendor_type: 'scraper',
-        last_sync: new Date(Date.now() - 3600000).toISOString(),
-        is_active: true,
-        sync_frequency: 'daily',
-        auto_remove_after_days: 7,
-        grace_period_days: 3,
-        stats: {
-          total_vehicles: 46,
-          active_vehicles: 40,
-          unlisted_vehicles: 6,
-          sold_vehicles: 2
-        }
-      },
-      {
-        vendor_id: 'internal',
-        vendor_name: 'Internal Inventory',
-        vendor_type: 'manual',
-        is_active: true,
-        sync_frequency: 'manual',
-        auto_remove_after_days: 0,
-        grace_period_days: 0,
-        stats: {
-          total_vehicles: 12,
-          active_vehicles: 10,
-          unlisted_vehicles: 0,
-          sold_vehicles: 2
-        }
+    try {
+      // Fetch real vendor stats from API
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
+                    'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/vendor-stats`);
+      
+      if (response.ok) {
+        const stats = await response.json();
+        
+        setVendors([
+          {
+            vendor_id: 'lambert',
+            vendor_name: 'Lambert Auto',
+            vendor_type: 'scraper',
+            last_sync: new Date(Date.now() - 3600000).toISOString(), // TODO: Get from sync logs
+            is_active: true,
+            sync_frequency: 'daily',
+            auto_remove_after_days: 7,
+            grace_period_days: 3,
+            stats: stats.lambert
+          },
+          {
+            vendor_id: 'internal',
+            vendor_name: 'Internal Inventory',
+            vendor_type: 'manual',
+            is_active: true,
+            sync_frequency: 'manual',
+            auto_remove_after_days: 0,
+            grace_period_days: 0,
+            stats: stats.internal
+          }
+        ]);
+      } else {
+        console.error('Failed to load vendor stats');
       }
-    ]);
+    } catch (error) {
+      console.error('Error loading vendor stats:', error);
+    }
   };
 
   const loadSyncLogs = async () => {
