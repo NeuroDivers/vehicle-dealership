@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AIFeatureManager from '@/components/AIFeatureManager';
 import SiteInfoManager from '@/components/SiteInfoManager';
-import LambertScraperPanelV2 from '@/components/admin/LambertScraperPanelV2';
 import VendorManagement from '@/components/admin/VendorManagement';
 
 interface Stats {
@@ -15,7 +14,7 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'financing' | 'analytics' | 'staff' | 'settings' | 'ai' | 'site' | 'lambert' | 'vendors'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'financing' | 'analytics' | 'staff' | 'settings' | 'ai' | 'site' | 'vendors'>('overview');
   const [stats, setStats] = useState<Stats>({
     totalVehicles: 0,
     soldVehicles: 0,
@@ -112,7 +111,7 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-lg shadow mb-6">
         <div className="border-b">
           <nav className="flex space-x-8 px-6 overflow-x-auto">
-            {(isDevUser ? ['overview', 'site', 'vehicles', 'vendors', 'lambert', 'settings', 'ai'] as const : ['overview', 'site', 'vehicles', 'vendors', 'lambert', 'settings'] as const).map(tab => (
+            {(isDevUser ? ['overview', 'site', 'vehicles', 'vendors', 'settings', 'ai'] as const : ['overview', 'site', 'vehicles', 'vendors', 'settings'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -124,7 +123,6 @@ export default function AdminDashboard() {
               >
                 {tab === 'ai' ? '🤖 AI Features' : 
                  tab === 'site' ? '🏢 Site Info' : 
-                 tab === 'lambert' ? '🚗 Lambert Scraper' :
                  tab === 'vendors' ? '📦 Vendors' : 
                  tab}
               </button>
@@ -180,11 +178,11 @@ export default function AdminDashboard() {
             <span>Settings & API Keys</span>
           </Link>
           <button
-            onClick={() => setActiveTab('lambert')}
+            onClick={() => setActiveTab('vendors')}
             className="bg-purple-600 text-white text-center py-3 px-6 rounded-lg hover:bg-purple-700 transition flex items-center justify-center space-x-2"
           >
-            <span>🚗</span>
-            <span>Lambert Scraper</span>
+            <span>📦</span>
+            <span>Vendor Management</span>
           </button>
           <Link
             href="/"
@@ -264,11 +262,6 @@ export default function AdminDashboard() {
       {/* AI Features Tab - Only for Dev */}
       {activeTab === 'ai' && isDevUser && (
         <AIFeatureManager />
-      )}
-
-      {/* Lambert Scraper Tab */}
-      {activeTab === 'lambert' && (
-        <LambertScraperPanelV2 />
       )}
 
       {/* Vendors Tab */}

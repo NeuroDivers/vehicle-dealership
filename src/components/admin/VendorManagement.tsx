@@ -110,24 +110,32 @@ export default function VendorManagement() {
   const syncVendor = async (vendorId: string) => {
     setSyncing(vendorId);
     try {
-      // For Lambert, call the Lambert scraper worker directly
-      if (vendorId === 'lambert') {
-        const lambertUrl = process.env.NEXT_PUBLIC_LAMBERT_WORKER_URL || 
-                          'https://lambert-scraper.nick-damato0011527.workers.dev';
-        const response = await fetch(`${lambertUrl}/api/lambert/scrape-with-images`, {
-          method: 'POST'
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          alert(`Lambert sync completed: ${result.stats?.vehiclesFound || 0} vehicles found`);
+      const syncUrl = process.env.NEXT_PUBLIC_VENDOR_SYNC_URL || 
+                      'https://vendor-sync-worker.nick-damato0011527.workers.dev';
+      
+      const response = await fetch(`${syncUrl}/api/sync-vendor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ vendorId })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert(`✅ Sync completed successfully!
+• ${result.vehicles_found} vehicles found
+• ${result.new_vehicles} new vehicles added
+• ${result.updated_vehicles} vehicles updated
+• Sync took ${result.sync_duration || 0} seconds`);
           loadVendors();
           loadSyncLogs();
         } else {
-          alert('Lambert sync failed. Check console for details.');
+          alert(`Sync failed: ${result.error}`);
         }
       } else {
-        alert('Sync not available for this vendor type');
+        alert('Sync request failed. Check console for details.');
       }
     } catch (error) {
       alert('Sync failed. Check console for details.');
