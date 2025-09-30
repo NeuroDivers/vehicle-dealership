@@ -84,16 +84,19 @@ export default {
     try {
       console.log('Starting Lambert sync...');
       
-      // Try to get real data from Lambert scraper with Cloudflare Images upload
+      // Try to get real data from Lambert scraper
       try {
-        const lambertScraperUrl = 'https://lambert-scraper.nick-damato0011527.workers.dev/api/scrape-with-images';
+        const lambertScraperUrl = 'https://lambert-scraper.nick-damato0011527.workers.dev/api/scrape';
+        console.log(`Calling Lambert scraper: ${lambertScraperUrl}`);
         const scraperResponse = await fetch(lambertScraperUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });
+        console.log(`Scraper response status: ${scraperResponse.status}`);
         
         if (scraperResponse.ok) {
           const scraperData = await scraperResponse.json();
+          console.log(`Scraper data:`, JSON.stringify(scraperData).substring(0, 200));
           if (scraperData.success && scraperData.vehicles && scraperData.vehicles.length > 0) {
             console.log(`Got ${scraperData.vehicles.length} vehicles from Lambert scraper`);
             if (scraperData.imagesUploaded) {
@@ -116,15 +119,20 @@ export default {
               images: v.cloudflareImages || v.images || []
             }));
           } else {
-            console.log('Lambert scraper returned no vehicles');
+            console.log('Lambert scraper returned no vehicles or empty response');
+            console.log('Scraper success:', scraperData.success);
+            console.log('Vehicles array:', scraperData.vehicles ? scraperData.vehicles.length : 'undefined');
             vehicles = [];
           }
         } else {
-          console.log('Lambert scraper request failed');
+          console.log(`Lambert scraper request failed with status: ${scraperResponse.status}`);
+          const errorText = await scraperResponse.text();
+          console.log('Error response:', errorText.substring(0, 200));
           vehicles = [];
         }
       } catch (error) {
         console.log('Could not fetch from Lambert scraper:', error.message);
+        console.log('Error stack:', error.stack);
         vehicles = [];
       }
       
@@ -245,7 +253,11 @@ export default {
         updated_vehicles: updatedCount,
         errors: errors,
         status: errors.length > 0 ? 'partial' : 'success',
-        sync_duration: syncDuration
+        sync_duration: syncDuration,
+        debug_info: {
+          scraper_called: true,
+          vehicles_received: vehicles.length
+        }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
