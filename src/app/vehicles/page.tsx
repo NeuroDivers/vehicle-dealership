@@ -80,7 +80,7 @@ export default function VehiclesPage() {
         vehicle.make.toLowerCase().includes(searchLower) ||
         vehicle.model.toLowerCase().includes(searchLower) ||
         vehicle.year.toString().includes(searchTerm) ||
-        vehicle.color.toLowerCase().includes(searchLower);
+        (vehicle.color && vehicle.color.toLowerCase().includes(searchLower));
 
       if (!matchesSearch) return false;
 
@@ -158,7 +158,7 @@ export default function VehiclesPage() {
           return vehicle.make.toLowerCase().includes(searchLower) ||
                  vehicle.model.toLowerCase().includes(searchLower) ||
                  vehicle.year.toString().includes(value) ||
-                 vehicle.color.toLowerCase().includes(searchLower);
+                 (vehicle.color && vehicle.color.toLowerCase().includes(searchLower));
         });
         trackSearchAnalytics(value, results.length);
       }
