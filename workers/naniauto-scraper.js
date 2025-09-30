@@ -141,68 +141,62 @@ export default {
         url: url
       };
       
-      // Extract price
-      const priceMatch = html.match(/Prix[:\s]*<\/[^>]+>\s*<[^>]+>([0-9,\s]+)/i) ||
-                        html.match(/price["\s:]+([0-9,]+)/i);
+      // Extract price from b-detail__head-price-num
+      const priceMatch = html.match(/b-detail__head-price-num[^>]*>([0-9,\s]+)/i);
       if (priceMatch) {
         vehicle.price = parseInt(priceMatch[1].replace(/[,\s]/g, ''));
       }
       
-      // Extract make
-      const makeMatch = html.match(/Make[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i) ||
-                       html.match(/Marque[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i);
+      // Extract make from b-detail__main-aside-desc-value after "Make"
+      const makeMatch = html.match(/Make<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
       if (makeMatch) {
         vehicle.make = makeMatch[1].trim();
       }
       
       // Extract model
-      const modelMatch = html.match(/Model[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i) ||
-                        html.match(/Modèle[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i);
+      const modelMatch = html.match(/Model<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
       if (modelMatch) {
         vehicle.model = modelMatch[1].trim();
       }
       
-      // Extract year from URL or title
-      const yearMatch = url.match(/\/(\d{4})-/) || html.match(/(\d{4})\s+[A-Z]/);
+      // Extract year from URL
+      const yearMatch = url.match(/\/(\d{4})-/);
       if (yearMatch) {
         vehicle.year = parseInt(yearMatch[1]);
       }
       
       // Extract kilometers/odometer
-      const kmMatch = html.match(/Kilom[èe]tres[:\s]*<\/[^>]+>\s*<[^>]+>([0-9,\s]+)/i);
+      const kmMatch = html.match(/Kilometres<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([0-9,\s]+)/i);
       if (kmMatch) {
         vehicle.odometer = parseInt(kmMatch[1].replace(/[,\s]/g, ''));
       }
       
       // Extract body type
-      const bodyMatch = html.match(/Body Type[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i) ||
-                       html.match(/Type de carrosserie[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i);
+      const bodyMatch = html.match(/Body Type<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
       if (bodyMatch) {
         vehicle.bodyType = this.normalizeBodyType(bodyMatch[1].trim());
       }
       
-      // Extract fuel type
-      const fuelMatch = html.match(/Engine[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i) ||
-                       html.match(/Moteur[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i);
+      // Extract fuel type (Engine)
+      const fuelMatch = html.match(/Engine<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
       if (fuelMatch) {
         vehicle.fuelType = this.normalizeFuelType(fuelMatch[1].trim());
       }
       
       // Extract transmission
-      const transMatch = html.match(/Transmission[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i);
+      const transMatch = html.match(/Transmission<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
       if (transMatch) {
         vehicle.transmission = this.normalizeTransmission(transMatch[1].trim());
       }
       
       // Extract color
-      const colorMatch = html.match(/Exterior Color[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i) ||
-                        html.match(/Couleur ext[ée]rieure[:\s]*<\/[^>]+>\s*<[^>]+>([^<]+)/i);
+      const colorMatch = html.match(/Exterior Color<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
       if (colorMatch) {
         vehicle.color = this.normalizeColor(colorMatch[1].trim());
       }
       
       // Extract VIN
-      const vinMatch = html.match(/VIN[:\s]*<\/[^>]+>\s*<[^>]+>([A-Z0-9]{17})/i);
+      const vinMatch = html.match(/Vin<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([A-Z0-9]{17})/i);
       if (vinMatch) {
         vehicle.vin = vinMatch[1].trim();
       }
