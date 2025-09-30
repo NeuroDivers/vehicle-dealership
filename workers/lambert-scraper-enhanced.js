@@ -459,8 +459,20 @@ export default {
     const apiToken = env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN;
     const accountHash = env.CLOUDFLARE_IMAGES_ACCOUNT_HASH;
     
+    console.log('=== Cloudflare Images Upload ===');
+    console.log('Account ID:', accountId);
+    console.log('Account Hash:', accountHash);
+    console.log('Token exists:', !!apiToken);
+    console.log('Vehicle ID:', vehicleId);
+    console.log('Image count:', imageUrls.length);
+    
     if (!apiToken) {
-      console.log('No Cloudflare Images token, keeping original URLs');
+      console.log('❌ No Cloudflare Images token, keeping original URLs');
+      return imageUrls;
+    }
+    
+    if (!accountId || !accountHash) {
+      console.log('❌ Missing account ID or hash');
       return imageUrls;
     }
     
@@ -507,12 +519,16 @@ export default {
             // Use the account hash to build the delivery URL
             const cfImageUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
             uploadedImages.push(cfImageUrl);
-            console.log(`✓ Uploaded: ${cfImageUrl}`);
+            console.log(`✅ Uploaded: ${cfImageUrl}`);
           } else {
-            console.error(`Upload failed:`, result.errors);
+            console.error(`❌ Upload failed:`, JSON.stringify(result.errors));
+            uploadedImages.push(imageUrl); // Keep original URL on failure
           }
         } else {
-          console.error(`Upload request failed: ${uploadResponse.status}`);
+          const errorText = await uploadResponse.text();
+          console.error(`❌ Upload request failed: ${uploadResponse.status}`);
+          console.error(`Response: ${errorText}`);
+          uploadedImages.push(imageUrl); // Keep original URL on failure
         }
         
         // Small delay to avoid rate limiting
