@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, DollarSign, Phone, Mail, User, MessageSquare } from 'lucide-react';
+import { X, DollarSign, Phone, Mail, User, MessageSquare, CreditCard, Briefcase, Shield } from 'lucide-react';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 interface FinancingModalProps {
   isOpen: boolean;
@@ -26,12 +27,22 @@ const translations = {
     emailPlaceholder: 'jean@exemple.com',
     phone: 'Téléphone',
     phonePlaceholder: '(514) 555-1234',
-    message: 'Message (optionnel)',
+    creditScore: 'Cote de crédit estimée',
+    creditScoreExcellent: 'Excellent (750+)',
+    creditScoreGood: 'Bon (700-749)',
+    creditScoreFair: 'Moyen (650-699)',
+    creditScorePoor: 'Faible (600-649)',
+    creditScoreUnknown: 'Je ne sais pas',
+    downPayment: 'Mise de fonds (optionnel)',
+    downPaymentPlaceholder: 'Ex: 5000',
+    employmentStatus: 'Statut d\'emploi',
+    employmentFullTime: 'Temps plein',
+    employmentPartTime: 'Temps partiel',
+    employmentSelfEmployed: 'Travailleur autonome',
+    employmentRetired: 'Retraité',
+    employmentOther: 'Autre',
+    message: 'Message ou questions (optionnel)',
     messagePlaceholder: 'Parlez-nous de vos besoins de financement...',
-    preferredContact: 'Méthode de contact préférée',
-    contactEmail: 'Courriel',
-    contactPhone: 'Téléphone',
-    contactBoth: 'Les deux',
     submit: 'Soumettre la demande',
     submitting: 'Envoi en cours...',
     cancel: 'Annuler',
@@ -40,7 +51,8 @@ const translations = {
     successMessage: 'Notre équipe vous contactera bientôt.',
     error: 'Erreur lors de l\'envoi',
     errorMessage: 'Veuillez réessayer plus tard.',
-    required: 'Ce champ est requis'
+    required: 'Ce champ est requis',
+    privacyNote: '🔒 Vos informations sont confidentielles et sécurisées. Nous respectons votre vie privée et ne partagerons jamais vos données personnelles.'
   },
   en: {
     title: 'Financing Request',
@@ -51,12 +63,22 @@ const translations = {
     emailPlaceholder: 'john@example.com',
     phone: 'Phone',
     phonePlaceholder: '(555) 123-4567',
-    message: 'Message (optional)',
+    creditScore: 'Estimated Credit Score',
+    creditScoreExcellent: 'Excellent (750+)',
+    creditScoreGood: 'Good (700-749)',
+    creditScoreFair: 'Fair (650-699)',
+    creditScorePoor: 'Poor (600-649)',
+    creditScoreUnknown: 'I don\'t know',
+    downPayment: 'Down Payment (optional)',
+    downPaymentPlaceholder: 'e.g., 5000',
+    employmentStatus: 'Employment Status',
+    employmentFullTime: 'Full-time',
+    employmentPartTime: 'Part-time',
+    employmentSelfEmployed: 'Self-employed',
+    employmentRetired: 'Retired',
+    employmentOther: 'Other',
+    message: 'Message or questions (optional)',
     messagePlaceholder: 'Tell us about your financing needs...',
-    preferredContact: 'Preferred Contact Method',
-    contactEmail: 'Email',
-    contactPhone: 'Phone',
-    contactBoth: 'Both',
     submit: 'Submit Request',
     submitting: 'Submitting...',
     cancel: 'Cancel',
@@ -65,7 +87,8 @@ const translations = {
     successMessage: 'Our team will contact you soon.',
     error: 'Error sending request',
     errorMessage: 'Please try again later.',
-    required: 'This field is required'
+    required: 'This field is required',
+    privacyNote: '🔒 Your information is confidential and secure. We respect your privacy and will never share your personal data.'
   },
   es: {
     title: 'Solicitud de financiamiento',
@@ -76,12 +99,22 @@ const translations = {
     emailPlaceholder: 'juan@ejemplo.com',
     phone: 'Teléfono',
     phonePlaceholder: '(555) 123-4567',
-    message: 'Mensaje (opcional)',
+    creditScore: 'Puntaje de crédito estimado',
+    creditScoreExcellent: 'Excelente (750+)',
+    creditScoreGood: 'Bueno (700-749)',
+    creditScoreFair: 'Regular (650-699)',
+    creditScorePoor: 'Bajo (600-649)',
+    creditScoreUnknown: 'No lo sé',
+    downPayment: 'Pago inicial (opcional)',
+    downPaymentPlaceholder: 'ej: 5000',
+    employmentStatus: 'Estado de empleo',
+    employmentFullTime: 'Tiempo completo',
+    employmentPartTime: 'Tiempo parcial',
+    employmentSelfEmployed: 'Autónomo',
+    employmentRetired: 'Jubilado',
+    employmentOther: 'Otro',
+    message: 'Mensaje o preguntas (opcional)',
     messagePlaceholder: 'Cuéntenos sobre sus necesidades de financiamiento...',
-    preferredContact: 'Método de contacto preferido',
-    contactEmail: 'Correo electrónico',
-    contactPhone: 'Teléfono',
-    contactBoth: 'Ambos',
     submit: 'Enviar solicitud',
     submitting: 'Enviando...',
     cancel: 'Cancelar',
@@ -90,17 +123,23 @@ const translations = {
     successMessage: 'Nuestro equipo se comunicará con usted pronto.',
     error: 'Error al enviar la solicitud',
     errorMessage: 'Por favor, inténtelo de nuevo más tarde.',
-    required: 'Este campo es obligatorio'
+    required: 'Este campo es obligatorio',
+    privacyNote: '🔒 Su información es confidencial y segura. Respetamos su privacidad y nunca compartiremos sus datos personales.'
   }
 };
 
 export default function FinancingModal({ isOpen, onClose, vehicle, language = 'fr' }: FinancingModalProps) {
+  const { getThemeColors } = useSiteSettings();
+  const themeColors = getThemeColors();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    message: '',
-    preferredContact: 'email'
+    creditScore: '',
+    downPayment: '',
+    employmentStatus: '',
+    message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -144,9 +183,12 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
         customer_name: formData.name,
         customer_email: formData.email,
         customer_phone: formData.phone,
+        credit_score: formData.creditScore,
+        down_payment: formData.downPayment ? parseFloat(formData.downPayment) : null,
+        employment_status: formData.employmentStatus,
         message: formData.message,
         inquiry_type: 'financing',
-        preferred_contact: formData.preferredContact,
+        preferred_contact: 'both',
         source: 'website',
         timestamp: new Date().toISOString()
       };
@@ -166,7 +208,7 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
         setSubmitStatus('success');
         setTimeout(() => {
           onClose();
-          setFormData({ name: '', email: '', phone: '', message: '', preferredContact: 'email' });
+          setFormData({ name: '', email: '', phone: '', creditScore: '', downPayment: '', employmentStatus: '', message: '' });
           setSubmitStatus('idle');
         }, 2000);
       } else {
@@ -192,7 +234,12 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
         {/* Modal panel */}
         <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+          <div 
+            className="px-6 py-4"
+            style={{ 
+              background: `linear-gradient(135deg, ${themeColors.primary} 0%, ${themeColors.secondary} 100%)`
+            }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <DollarSign className="h-6 w-6 text-white" />
@@ -205,11 +252,14 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <p className="text-blue-100 text-sm mt-2">{t.subtitle}</p>
+            <p className="text-white text-opacity-90 text-sm mt-2">{t.subtitle}</p>
           </div>
 
           {/* Vehicle Info */}
-          <div className="bg-blue-50 px-6 py-3 border-b">
+          <div 
+            className="px-6 py-3 border-b"
+            style={{ backgroundColor: `${themeColors.primary}15` }}
+          >
             <p className="text-sm text-gray-600 mb-1">{t.vehicleInfo}</p>
             <p className="font-semibold text-gray-900">
               {vehicle.year} {vehicle.make} {vehicle.model} - ${vehicle.price.toLocaleString()}
@@ -287,27 +337,59 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
                 {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
               </div>
 
-              {/* Preferred Contact */}
+              {/* Credit Score */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.preferredContact}
+                  <CreditCard className="h-4 w-4 inline mr-1" />
+                  {t.creditScore}
                 </label>
-                <div className="flex space-x-4">
-                  {['email', 'phone', 'both'].map((method) => (
-                    <label key={method} className="flex items-center">
-                      <input
-                        type="radio"
-                        value={method}
-                        checked={formData.preferredContact === method}
-                        onChange={(e) => setFormData({ ...formData, preferredContact: e.target.value })}
-                        className="mr-2"
-                      />
-                      <span className="text-sm">
-                        {method === 'email' ? t.contactEmail : method === 'phone' ? t.contactPhone : t.contactBoth}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                <select
+                  value={formData.creditScore}
+                  onChange={(e) => setFormData({ ...formData, creditScore: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+                >
+                  <option value="">{t.creditScoreUnknown}</option>
+                  <option value="excellent">{t.creditScoreExcellent}</option>
+                  <option value="good">{t.creditScoreGood}</option>
+                  <option value="fair">{t.creditScoreFair}</option>
+                  <option value="poor">{t.creditScorePoor}</option>
+                </select>
+              </div>
+
+              {/* Down Payment */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <DollarSign className="h-4 w-4 inline mr-1" />
+                  {t.downPayment}
+                </label>
+                <input
+                  type="number"
+                  value={formData.downPayment}
+                  onChange={(e) => setFormData({ ...formData, downPayment: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+                  placeholder={t.downPaymentPlaceholder}
+                  min="0"
+                  step="100"
+                />
+              </div>
+
+              {/* Employment Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Briefcase className="h-4 w-4 inline mr-1" />
+                  {t.employmentStatus}
+                </label>
+                <select
+                  value={formData.employmentStatus}
+                  onChange={(e) => setFormData({ ...formData, employmentStatus: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+                >
+                  <option value="">{t.employmentOther}</option>
+                  <option value="full-time">{t.employmentFullTime}</option>
+                  <option value="part-time">{t.employmentPartTime}</option>
+                  <option value="self-employed">{t.employmentSelfEmployed}</option>
+                  <option value="retired">{t.employmentRetired}</option>
+                </select>
               </div>
 
               {/* Message */}
@@ -326,6 +408,14 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
               </div>
             </div>
 
+            {/* Privacy Note */}
+            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-start space-x-2">
+                <Shield className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-green-800">{t.privacyNote}</p>
+              </div>
+            </div>
+
             {/* Buttons */}
             <div className="flex space-x-3 mt-6">
               <button
@@ -338,7 +428,11 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ 
+                  backgroundColor: themeColors.primary,
+                  opacity: isSubmitting ? 0.5 : 1
+                }}
               >
                 {isSubmitting ? t.submitting : t.submit}
               </button>
