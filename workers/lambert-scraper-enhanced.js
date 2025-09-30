@@ -106,9 +106,9 @@ export default {
         return new Response(JSON.stringify({
           success: false,
           error: error.message,
-          vehicles: this.getSampleVehicles() // Fallback to sample data
+          vehicles: [] // No fallback - return empty array
         }), {
-          status: 200, // Return 200 with sample data
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
@@ -123,7 +123,7 @@ export default {
     const config = {
       baseUrl: 'https://www.automobile-lambert.com',
       listingPath: '/cars/',
-      maxPages: 2,  // Limit pages for performance
+      maxPages: 50,  // Scrape ALL pages
       perPage: 20
     };
     
@@ -134,8 +134,8 @@ export default {
       const vehicleUrls = await this.discoverVehicleUrls(config);
       console.log(`Discovered ${vehicleUrls.length} vehicle URLs`);
       
-      // Step 2: Scrape each vehicle (limit to 15 for performance)
-      for (const url of vehicleUrls.slice(0, 15)) {
+      // Step 2: Scrape ALL vehicles (no limit)
+      for (const url of vehicleUrls) {
         try {
           await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
           const vehicle = await this.scrapeVehicleDetails(url);
@@ -149,17 +149,12 @@ export default {
       
       console.log(`Successfully scraped ${vehicles.length} vehicles`);
       
-      // If no vehicles found, return sample data
-      if (vehicles.length === 0) {
-        return this.getSampleVehicles();
-      }
-      
       return vehicles;
       
     } catch (error) {
       console.error('Inventory scrape failed:', error);
-      // Return sample data as fallback
-      return this.getSampleVehicles();
+      // No fallback - return whatever we got
+      return vehicles;
     }
   },
 
