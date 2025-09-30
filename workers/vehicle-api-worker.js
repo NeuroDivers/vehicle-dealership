@@ -160,6 +160,99 @@ export default {
         });
       }
 
+      // GET /api/reviews - Get all reviews
+      if (url.pathname === '/api/reviews' && request.method === 'GET') {
+        const { results } = await env.DB.prepare(`
+          SELECT * FROM reviews 
+          ORDER BY is_featured DESC, date DESC
+        `).all();
+        
+        return new Response(JSON.stringify(results), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // GET /api/reviews/featured - Get featured reviews only
+      if (url.pathname === '/api/reviews/featured' && request.method === 'GET') {
+        const { results } = await env.DB.prepare(`
+          SELECT * FROM reviews 
+          WHERE is_featured = 1 AND is_approved = 1
+          ORDER BY date DESC
+          LIMIT 10
+        `).all();
+        
+        return new Response(JSON.stringify(results), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // POST /api/reviews - Create a new review
+      if (url.pathname === '/api/reviews' && request.method === 'POST') {
+        const reviewData = await request.json();
+        const reviewId = `rev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        await env.DB.prepare(`
+          INSERT INTO reviews (
+            id, customer_name, rating, review_text, location, date, is_featured, is_approved
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          reviewId,
+          reviewData.customer_name,
+          reviewData.rating,
+          reviewData.review_text,
+          reviewData.location || null,
+          reviewData.date,
+          reviewData.is_featured || 0,
+          reviewData.is_approved || 1
+        ).run();
+        
+        return new Response(JSON.stringify({
+          success: true,
+          reviewId: reviewId
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // PUT /api/reviews/[id] - Update a review
+      if (url.pathname.match(/^\/api\/reviews\/[\w-]+$/) && request.method === 'PUT') {
+        const reviewId = url.pathname.split('/')[3];
+        const reviewData = await request.json();
+        
+        await env.DB.prepare(`
+          UPDATE reviews 
+          SET customer_name = ?, rating = ?, review_text = ?, location = ?, 
+              date = ?, is_featured = ?, is_approved = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).bind(
+          reviewData.customer_name,
+          reviewData.rating,
+          reviewData.review_text,
+          reviewData.location || null,
+          reviewData.date,
+          reviewData.is_featured || 0,
+          reviewData.is_approved || 1,
+          reviewId
+        ).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // DELETE /api/reviews/[id] - Delete a review
+      if (url.pathname.match(/^\/api\/reviews\/[\w-]+$/) && request.method === 'DELETE') {
+        const reviewId = url.pathname.split('/')[3];
+        
+        await env.DB.prepare(`
+          DELETE FROM reviews WHERE id = ?
+        `).bind(reviewId).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       // POST /api/leads - Create a new lead
       if (url.pathname === '/api/leads' && request.method === 'POST') {
         const leadData = await request.json();

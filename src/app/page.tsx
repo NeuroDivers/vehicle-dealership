@@ -96,6 +96,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [language, setLanguage] = useState<'fr' | 'en' | 'es'>('fr'); // French by default
   const [featuredVehicles, setFeaturedVehicles] = useState<Vehicle[]>([]);
+  const [testimonials, setTestimonials] = useState<any[]>([]);
   const themeColors = getThemeColors();
   const t = translations[language];
 
@@ -148,12 +149,22 @@ export default function Home() {
     return null;
   }
 
+  const loadTestimonials = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/reviews/featured`);
+      if (response.ok) {
+        const data = await response.json();
+        setTestimonials(data);
+      }
+    } catch (error) {
+      console.error('Failed to load testimonials:', error);
+    }
+  };
 
-  const testimonials = [
-    { name: 'John D.', rating: 5, text: 'Excellent service! Found my dream car at a great price.' },
-    { name: 'Sarah M.', rating: 5, text: 'Professional staff and hassle-free experience. Highly recommend!' },
-    { name: 'Mike R.', rating: 5, text: 'Best dealership in town. They really care about their customers.' },
-  ];
+  useEffect(() => {
+    loadTestimonials();
+  }, []);
 
   return (
     <main className="min-h-screen">
@@ -341,30 +352,37 @@ export default function Home() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4" style={{ color: themeColors.primary }}>
-              What Our Customers Say
-            </h2>
-            <p className="text-gray-600">Real reviews from real customers</p>
-          </div>
+      {testimonials.length > 0 && (
+        <section className="py-16 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-4" style={{ color: themeColors.primary }}>
+                {t.testimonials}
+              </h2>
+              <p className="text-gray-600">{t.testimonialsSubtitle}</p>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow">
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 fill-current" style={{ color: themeColors.accent }} />
-                  ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {testimonials.slice(0, 3).map((testimonial) => (
+                <div key={testimonial.id} className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                  <div className="flex mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-current" style={{ color: themeColors.accent }} />
+                    ))}
+                  </div>
+                  <p className="text-gray-600 mb-4 italic">"{testimonial.review_text}"</p>
+                  <div>
+                    <p className="font-semibold">{testimonial.customer_name}</p>
+                    {testimonial.location && (
+                      <p className="text-sm text-gray-500">{testimonial.location}</p>
+                    )}
+                  </div>
                 </div>
-                <p className="text-gray-600 mb-4">"{testimonial.text}"</p>
-                <p className="font-semibold">- {testimonial.name}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="py-16" style={{ backgroundColor: `${themeColors.primary}10` }}>
