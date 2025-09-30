@@ -32,7 +32,7 @@ interface SiteInfo {
     fr: string;
     es: string;
   };
-  disclaimer: {
+  disclaimers?: {
     en: string;
     fr: string;
     es: string;
@@ -76,7 +76,7 @@ const defaultSiteInfo: SiteInfo = {
     fr: '© 2024 Premium Auto Sales. Tous droits réservés.',
     es: '© 2024 Premium Auto Sales. Todos los derechos reservados.'
   },
-  disclaimer: {
+  disclaimers: {
     en: 'This vehicle is offered for sale subject to prior sale. All information provided is believed to be accurate but is not guaranteed. Please verify all details with our sales team.',
     fr: 'Ce véhicule est offert à la vente sous réserve de vente préalable. Toutes les informations fournies sont considérées comme exactes mais ne sont pas garanties. Veuillez vérifier tous les détails avec notre équipe de vente.',
     es: 'Este vehículo se ofrece a la venta sujeto a venta previa. Toda la información proporcionada se considera precisa pero no está garantizada. Verifique todos los detalles con nuestro equipo de ventas.'
@@ -502,12 +502,14 @@ export default function SiteInfoManager() {
         
         <div>
           <textarea
-            value={siteInfo.disclaimer[activeLanguageTab]}
+            value={siteInfo.disclaimers?.[activeLanguageTab] || ''}
             onChange={(e) => setSiteInfo(prev => ({
               ...prev,
-              disclaimer: {
-                ...prev.disclaimer,
-                [activeLanguageTab]: e.target.value
+              disclaimers: {
+                ...prev.disclaimers,
+                en: activeLanguageTab === 'en' ? e.target.value : (prev.disclaimers?.en || ''),
+                fr: activeLanguageTab === 'fr' ? e.target.value : (prev.disclaimers?.fr || ''),
+                es: activeLanguageTab === 'es' ? e.target.value : (prev.disclaimers?.es || '')
               }
             }))}
             rows={4}

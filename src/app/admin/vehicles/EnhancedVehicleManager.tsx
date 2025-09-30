@@ -88,7 +88,7 @@ export default function EnhancedVehicleManager() {
       // Search filter
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
-        const searchableText = `${vehicle.make} ${vehicle.model} ${vehicle.year} ${vehicle.color} ${vehicle.bodyType} ${vehicle.id}`.toLowerCase();
+        const searchableText = `${vehicle.make} ${vehicle.model} ${vehicle.year} ${vehicle.color} ${vehicle.bodyType} ${vehicle.id} ${vehicle.vendor_name || ''} ${vehicle.vendor_stock_number || ''}`.toLowerCase();
         if (!searchableText.includes(search)) return false;
       }
       
