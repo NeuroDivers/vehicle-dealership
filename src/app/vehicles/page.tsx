@@ -15,11 +15,19 @@ interface Vehicle {
   price: number;
   odometer: number;
   bodyType: string;
-  color: string;
   fuelType?: string;
+  transmission?: string;
+  drivetrain?: string;
+  color?: string;
+  vin?: string;
+  stockNumber?: string;
   description?: string;
   isSold?: number;
   images?: string;
+  vendor_id?: string;
+  vendor_name?: string;
+  vendor_status?: 'active' | 'unlisted' | 'sold_by_us' | 'sold_by_vendor' | 'removed';
+  last_seen_from_vendor?: string;
 }
 
 export default function VehiclesPage() {
@@ -383,6 +391,23 @@ export default function VehiclesPage() {
                     {images.length > 1 && (
                       <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded z-10">
                         +{images.length - 1} photos
+                      </div>
+                    )}
+                    {/* Vendor Badge */}
+                    {vehicle.vendor_name && vehicle.vendor_name !== 'Internal Inventory' && (
+                      <div className="absolute top-2 left-2 bg-blue-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded z-10">
+                        {vehicle.vendor_name}
+                      </div>
+                    )}
+                    {/* Status Badges */}
+                    {vehicle.vendor_status === 'unlisted' && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded z-10">
+                        Unlisted
+                      </div>
+                    )}
+                    {vehicle.isSold === 1 && (
+                      <div className="absolute top-2 right-2 bg-red-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded z-10">
+                        Sold
                       </div>
                     )}
                   </div>
