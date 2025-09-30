@@ -45,21 +45,20 @@ interface SiteSettings {
 }
 
 const defaultSettings: SiteSettings = {
-  siteName: 'Premium Auto Sales',
+  siteName: 'Autoprêt 123',
   logo: '',
-  contactEmail: 'info@dealership.com',
-  contactPhone: '555-0123',
-  address: '123 Main Street',
-  city: 'City',
-  province: 'Province',
-  postalCode: '12345',
+  contactEmail: 'info@autopret123.com',
+  contactPhone: '514-444-2769',
+  address: '',
+  city: '',
+  province: '',
+  postalCode: '',
   country: 'Canada',
   businessHours: {
     monday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
     tuesday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
     wednesday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
     thursday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
-    friday: { en: '9:00 AM - 6:00 PM', fr: '9h00 - 18h00', es: '9:00 AM - 6:00 PM' },
     saturday: { en: '10:00 AM - 4:00 PM', fr: '10h00 - 16h00', es: '10:00 AM - 4:00 PM' },
     sunday: { en: 'Closed', fr: 'Fermé', es: 'Cerrado' }
   },
@@ -70,9 +69,9 @@ const defaultSettings: SiteSettings = {
     es: '© 2024 Premium Auto Sales. Todos los derechos reservados.'
   },
   themeColors: {
-    primary: '#2563eb', // blue-600
-    secondary: '#1e3a8a', // blue-900
-    accent: '#3b82f6', // blue-500
+    primary: '#10b981', // green-500
+    secondary: '#059669', // green-600
+    accent: '#34d399', // green-400
     headerText: '#000000' // black for header text
   },
   disclaimers: {

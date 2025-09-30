@@ -271,10 +271,15 @@ export default {
         // Return default settings if none exist
         return new Response(JSON.stringify({
           siteName: 'Autoprêt 123',
+          logo: '',
+          contactEmail: 'info@autopret123.com',
+          contactPhone: '514-444-2769',
+          address: '',
           themeColors: {
             primary: '#10b981',
             secondary: '#059669',
-            accent: '#34d399'
+            accent: '#34d399',
+            headerText: '#000000'
           }
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
