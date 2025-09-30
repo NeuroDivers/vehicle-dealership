@@ -4,26 +4,133 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { Search, Phone, MapPin, Clock, ChevronRight, Star, Shield, Award, Car } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+interface Vehicle {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  images?: string;
+  bodyType: string;
+  isSold: number;
+}
+
+const translations = {
+  fr: {
+    welcome: 'Bienvenue chez',
+    tagline: 'Votre partenaire de confiance pour trouver le véhicule parfait',
+    searchPlaceholder: 'Rechercher par marque, modèle ou type...',
+    searchButton: 'Rechercher',
+    vehiclesInStock: 'Véhicules en stock',
+    yearsOfService: 'Années de service',
+    happyCustomers: 'Clients satisfaits',
+    featuredVehicles: 'Véhicules en vedette',
+    featuredSubtitle: 'Découvrez notre sélection triée sur le volet',
+    viewDetails: 'Voir les détails',
+    whyChooseUs: 'Pourquoi nous choisir',
+    whyChooseSubtitle: 'Votre satisfaction est notre priorité',
+    qualityVehicles: 'Véhicules de qualité',
+    qualityDesc: 'Chaque véhicule est inspecté et certifié',
+    bestPrices: 'Meilleurs prix',
+    bestPricesDesc: 'Prix compétitifs et options de financement',
+    expertTeam: 'Équipe experte',
+    expertTeamDesc: 'Personnel professionnel et expérimenté',
+    testimonials: 'Témoignages',
+    testimonialsSubtitle: 'Ce que disent nos clients',
+    viewAllVehicles: 'Voir tous les véhicules'
+  },
+  en: {
+    welcome: 'Welcome to',
+    tagline: 'Your Trusted Partner in Finding the Perfect Vehicle',
+    searchPlaceholder: 'Search by make, model, or type...',
+    searchButton: 'Search',
+    vehiclesInStock: 'Vehicles in Stock',
+    yearsOfService: 'Years of Service',
+    happyCustomers: 'Happy Customers',
+    featuredVehicles: 'Featured Vehicles',
+    featuredSubtitle: 'Check out our hand-picked selection',
+    viewDetails: 'View Details',
+    whyChooseUs: 'Why Choose Us',
+    whyChooseSubtitle: 'Your satisfaction is our priority',
+    qualityVehicles: 'Quality Vehicles',
+    qualityDesc: 'Every vehicle is inspected and certified',
+    bestPrices: 'Best Prices',
+    bestPricesDesc: 'Competitive pricing and financing options',
+    expertTeam: 'Expert Team',
+    expertTeamDesc: 'Professional and experienced staff',
+    testimonials: 'Testimonials',
+    testimonialsSubtitle: 'What our customers say',
+    viewAllVehicles: 'View All Vehicles'
+  },
+  es: {
+    welcome: 'Bienvenido a',
+    tagline: 'Su socio de confianza para encontrar el vehículo perfecto',
+    searchPlaceholder: 'Buscar por marca, modelo o tipo...',
+    searchButton: 'Buscar',
+    vehiclesInStock: 'Vehículos en stock',
+    yearsOfService: 'Años de servicio',
+    happyCustomers: 'Clientes satisfechos',
+    featuredVehicles: 'Vehículos destacados',
+    featuredSubtitle: 'Vea nuestra selección cuidadosamente elegida',
+    viewDetails: 'Ver detalles',
+    whyChooseUs: 'Por qué elegirnos',
+    whyChooseSubtitle: 'Su satisfacción es nuestra prioridad',
+    qualityVehicles: 'Vehículos de calidad',
+    qualityDesc: 'Cada vehículo es inspeccionado y certificado',
+    bestPrices: 'Mejores precios',
+    bestPricesDesc: 'Precios competitivos y opciones de financiamiento',
+    expertTeam: 'Equipo experto',
+    expertTeamDesc: 'Personal profesional y experimentado',
+    testimonials: 'Testimonios',
+    testimonialsSubtitle: 'Lo que dicen nuestros clientes',
+    viewAllVehicles: 'Ver todos los vehículos'
+  }
+};
 
 export default function Home() {
   const { settings, getThemeColors } = useSiteSettings();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [language, setLanguage] = useState<'fr' | 'en' | 'es'>('fr'); // French by default
+  const [featuredVehicles, setFeaturedVehicles] = useState<Vehicle[]>([]);
   const themeColors = getThemeColors();
+  const t = translations[language];
 
   useEffect(() => {
     setMounted(true);
+    loadFeaturedVehicles();
   }, []);
+
+  const loadFeaturedVehicles = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/vehicles?limit=6`);
+      if (response.ok) {
+        const data = await response.json();
+        // Filter out sold vehicles
+        const available = data.filter((v: Vehicle) => v.isSold === 0).slice(0, 3);
+        setFeaturedVehicles(available);
+      }
+    } catch (error) {
+      console.error('Failed to load featured vehicles:', error);
+    }
+  };
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      router.push(`/vehicles?search=${encodeURIComponent(searchQuery)}`);
+    } else {
+      router.push('/vehicles');
+    }
+  };
 
   if (!mounted) {
     return null;
   }
 
-  const featuredVehicles = [
-    { id: 1, make: 'Toyota', model: 'Camry', year: 2023, price: 28999, image: '/api/placeholder/400/300', type: 'Sedan' },
-    { id: 2, make: 'Honda', model: 'CR-V', year: 2023, price: 34999, image: '/api/placeholder/400/300', type: 'SUV' },
-    { id: 3, make: 'Ford', model: 'F-150', year: 2023, price: 45999, image: '/api/placeholder/400/300', type: 'Truck' },
-  ];
 
   const testimonials = [
     { name: 'John D.', rating: 5, text: 'Excellent service! Found my dream car at a great price.' },
@@ -33,6 +140,23 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
+      {/* Language Selector */}
+      <div className="fixed top-20 right-4 z-50 bg-white rounded-lg shadow-lg p-2 flex space-x-2">
+        {(['fr', 'en', 'es'] as const).map((lang) => (
+          <button
+            key={lang}
+            onClick={() => setLanguage(lang)}
+            className={`px-3 py-1 rounded font-medium transition ${
+              language === lang
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {lang.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
       {/* Hero Section */}
       <section 
         className="relative h-[600px] flex items-center justify-center text-white"
@@ -43,44 +167,45 @@ export default function Home() {
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-fade-in">
-            Welcome to {settings.siteName}
+            {t.welcome} {settings.siteName}
           </h1>
           <p className="text-xl md:text-2xl mb-8 opacity-90">
-            Your Trusted Partner in Finding the Perfect Vehicle
+            {t.tagline}
           </p>
           
           {/* Search Bar */}
           <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-xl p-2 flex">
             <input
               type="text"
-              placeholder="Search by make, model, or type..."
+              placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               className="flex-1 px-4 py-3 text-gray-800 outline-none"
             />
-            <Link
-              href={`/vehicles?search=${searchQuery}`}
+            <button
+              onClick={handleSearch}
               className="px-6 py-3 rounded-md font-semibold transition flex items-center space-x-2"
               style={{ backgroundColor: themeColors.primary, color: 'white' }}
             >
               <Search className="h-5 w-5" />
-              <span>Search</span>
-            </Link>
+              <span>{t.searchButton}</span>
+            </button>
           </div>
 
           {/* Quick Stats */}
           <div className="mt-12 grid grid-cols-3 gap-8 max-w-3xl mx-auto">
             <div>
               <div className="text-3xl font-bold">500+</div>
-              <div className="text-sm opacity-75">Vehicles in Stock</div>
+              <div className="text-sm opacity-75">{t.vehiclesInStock}</div>
             </div>
             <div>
               <div className="text-3xl font-bold">15+</div>
-              <div className="text-sm opacity-75">Years of Service</div>
+              <div className="text-sm opacity-75">{t.yearsOfService}</div>
             </div>
             <div>
               <div className="text-3xl font-bold">10,000+</div>
-              <div className="text-sm opacity-75">Happy Customers</div>
+              <div className="text-sm opacity-75">{t.happyCustomers}</div>
             </div>
           </div>
         </div>
@@ -91,20 +216,27 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold mb-4" style={{ color: themeColors.primary }}>
-              Featured Vehicles
+              {t.featuredVehicles}
             </h2>
-            <p className="text-gray-600">Check out our hand-picked selection</p>
+            <p className="text-gray-600">{t.featuredSubtitle}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredVehicles.map((vehicle) => (
+            {featuredVehicles.map((vehicle) => {
+              const images = vehicle.images ? JSON.parse(vehicle.images) : [];
+              const firstImage = images[0] || '/api/placeholder/400/300';
+              return (
               <div key={vehicle.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
                 <div className="h-48 bg-gray-200 relative">
+                  {firstImage !== '/api/placeholder/400/300' ? (
+                    <img src={firstImage} alt={`${vehicle.make} ${vehicle.model}`} className="w-full h-full object-cover" />
+                  ) : (
+                    <Car className="h-full w-full p-12 text-gray-400" />
+                  )}
                   <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-sm font-semibold"
                        style={{ color: themeColors.primary }}>
-                    {vehicle.type}
+                    {vehicle.bodyType}
                   </div>
-                  <Car className="h-full w-full p-12 text-gray-400" />
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-semibold mb-2">
@@ -121,11 +253,12 @@ export default function Home() {
                       color: 'white'
                     }}
                   >
-                    View Details
+                    {t.viewDetails}
                   </Link>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="text-center mt-8">
