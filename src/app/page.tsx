@@ -15,6 +15,7 @@ interface Vehicle {
   images?: string;
   bodyType: string;
   isSold: number;
+  odometer?: number;
 }
 
 const translations = {
@@ -97,12 +98,20 @@ export default function Home() {
   const [language, setLanguage] = useState<'fr' | 'en' | 'es'>('fr'); // French by default
   const [featuredVehicles, setFeaturedVehicles] = useState<Vehicle[]>([]);
   const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [carouselVehicles, setCarouselVehicles] = useState<{[key: string]: Vehicle[]}>({
+    suv: [],
+    sedan: [],
+    truck: []
+  });
+  const [activeCategory, setActiveCategory] = useState<'suv' | 'sedan' | 'truck'>('suv');
   const themeColors = getThemeColors();
   const t = translations[language];
 
   useEffect(() => {
     setMounted(true);
     loadFeaturedVehicles();
+    loadTestimonials();
+    loadCarouselVehicles();
     
     // Get initial language from localStorage (set by header)
     const storedLang = localStorage.getItem('language') as 'fr' | 'en' | 'es';
@@ -121,6 +130,39 @@ export default function Home() {
     window.addEventListener('languageChange', handleLanguageChange);
     return () => window.removeEventListener('languageChange', handleLanguageChange);
   }, []);
+
+  const loadTestimonials = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/reviews/featured`);
+      if (response.ok) {
+        const data = await response.json();
+        setTestimonials(data);
+      }
+    } catch (error) {
+      console.error('Failed to load testimonials:', error);
+    }
+  };
+
+  const loadCarouselVehicles = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/vehicles`);
+      if (response.ok) {
+        const data = await response.json();
+        const available = data.filter((v: Vehicle) => v.isSold === 0);
+        
+        // Group by body type
+        const suv = available.filter((v: Vehicle) => v.bodyType === 'SUV').slice(0, 6);
+        const sedan = available.filter((v: Vehicle) => v.bodyType === 'Sedan').slice(0, 6);
+        const truck = available.filter((v: Vehicle) => v.bodyType === 'Truck').slice(0, 6);
+        
+        setCarouselVehicles({ suv, sedan, truck });
+      }
+    } catch (error) {
+      console.error('Failed to load carousel vehicles:', error);
+    }
+  };
 
   const loadFeaturedVehicles = async () => {
     try {
@@ -148,23 +190,6 @@ export default function Home() {
   if (!mounted) {
     return null;
   }
-
-  const loadTestimonials = async () => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
-      const response = await fetch(`${apiUrl}/api/reviews/featured`);
-      if (response.ok) {
-        const data = await response.json();
-        setTestimonials(data);
-      }
-    } catch (error) {
-      console.error('Failed to load testimonials:', error);
-    }
-  };
-
-  useEffect(() => {
-    loadTestimonials();
-  }, []);
 
   return (
     <main className="min-h-screen">
@@ -300,6 +325,102 @@ export default function Home() {
               <span>View All Inventory</span>
               <ChevronRight className="h-5 w-5" />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Vehicle Carousel by Category */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-4xl font-bold mb-4" style={{ color: themeColors.primary }}>
+              {language === 'fr' ? 'Explorez par catégorie' : 
+               language === 'es' ? 'Explorar por categoría' : 
+               'Explore by Category'}
+            </h2>
+            <p className="text-gray-600">
+              {language === 'fr' ? 'Trouvez le véhicule parfait pour votre style de vie' : 
+               language === 'es' ? 'Encuentra el vehículo perfecto para tu estilo de vida' : 
+               'Find the perfect vehicle for your lifestyle'}
+            </p>
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex justify-center space-x-4 mb-8">
+            {[
+              { key: 'suv' as const, label: { fr: 'VUS', en: 'SUVs', es: 'SUVs' } },
+              { key: 'sedan' as const, label: { fr: 'Berlines', en: 'Sedans', es: 'Sedanes' } },
+              { key: 'truck' as const, label: { fr: 'Camions', en: 'Trucks', es: 'Camionetas' } }
+            ].map((category) => (
+              <button
+                key={category.key}
+                onClick={() => setActiveCategory(category.key)}
+                className={`px-6 py-3 rounded-lg font-semibold transition ${
+                  activeCategory === category.key
+                    ? 'text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                style={activeCategory === category.key ? { backgroundColor: themeColors.primary } : {}}
+              >
+                {category.label[language]}
+              </button>
+            ))}
+          </div>
+
+          {/* Vehicle Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {carouselVehicles[activeCategory].length > 0 ? (
+              carouselVehicles[activeCategory].map((vehicle) => {
+                let images = [];
+                try {
+                  images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
+                } catch (e) {
+                  images = [];
+                }
+                const firstImage = images[0] || '/api/placeholder/400/300';
+                
+                return (
+                  <Link
+                    key={vehicle.id}
+                    href={`/vehicles/${vehicle.id}`}
+                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group"
+                  >
+                    <div className="h-48 bg-gray-200 relative overflow-hidden">
+                      {firstImage !== '/api/placeholder/400/300' ? (
+                        <img 
+                          src={firstImage} 
+                          alt={`${vehicle.make} ${vehicle.model}`} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                        />
+                      ) : (
+                        <Car className="h-full w-full p-12 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-lg mb-1">
+                        {vehicle.year} {vehicle.make} {vehicle.model}
+                      </h3>
+                      <p className="text-2xl font-bold mb-2" style={{ color: themeColors.primary }}>
+                        ${vehicle.price.toLocaleString()}
+                      </p>
+                      <div className="flex items-center justify-between text-sm text-gray-600">
+                        <span>{vehicle.odometer?.toLocaleString()} km</span>
+                        <span>{vehicle.bodyType}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="col-span-3 text-center py-12">
+                <Car className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">
+                  {language === 'fr' ? 'Aucun véhicule disponible dans cette catégorie' : 
+                   language === 'es' ? 'No hay vehículos disponibles en esta categoría' : 
+                   'No vehicles available in this category'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </section>
