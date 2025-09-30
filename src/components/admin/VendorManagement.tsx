@@ -74,6 +74,17 @@ export default function VendorManagement() {
             stats: stats.lambert
           },
           {
+            vendor_id: 'naniauto',
+            vendor_name: 'NaniAuto',
+            vendor_type: 'scraper',
+            last_sync: undefined,
+            is_active: true,
+            sync_frequency: 'daily',
+            auto_remove_after_days: 7,
+            grace_period_days: 3,
+            stats: stats.naniauto || { total_vehicles: 0, active_vehicles: 0, unlisted_vehicles: 0, sold_vehicles: 0 }
+          },
+          {
             vendor_id: 'internal',
             vendor_name: 'Internal Inventory',
             vendor_type: 'manual',

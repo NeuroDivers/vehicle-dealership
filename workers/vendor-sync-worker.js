@@ -26,6 +26,8 @@ export default {
         
         if (vendorId === 'lambert') {
           return await this.syncLambert(env, corsHeaders);
+        } else if (vendorId === 'naniauto') {
+          return await this.syncNaniAuto(env, corsHeaders);
         } else {
           return new Response(JSON.stringify({
             success: false,
@@ -506,5 +508,131 @@ export default {
     
     console.log(`Generated ${vehicles.length} sample Lambert vehicles`);
     return vehicles;
+  },
+
+  async syncNaniAuto(env, corsHeaders) {
+    console.log('Starting NaniAuto sync...');
+    
+    let vehicles = [];
+    
+    // Call NaniAuto scraper (will be set up as service binding)
+    try {
+      console.log('Calling NaniAuto scraper...');
+      
+      // For now, use HTTP fetch (later can be converted to service binding)
+      const scraperUrl = 'https://naniauto-scraper.nick-damato0011527.workers.dev';
+      const scraperResponse = await fetch(`${scraperUrl}/api/scrape`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (scraperResponse.ok) {
+        const scraperData = await scraperResponse.json();
+        if (scraperData.success && scraperData.vehicles && scraperData.vehicles.length > 0) {
+          console.log(`Got ${scraperData.vehicles.length} vehicles from NaniAuto scraper`);
+          
+          vehicles = scraperData.vehicles.map(v => ({
+            make: v.make || '',
+            model: v.model || '',
+            year: v.year || 0,
+            price: v.price || 0,
+            vin: v.vin || `NANI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            stockNumber: v.stockNumber || v.stock || '',
+            bodyType: v.bodyType || '',
+            fuelType: v.fuelType || '',
+            transmission: v.transmission || '',
+            color: v.color || 'Unknown',
+            odometer: v.odometer || v.mileage || 0,
+            description: v.description || `${v.year} ${v.make} ${v.model}`,
+            images: v.images || []
+          }));
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch from NaniAuto scraper:', error.message);
+      vehicles = [];
+    }
+    
+    // Save to database
+    const existingVehicles = await env.DB.prepare(
+      'SELECT vin, stockNumber FROM vehicles WHERE vendor_id = ?'
+    ).bind('naniauto').all();
+    
+    const existingVINs = new Set(existingVehicles.results.map(v => v.vin));
+    const existingStockNumbers = new Set(existingVehicles.results.map(v => v.stockNumber));
+    
+    let newCount = 0;
+    let updatedCount = 0;
+    
+    for (const vehicle of vehicles) {
+      try {
+        const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
+        
+        if (isExisting) {
+          // Update existing vehicle
+          await env.DB.prepare(`
+            UPDATE vehicles 
+            SET 
+              price = ?,
+              odometer = ?,
+              last_seen_from_vendor = datetime('now'),
+              vendor_status = 'active',
+              updated_at = datetime('now')
+            WHERE (vin = ? OR stockNumber = ?) AND vendor_id = 'naniauto'
+          `).bind(
+            vehicle.price,
+            vehicle.odometer,
+            vehicle.vin,
+            vehicle.stockNumber
+          ).run();
+          
+          updatedCount++;
+        } else {
+          // Insert new vehicle
+          await env.DB.prepare(`
+            INSERT INTO vehicles (
+              make, model, year, price, odometer, bodyType, fuelType,
+              transmission, color, vin, stockNumber, description, images, isSold,
+              vendor_id, vendor_name, vendor_stock_number,
+              last_seen_from_vendor, vendor_status, is_published
+            ) VALUES (
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0,
+              'naniauto', 'NaniAuto', ?,
+              datetime('now'), 'active', 1
+            )
+          `).bind(
+            vehicle.make,
+            vehicle.model,
+            vehicle.year,
+            vehicle.price,
+            vehicle.odometer,
+            vehicle.bodyType,
+            vehicle.fuelType || 'Gasoline',
+            vehicle.transmission || 'Automatic',
+            vehicle.color,
+            vehicle.vin,
+            vehicle.stockNumber,
+            vehicle.description,
+            JSON.stringify(vehicle.images),
+            vehicle.stockNumber
+          ).run();
+          
+          newCount++;
+        }
+      } catch (error) {
+        console.error(`Error saving vehicle ${vehicle.vin}:`, error.message);
+      }
+    }
+    
+    return new Response(JSON.stringify({
+      success: true,
+      vehicles_found: vehicles.length,
+      new_vehicles: newCount,
+      updated_vehicles: updatedCount,
+      vendor: 'naniauto',
+      timestamp: new Date().toISOString()
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 };
