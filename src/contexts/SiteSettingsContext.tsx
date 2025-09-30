@@ -141,13 +141,21 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
             parsed.themeColors = colorMap[parsed.themeColor] || colorMap.blue;
             delete parsed.themeColor;
           } else if (!parsed.themeColors) {
-            // No theme colors at all, use defaults
+            // No theme colors at all, use green defaults
             parsed.themeColors = {
-              primary: '#2563eb',
-              secondary: '#1e3a8a',
-              accent: '#3b82f6'
+              primary: '#10b981',
+              secondary: '#059669',
+              accent: '#34d399'
             };
           }
+          
+          // Set CSS variables immediately to prevent flash
+          if (typeof document !== 'undefined') {
+            document.documentElement.style.setProperty('--color-primary', parsed.themeColors.primary);
+            document.documentElement.style.setProperty('--color-secondary', parsed.themeColors.secondary);
+            document.documentElement.style.setProperty('--color-accent', parsed.themeColors.accent);
+          }
+          
           setSettings(parsed);
           // Save migrated version back to localStorage
           localStorage.setItem('siteInfo', JSON.stringify(parsed));

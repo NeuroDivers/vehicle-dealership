@@ -228,22 +228,6 @@ export default function Home() {
               <span>{t.searchButton}</span>
             </button>
           </div>
-
-          {/* Quick Stats */}
-          <div className="mt-12 grid grid-cols-3 gap-8 max-w-3xl mx-auto">
-            <div>
-              <div className="text-3xl font-bold">500+</div>
-              <div className="text-sm opacity-75">{t.vehiclesInStock}</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold">15+</div>
-              <div className="text-sm opacity-75">{t.yearsOfService}</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold">10,000+</div>
-              <div className="text-sm opacity-75">{t.happyCustomers}</div>
-            </div>
-          </div>
         </div>
       </section>
 

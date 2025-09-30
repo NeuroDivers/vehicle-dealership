@@ -5,6 +5,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Theme colors - green by default */
+  --color-primary: #10b981;
+  --color-secondary: #059669;
+  --color-accent: #34d399;
 }
 
 @media (prefers-color-scheme: dark) {
