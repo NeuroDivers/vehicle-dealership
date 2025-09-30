@@ -344,9 +344,22 @@ export default function VehiclesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVehicles.map((vehicle) => {
-              const images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
-              return (
+{filteredVehicles.map((vehicle) => {
+  let images: string[] = [];
+  if (vehicle.images) {
+    const imageData = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
+    images = imageData.map((img: any) => {
+      if (typeof img === 'string') {
+        return img;
+      } else if (img.variants) {
+        return img.variants.thumbnail || img.variants.public || img.variants.gallery;
+      } else if (img.url) {
+        return img.url;
+      }
+      return null;
+    }).filter((url: any) => url);
+  }
+  return (
                 <Link 
                   key={vehicle.id} 
                   href={`/vehicles/detail?id=${vehicle.id}`}

@@ -18,6 +18,7 @@ function handleCORS(request) {
       headers: corsHeaders,
     });
   }
+  return null; // Important: return null for non-OPTIONS requests
 }
 
 // Vehicle Views Analytics Handlers

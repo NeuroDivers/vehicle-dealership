@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import VehicleDetailClient from './VehicleDetailClient';
+import VehicleDetailWrapper from './VehicleDetailWrapper';
 
 export const metadata: Metadata = {
   title: 'Vehicle Details - Auto Dealership',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function VehicleDetailPage() {
+export default function VehicleDetailPage({ searchParams }: { searchParams: { id?: string } }) {
   return (
     <main className="min-h-screen bg-gray-50">
       <Suspense fallback={
@@ -29,7 +29,7 @@ export default function VehicleDetailPage() {
           <p className="text-gray-600">Please wait while we fetch the vehicle details.</p>
         </div>
       }>
-        <VehicleDetailClient />
+        <VehicleDetailWrapper />
       </Suspense>
     </main>
   );
