@@ -123,7 +123,7 @@ export default {
     const config = {
       baseUrl: 'https://www.automobile-lambert.com',
       listingPath: '/cars/',
-      maxPages: 50,  // Scrape ALL pages
+      maxPages: 5,  // Start with 5 pages for testing
       perPage: 20
     };
     
@@ -132,22 +132,33 @@ export default {
     try {
       // Step 1: Discover vehicle URLs
       const vehicleUrls = await this.discoverVehicleUrls(config);
-      console.log(`Discovered ${vehicleUrls.length} vehicle URLs`);
+      console.log(`Discovered ${vehicleUrls.length} vehicle URLs from Lambert website`);
+      
+      // If no URLs found, log and return
+      if (vehicleUrls.length === 0) {
+        console.log('No vehicle URLs found on Lambert website');
+        return vehicles;
+      }
       
       // Step 2: Scrape ALL vehicles (no limit)
+      let successCount = 0;
+      let errorCount = 0;
+      
       for (const url of vehicleUrls) {
         try {
           await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
           const vehicle = await this.scrapeVehicleDetails(url);
           if (vehicle) {
             vehicles.push(vehicle);
+            successCount++;
           }
         } catch (error) {
           console.error(`Error scraping ${url}:`, error.message);
+          errorCount++;
         }
       }
       
-      console.log(`Successfully scraped ${vehicles.length} vehicles`);
+      console.log(`Scraping complete: ${successCount} successful, ${errorCount} errors`);
       
       return vehicles;
       
@@ -174,26 +185,31 @@ export default {
         
         const html = await response.text();
         
-        // Extract vehicle links - Lambert uses /cars/year-make-model/ pattern
-        const linkPattern = /href="(\/cars\/[^"]+\/)"/g;
+        // Extract vehicle links - Lambert uses both relative and absolute URLs
+        // Pattern 1: Relative URLs like /cars/2018-toyota-c-hr/
+        const relativePattern = /href="(\/cars\/[^"\/]+\/)"/g;
         let match;
         
-        while ((match = linkPattern.exec(html)) !== null) {
+        while ((match = relativePattern.exec(html)) !== null) {
           const path = match[1];
-          // Filter out category/filter URLs
-          if (!path.includes('?') && path.split('/').length === 4) {
+          // Filter out /cars/ and /cars/feed/
+          if (!path.includes('?') && path !== '/cars/' && !path.includes('/feed/')) {
             urls.add(`${config.baseUrl}${path}`);
           }
         }
         
-        // If no links found on this page, stop
-        if (urls.size === 0 && page === 1) {
-          console.log('No vehicle links found, checking for different pattern...');
-          // Try alternative patterns
-          const altPattern = /href="([^"]*automobile-lambert\.com\/[^"]*voiture[^"]*)"/gi;
-          while ((match = altPattern.exec(html)) !== null) {
-            urls.add(match[1]);
+        // Pattern 2: Absolute URLs like https://www.automobile-lambert.com/cars/...
+        const absolutePattern = /href="(https?:\/\/[^"]*automobile-lambert\.com\/cars\/[^"\/]+\/)"/g;
+        while ((match = absolutePattern.exec(html)) !== null) {
+          const url = match[1];
+          if (!url.includes('?') && !url.endsWith('/cars/') && !url.includes('/feed/')) {
+            urls.add(url);
           }
+        }
+        
+        // Log progress
+        if (page === 1) {
+          console.log(`Found ${urls.size} vehicle URLs on first page`);
         }
         
       } catch (error) {
