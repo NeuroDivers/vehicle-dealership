@@ -1,0 +1,13 @@
+name = "lambert-sync-worker"
+main = "lambert-sync-worker.js"
+compatibility_date = "2023-12-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+# D1 Database binding - using the correct database
+[[d1_databases]]
+binding = "DB"
+database_name = "vehicle-dealership-analytics"
+database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
+
+[vars]
+ENVIRONMENT = "production"

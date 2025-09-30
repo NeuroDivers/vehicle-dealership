@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { FileText, Download, RefreshCw, Upload, ExternalLink, ChevronDown, ChevronUp, Check, Package } from 'lucide-react';
-import { LambertSyncManager } from '@/lib/vendor-sync-manager';
 
 interface ScraperStats {
   lastRun?: string;
@@ -86,9 +85,22 @@ export default function LambertScraperPanelV2() {
     setStats(prev => ({ ...prev, status: 'running' }));
     
     try {
-      // Use the new VendorSyncManager
-      const syncManager = new LambertSyncManager();
-      const result = await syncManager.syncLambertInventory();
+      // Call the Lambert sync worker that saves to database
+      const syncWorkerUrl = process.env.NEXT_PUBLIC_LAMBERT_SYNC_WORKER_URL || 
+                           'https://lambert-sync-worker.nick-damato0011527.workers.dev';
+      
+      const response = await fetch(`${syncWorkerUrl}/sync-lambert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Sync request failed');
+      }
+      
+      const result = await response.json();
       
       // Update stats with sync results
       setStats({
@@ -97,27 +109,23 @@ export default function LambertScraperPanelV2() {
         syncedToMain: result.vehicles_found,
         newVehicles: result.new_vehicles,
         updatedVehicles: result.updated_vehicles,
-        unlistedVehicles: result.unlisted_vehicles || 0,
-        removedVehicles: result.removed_vehicles,
+        unlistedVehicles: 0,
+        removedVehicles: 0,
         lastRun: new Date().toISOString(),
-        status: result.status
+        status: result.status || 'success'
       });
       
       // Reload vehicles
       await loadRecentVehicles();
       
-      if (result.status === 'success') {
+      if (result.success) {
         alert(`✅ Sync completed successfully!
 • ${result.vehicles_found} vehicles found
-• ${result.new_vehicles} new vehicles added
-• ${result.updated_vehicles} vehicles updated
-• ${result.unlisted_vehicles || 0} vehicles unlisted
-• ${result.removed_vehicles} vehicles removed`);
-      } else if (result.status === 'partial') {
-        alert(`⚠️ Sync partially completed with some errors.
-Check the console for details.`);
+• ${result.new_vehicles} new vehicles added to database
+• ${result.updated_vehicles} vehicles updated in database
+${result.errors && result.errors.length > 0 ? `• ${result.errors.length} errors occurred` : ''}`);
       } else {
-        alert(`❌ Sync failed: ${result.error_message || 'Unknown error'}`);
+        alert(`❌ Sync failed: ${result.error || 'Unknown error'}`);
       }
       
     } catch (error) {
