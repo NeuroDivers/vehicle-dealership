@@ -260,7 +260,13 @@ export default function Home() {
                 console.error('Error parsing images:', e);
                 images = [];
               }
-              const firstImage = images[0] || '/api/placeholder/400/300';
+              let firstImage = images[0] || '/api/placeholder/400/300';
+              
+              // Use thumbnail variant for Cloudflare Images
+              if (firstImage && firstImage.includes('imagedelivery.net')) {
+                firstImage = firstImage.replace('/public', '/thumbnail');
+              }
+              
               return (
               <div key={vehicle.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
                 <div className="h-48 bg-gray-200 relative">
@@ -361,7 +367,12 @@ export default function Home() {
                 } catch (e) {
                   images = [];
                 }
-                const firstImage = images[0] || '/api/placeholder/400/300';
+                let firstImage = images[0] || '/api/placeholder/400/300';
+                
+                // Use thumbnail variant for Cloudflare Images
+                if (firstImage && firstImage.includes('imagedelivery.net')) {
+                  firstImage = firstImage.replace('/public', '/thumbnail');
+                }
                 
                 return (
                   <Link

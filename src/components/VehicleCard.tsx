@@ -31,7 +31,12 @@ interface VehicleCardProps {
 
 export default function VehicleCard({ vehicle, showPrice = true }: VehicleCardProps) {
   const images = vehicle.images ? JSON.parse(vehicle.images) : [];
-  const mainImage = images[0] || '/placeholder-vehicle.jpg';
+  let mainImage = images[0] || '/placeholder-vehicle.jpg';
+  
+  // Use thumbnail variant for Cloudflare Images
+  if (mainImage && mainImage.includes('imagedelivery.net')) {
+    mainImage = mainImage.replace('/public', '/thumbnail');
+  }
   
   // Determine if this is a partner vehicle
   const isPartnerVehicle = vehicle.source && vehicle.source !== 'internal';

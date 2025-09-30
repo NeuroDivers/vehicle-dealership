@@ -357,14 +357,21 @@ export default function VehiclesPage() {
   if (vehicle.images) {
     const imageData = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
     images = imageData.map((img: any) => {
+      let imageUrl = '';
       if (typeof img === 'string') {
-        return img;
+        imageUrl = img;
       } else if (img.variants) {
-        return img.variants.thumbnail || img.variants.public || img.variants.gallery;
+        imageUrl = img.variants.thumbnail || img.variants.public || img.variants.gallery;
       } else if (img.url) {
-        return img.url;
+        imageUrl = img.url;
       }
-      return null;
+      
+      // Use thumbnail variant for Cloudflare Images
+      if (imageUrl && imageUrl.includes('imagedelivery.net')) {
+        imageUrl = imageUrl.replace('/public', '/thumbnail');
+      }
+      
+      return imageUrl;
     }).filter((url: any) => url);
   }
   return (
