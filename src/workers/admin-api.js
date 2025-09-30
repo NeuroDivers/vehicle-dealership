@@ -287,6 +287,21 @@ export default {
         }, corsHeaders);
       }
 
+      // Route: GET /api/admin/vehicles - Get all vehicles from database
+      if (url.pathname === '/api/admin/vehicles' && request.method === 'GET') {
+        try {
+          const vehicles = await env.DB.prepare(`
+            SELECT * FROM vehicles 
+            ORDER BY createdAt DESC
+          `).all();
+          
+          return jsonResponse(vehicles.results || [], corsHeaders);
+        } catch (error) {
+          console.error('Error fetching vehicles:', error);
+          return jsonResponse([], corsHeaders);
+        }
+      }
+
       // Route: GET /api/admin/lambert/export
       if (url.pathname === '/api/admin/lambert/export' && request.method === 'GET') {
         const csv = await exportLambertCSV(env.DB);

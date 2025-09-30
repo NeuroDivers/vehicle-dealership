@@ -139,11 +139,12 @@ export default function LambertScraperPanel() {
         // If we have sample vehicles, update the recent vehicles list
         if (result.vehicles && result.vehicles.length > 0) {
           // Check which vehicles already exist in the database
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
-                        'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+          const adminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
+                             'https://vehicle-admin-api.nick-damato0011527.workers.dev';
           
           try {
-            const existingResponse = await fetch(`${apiUrl}/api/vehicles`);
+            // Get existing vehicles from admin API which has access to the database
+            const existingResponse = await fetch(`${adminApiUrl}/api/admin/vehicles`);
             const existingVehicles = await existingResponse.json();
             
             const formattedVehicles = result.vehicles.map((v: any, index: number) => {
