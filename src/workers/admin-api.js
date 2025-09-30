@@ -161,30 +161,29 @@ export default {
             // Generate a unique ID for the vehicle
             const vehicleId = `lam_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             
-            // Check if vehicle already exists by VIN or URL
+            // Check if vehicle already exists by VIN
             let existingVehicle = null;
             if (vehicle.vin) {
               existingVehicle = await env.DB.prepare(
-                'SELECT id FROM Vehicle WHERE partnerVin = ? LIMIT 1'
+                'SELECT id FROM vehicles WHERE vin = ? LIMIT 1'
               ).bind(vehicle.vin).first();
             }
             
-            if (!existingVehicle && vehicle.url) {
+            // If no VIN match, check by stock number
+            if (!existingVehicle && vehicle.stock_number) {
               existingVehicle = await env.DB.prepare(
-                'SELECT id FROM Vehicle WHERE partnerUrl = ? LIMIT 1'
-              ).bind(vehicle.url).first();
+                'SELECT id FROM vehicles WHERE stockNumber = ? LIMIT 1'
+              ).bind(vehicle.stock_number).first();
             }
             
             if (existingVehicle) {
               // Update existing vehicle
               await env.DB.prepare(`
-                UPDATE Vehicle SET
+                UPDATE vehicles SET
                   make = ?, model = ?, year = ?, price = ?,
                   odometer = ?, bodyType = ?, color = ?,
-                  fuelType = ?, description = ?, images = ?,
-                  partnerName = 'Automobile Lambert',
-                  partnerUrl = ?, partnerVin = ?, partnerStock = ?,
-                  lastSynced = CURRENT_TIMESTAMP,
+                  description = ?, images = ?,
+                  stockNumber = ?, vin = ?,
                   updatedAt = CURRENT_TIMESTAMP
                 WHERE id = ?
               `).bind(
@@ -195,25 +194,20 @@ export default {
                 vehicle.odometer || null,
                 vehicle.body_type || '',
                 vehicle.color_exterior || '',
-                vehicle.fuel_type || 'gasoline',
                 vehicle.description || '',
                 JSON.stringify(vehicle.images || []),
-                vehicle.url || '',
-                vehicle.vin || '',
                 vehicle.stock_number || '',
+                vehicle.vin || '',
                 existingVehicle.id
               ).run();
             } else {
-              // Insert new vehicle
+              // Insert new vehicle into vehicles table
               await env.DB.prepare(`
-                INSERT INTO Vehicle (
-                  id, make, model, year, price, odometer, bodyType, color,
-                  fuelType, description, images, isSold, source,
-                  partnerName, partnerUrl, partnerVin, partnerStock, lastSynced,
-                  createdAt, updatedAt
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO vehicles (
+                  make, model, year, price, odometer, bodyType, color,
+                  description, images, isSold, stockNumber, vin
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               `).bind(
-                vehicleId,
                 vehicle.make || '',
                 vehicle.model || '',
                 vehicle.year || null,
@@ -221,20 +215,38 @@ export default {
                 vehicle.odometer || null,
                 vehicle.body_type || '',
                 vehicle.color_exterior || '',
-                vehicle.fuel_type || 'gasoline',
                 vehicle.description || '',
                 JSON.stringify(vehicle.images || []),
-                false,
-                'lambert',
-                'Automobile Lambert',
-                vehicle.url || '',
-                vehicle.vin || '',
+                0,  // isSold = false
                 vehicle.stock_number || '',
-                new Date().toISOString(),
-                new Date().toISOString(),
-                new Date().toISOString()
+                vehicle.vin || ''
               ).run();
             }
+            
+            // Also insert/update in lambert_vehicles table for tracking
+            await env.DB.prepare(`
+              INSERT OR REPLACE INTO lambert_vehicles (
+                url, title, year, make, model, price, vin, stock_number,
+                odometer, fuel_type, body_type, color_exterior, description,
+                images, status, last_seen, scraped_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            `).bind(
+              vehicle.url || '',
+              vehicle.title || '',
+              vehicle.year || null,
+              vehicle.make || '',
+              vehicle.model || '',
+              vehicle.price || null,
+              vehicle.vin || '',
+              vehicle.stock_number || '',
+              vehicle.odometer || null,
+              vehicle.fuel_type || '',
+              vehicle.body_type || '',
+              vehicle.color_exterior || '',
+              vehicle.description || '',
+              JSON.stringify(vehicle.images || []),
+              'SYNCED'
+            ).run();
             
             synced++;
           } catch (error) {

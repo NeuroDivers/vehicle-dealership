@@ -117,7 +117,7 @@ export default {
               syncedToMain: 0,
               errors: []
             },
-            vehicles: vehicles.slice(0, 5), // Return first 5 vehicles as sample
+            vehicles: vehicles, // Return all scraped vehicles
             timestamp: new Date().toISOString()
           }, corsHeaders);
           
