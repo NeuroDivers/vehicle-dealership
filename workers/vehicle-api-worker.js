@@ -24,15 +24,11 @@ export default {
       if (url.pathname === '/api/vehicles' && request.method === 'GET') {
         const { results } = await env.DB.prepare(`
           SELECT 
-            id, make, model, year, price, odometer, bodyType, fuelType,
-            transmission, drivetrain, color, vin, stockNumber,
-            description, images, isSold,
-            vendor_id, vendor_name, vendor_status, is_published
+            id, make, model, year, price, odometer, bodyType,
+            color, description, images, isSold
           FROM vehicles 
-          WHERE is_published = 1 
-            AND (vendor_status = 'active' OR vendor_status IS NULL)
-            AND (isSold = 0 OR isSold IS NULL)
-          ORDER BY created_at DESC
+          WHERE (isSold = 0 OR isSold IS NULL)
+          ORDER BY id DESC
           LIMIT 500
         `).all();
         

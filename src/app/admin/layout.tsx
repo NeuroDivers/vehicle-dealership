@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   X,
+  Star,
   User,
   MessageSquare,
   BarChart3,
@@ -97,8 +98,17 @@ export default function AdminLayout({
                     pathname === '/admin/leads' ? 'bg-gray-700' : 'hover:bg-gray-700'
                   }`}
                 >
-                  <MessageSquare className="h-4 w-4" />
+                  <Users className="h-4 w-4" />
                   <span>Leads</span>
+                </Link>
+                <Link
+                  href="/admin/reviews"
+                  className={`px-3 py-2 rounded flex items-center space-x-1 ${
+                    pathname === '/admin/reviews' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <Star className="h-4 w-4" />
+                  <span>Reviews</span>
                 </Link>
                 <Link
                   href="/admin/staff"
@@ -106,7 +116,6 @@ export default function AdminLayout({
                     pathname === '/admin/staff' ? 'bg-gray-700' : 'hover:bg-gray-700'
                   }`}
                 >
-                  <Users className="h-4 w-4" />
                   <span>Staff</span>
                 </Link>
                 <Link
@@ -197,6 +206,13 @@ export default function AdminLayout({
                 onClick={() => setShowMobileMenu(false)}
               >
                 Leads
+              </Link>
+              <Link
+                href="/admin/reviews"
+                className="block px-3 py-2 rounded hover:bg-gray-700"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Reviews
               </Link>
               <Link
                 href="/admin/staff"
