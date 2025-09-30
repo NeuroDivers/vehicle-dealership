@@ -398,7 +398,7 @@ export default {
             : `https://www.automobile-lambert.com/${url}`;
         }
         
-        if (!seen.has(url) && images.length < 5) { // Limit to 5 images
+        if (!seen.has(url) && images.length < 15) { // Limit to 15 images
           seen.add(url);
           images.push(url);
         }
@@ -465,7 +465,7 @@ export default {
       return imageUrls;
     }
     
-    for (let i = 0; i < Math.min(imageUrls.length, 5); i++) { // Limit to 5 images
+    for (let i = 0; i < Math.min(imageUrls.length, 15); i++) { // Limit to 15 images
       try {
         const imageUrl = imageUrls[i];
         console.log(`Uploading image ${i + 1}: ${imageUrl}`);

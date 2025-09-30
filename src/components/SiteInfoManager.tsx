@@ -32,6 +32,11 @@ interface SiteInfo {
     fr: string;
     es: string;
   };
+  disclaimer: {
+    en: string;
+    fr: string;
+    es: string;
+  };
   themeColors: {
     primary: string;
     secondary: string;
@@ -70,6 +75,11 @@ const defaultSiteInfo: SiteInfo = {
     en: '© 2024 Premium Auto Sales. All rights reserved.',
     fr: '© 2024 Premium Auto Sales. Tous droits réservés.',
     es: '© 2024 Premium Auto Sales. Todos los derechos reservados.'
+  },
+  disclaimer: {
+    en: 'This vehicle is offered for sale subject to prior sale. All information provided is believed to be accurate but is not guaranteed. Please verify all details with our sales team.',
+    fr: 'Ce véhicule est offert à la vente sous réserve de vente préalable. Toutes les informations fournies sont considérées comme exactes mais ne sont pas garanties. Veuillez vérifier tous les détails avec notre équipe de vente.',
+    es: 'Este vehículo se ofrece a la venta sujeto a venta previa. Toda la información proporcionada se considera precisa pero no está garantizada. Verifique todos los detalles con nuestro equipo de ventas.'
   },
   themeColors: {
     primary: '#2563eb', // blue-600
@@ -463,6 +473,49 @@ export default function SiteInfoManager() {
               activeLanguageTab === 'en' ? `© ${currentYear} Your Company. All rights reserved.` :
               activeLanguageTab === 'fr' ? `© ${currentYear} Votre Entreprise. Tous droits réservés.` :
               `© ${currentYear} Su Empresa. Todos los derechos reservados.`
+            }
+          />
+        </div>
+      </div>
+
+      {/* Disclaimer Text */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4">Vehicle Disclaimer Text</h3>
+        <p className="text-sm text-gray-600 mb-3">This disclaimer appears on individual vehicle pages</p>
+        
+        {/* Language Tabs for Disclaimer */}
+        <div className="flex border-b mb-4">
+          {(['en', 'fr', 'es'] as const).map(lang => (
+            <button
+              key={lang}
+              onClick={() => setActiveLanguageTab(lang)}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeLanguageTab === lang
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {lang === 'en' ? 'English' : lang === 'fr' ? 'Français' : 'Español'}
+            </button>
+          ))}
+        </div>
+        
+        <div>
+          <textarea
+            value={siteInfo.disclaimer[activeLanguageTab]}
+            onChange={(e) => setSiteInfo(prev => ({
+              ...prev,
+              disclaimer: {
+                ...prev.disclaimer,
+                [activeLanguageTab]: e.target.value
+              }
+            }))}
+            rows={4}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder={
+              activeLanguageTab === 'en' ? 'This vehicle is offered for sale subject to prior sale...' :
+              activeLanguageTab === 'fr' ? 'Ce véhicule est offert à la vente sous réserve...' :
+              'Este vehículo se ofrece a la venta sujeto...'
             }
           />
         </div>

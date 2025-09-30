@@ -393,12 +393,7 @@ export default function VehiclesPage() {
                         +{images.length - 1} photos
                       </div>
                     )}
-                    {/* Vendor Badge */}
-                    {vehicle.vendor_name && vehicle.vendor_name !== 'Internal Inventory' && (
-                      <div className="absolute top-2 left-2 bg-blue-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded z-10">
-                        {vehicle.vendor_name}
-                      </div>
-                    )}
+                    {/* Vendor Badge - Hidden from public view */}
                     {/* Status Badges */}
                     {vehicle.vendor_status === 'unlisted' && (
                       <div className="absolute top-2 right-2 bg-yellow-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded z-10">
