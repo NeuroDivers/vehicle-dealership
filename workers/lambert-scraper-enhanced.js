@@ -188,28 +188,25 @@ export default {
     };
     
     // Extract from structured list items (Lambert's format)
-    // Look for patterns like "- Année 2021", "- Marque ram", etc.
-    // The site uses list items with labels
+    // Structure: <span>Label</span> <strong class="text-right">Value</strong>
     
-    const yearMatch = html.match(/Année[^>]*>\s*(\d{4})/i);
+    const yearMatch = html.match(/<span>Année<\/span>\s*<strong[^>]*>(\d{4})<\/strong>/i);
     if (yearMatch) {
       vehicle.year = parseInt(yearMatch[1]);
     }
     
-    const makeMatch = html.match(/Marque[^>]*>\s*([^<\n]+)/i);
+    const makeMatch = html.match(/<span>Marque<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
     if (makeMatch) {
       vehicle.make = makeMatch[1].trim().toUpperCase();
-      // Special handling for RAM
-      if (vehicle.make === 'RAM') vehicle.make = 'RAM';
     }
     
-    const modelMatch = html.match(/Modèle[^>]*>\s*([^<\n]+)/i);
+    const modelMatch = html.match(/<span>Modèle<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
     if (modelMatch) {
       vehicle.model = modelMatch[1].trim();
     }
     
     // Get trim/garniture
-    const trimMatch = html.match(/Garniture[^>]*>\s*([^<\n]+)/i);
+    const trimMatch = html.match(/<span>Garniture<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
     if (trimMatch) {
       vehicle.model = `${vehicle.model || ''} ${trimMatch[1].trim()}`.trim();
     }
@@ -224,55 +221,44 @@ export default {
       }
     }
     
-    // Extract price (Lambert format: "39,995$" or "$39,995")
-    const priceMatch = html.match(/(?:\$\s*([0-9,\s]+)|([0-9,\s]+)\s*\$)/);
+    // Extract price (Lambert format: <div class="new-price"> 39,995<span class="currency-symbol">$</span></div>)
+    const priceMatch = html.match(/class="new-price">\s*([0-9,\s]+)<span/i);
     if (priceMatch) {
-      const priceStr = priceMatch[1] || priceMatch[2];
-      vehicle.price = parseInt(priceStr.replace(/[,\s]/g, ''));
+      vehicle.price = parseInt(priceMatch[1].replace(/[,\s]/g, ''));
+    } else {
+      // Try alternative patterns
+      const priceAlt = html.match(/([0-9,]+)\s*<span class="currency-symbol">\$/i);
+      if (priceAlt) {
+        vehicle.price = parseInt(priceAlt[1].replace(/,/g, ''));
+      } else {
+        vehicle.price = 0;
+      }
     }
     
     // Extract VIN (French: Numéro VIN)
-    const vinMatch = html.match(/Numéro VIN[^>]*>\s*([A-HJ-NPR-Z0-9]{17})/i);
+    const vinMatch = html.match(/<span>Numéro VIN<\/span>\s*<strong[^>]*>([A-HJ-NPR-Z0-9]{17})<\/strong>/i);
     if (vinMatch) {
       vehicle.vin = vinMatch[1];
     } else {
-      // Try alternative pattern
-      const vinAlt = html.match(/VIN[:\s]+([A-HJ-NPR-Z0-9]{17})/i);
-      if (vinAlt) {
-        vehicle.vin = vinAlt[1];
-      } else {
-        // Generate unique VIN if not found
-        vehicle.vin = `LAM${Date.now()}${Math.random().toString(36).substr(2, 6)}`.toUpperCase();
-      }
+      // Generate unique VIN if not found
+      vehicle.vin = `LAM${Date.now()}${Math.random().toString(36).substr(2, 6)}`.toUpperCase();
     }
     
     // Extract stock number (French: Numéro de stock)
-    const stockMatch = html.match(/Numéro de stock[^>]*>\s*(\d+)/i);
+    const stockMatch = html.match(/<span>Numéro de stock<\/span>\s*<strong[^>]*>(\d+)<\/strong>/i);
     if (stockMatch) {
       vehicle.stockNumber = stockMatch[1];
     } else {
-      // Try alternative pattern
-      const stockAlt = html.match(/Stock[:\s#]+(\d+)/i);
-      if (stockAlt) {
-        vehicle.stockNumber = stockAlt[1];
-      } else {
-        // Generate stock number if not found
-        vehicle.stockNumber = `LAM-${vehicle.year || '00'}${Math.floor(Math.random() * 1000)}`;
-      }
+      // Generate stock number if not found
+      vehicle.stockNumber = `LAM-${vehicle.year || '00'}${Math.floor(Math.random() * 1000)}`;
     }
     
-    // Extract mileage/kilometrage (Lambert format: "- Kilométrage 112998 KM")
-    const mileageMatch = html.match(/Kilométrage[^>]*>\s*(\d{1,3}[\s,]?\d{3,6})\s*(km|KM)?/i);
+    // Extract mileage/kilometrage
+    const mileageMatch = html.match(/<span>Kilométrage<\/span>\s*<strong[^>]*>(\d+)\s*KM<\/strong>/i);
     if (mileageMatch) {
-      vehicle.odometer = parseInt(mileageMatch[1].replace(/[\s,]/g, ''));
+      vehicle.odometer = parseInt(mileageMatch[1]);
     } else {
-      // Try alternative pattern
-      const mileageAlt = html.match(/(\d{1,3}[\s,]?\d{3,6})\s*KM/i);
-      if (mileageAlt) {
-        vehicle.odometer = parseInt(mileageAlt[1].replace(/[\s,]/g, ''));
-      } else {
-        vehicle.odometer = 0;
-      }
+      vehicle.odometer = 0;
     }
     
     // Extract transmission (French: Transmission, Boîte)
@@ -292,16 +278,10 @@ export default {
                           drive.includes('rwd') || drive.includes('arrière') ? 'RWD' : driveMatch[2].trim();
     }
     
-    // Extract fuel type (Lambert format: "- CARBURANT GASOLINE")
-    const fuelMatch = html.match(/CARBURANT[^>]*>\s*([^<\n]+)/i);
+    // Extract fuel type
+    const fuelMatch = html.match(/<span>CARBURANT<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
     if (fuelMatch) {
       vehicle.fuelType = this.normalizeFuelType(fuelMatch[1].trim());
-    } else {
-      // Try alternative pattern
-      const fuelAlt = html.match(/(?:Fuel Type|Type de carburant|Carburant)[:\s]+([^<\n]+)/i);
-      if (fuelAlt) {
-        vehicle.fuelType = this.normalizeFuelType(fuelAlt[1].trim());
-      }
     }
     
     // Extract body style (Lambert format: "Carrosserie PICKUP TRUCK TRUCK")
@@ -313,18 +293,12 @@ export default {
       vehicle.bodyType = this.detectBodyTypeFromText(vehicle.model || vehicle.title || '');
     }
     
-    // Extract exterior color (Lambert format: "- COULEUR EXT. ROUGE")
-    const colorMatch = html.match(/COULEUR EXT\.[^>]*>\s*([^<\n]+)/i);
+    // Extract exterior color
+    const colorMatch = html.match(/<span>COULEUR EXT\.<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
     if (colorMatch) {
       vehicle.color = this.normalizeColor(colorMatch[1].trim());
     } else {
-      // Try alternative patterns
-      const colorAlt = html.match(/(?:Couleur extérieure|Exterior Color|Couleur)[:\s]+([^<\n]+)/i);
-      if (colorAlt) {
-        vehicle.color = this.normalizeColor(colorAlt[1].trim());
-      } else {
-        vehicle.color = 'Unknown';
-      }
+      vehicle.color = 'Unknown';
     }
     
     // Extract images

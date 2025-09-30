@@ -135,25 +135,30 @@ export default function EnhancedVehicleManager() {
     return Array.from(yearSet).sort((a, b) => b.localeCompare(a));
   }, [vehicles]);
 
+  const deleteVehicleById = async (id: string) => {
+    // Internal delete function without confirmation
+    const res = await fetch(getVehicleEndpoint(`/${id}`), {
+      method: 'DELETE',
+    });
+    
+    if (res.ok) {
+      setVehicles(prev => prev.filter(v => v.id !== id));
+      setSelectedVehicles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+      return true;
+    }
+    return false;
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this vehicle?')) return;
     
     setDeletingId(id);
     try {
-      const res = await fetch(getVehicleEndpoint(`/${id}`), {
-        method: 'DELETE',
-      });
-      
-      if (res.ok) {
-        setVehicles(vehicles.filter(v => v.id !== id));
-        setSelectedVehicles(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(id);
-          return newSet;
-        });
-      } else {
-        alert('Failed to delete vehicle');
-      }
+      await deleteVehicleById(id);
     } catch (error) {
       console.error('Error deleting vehicle:', error);
       alert('Failed to delete vehicle');
@@ -212,8 +217,27 @@ export default function EnhancedVehicleManager() {
       case 'delete':
         if (confirm(`Are you sure you want to delete ${selectedVehicles.size} vehicles?`)) {
           const vehicleIds = Array.from(selectedVehicles);
+          let successCount = 0;
+          let failCount = 0;
+          
           for (const id of vehicleIds) {
-            await handleDelete(id);
+            try {
+              const success = await deleteVehicleById(id);
+              if (success) {
+                successCount++;
+              } else {
+                failCount++;
+              }
+            } catch (error) {
+              console.error(`Error deleting vehicle ${id}:`, error);
+              failCount++;
+            }
+          }
+          
+          if (successCount > 0) {
+            alert(`Successfully deleted ${successCount} vehicle(s)${failCount > 0 ? `. Failed to delete ${failCount} vehicle(s).` : '.'}`);
+          } else if (failCount > 0) {
+            alert(`Failed to delete ${failCount} vehicle(s).`);
           }
         }
         break;
