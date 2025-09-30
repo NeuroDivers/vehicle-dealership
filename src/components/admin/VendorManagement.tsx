@@ -110,15 +110,24 @@ export default function VendorManagement() {
   const syncVendor = async (vendorId: string) => {
     setSyncing(vendorId);
     try {
-      const response = await fetch(`/api/vendors/${vendorId}/sync`, {
-        method: 'POST'
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Sync completed: ${result.new_vehicles} new, ${result.updated_vehicles} updated`);
-        loadVendors();
-        loadSyncLogs();
+      // For Lambert, call the Lambert scraper worker directly
+      if (vendorId === 'lambert') {
+        const lambertUrl = process.env.NEXT_PUBLIC_LAMBERT_WORKER_URL || 
+                          'https://lambert-scraper.nick-damato0011527.workers.dev';
+        const response = await fetch(`${lambertUrl}/api/lambert/scrape-with-images`, {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          alert(`Lambert sync completed: ${result.stats?.vehiclesFound || 0} vehicles found`);
+          loadVendors();
+          loadSyncLogs();
+        } else {
+          alert('Lambert sync failed. Check console for details.');
+        }
+      } else {
+        alert('Sync not available for this vendor type');
       }
     } catch (error) {
       alert('Sync failed. Check console for details.');
