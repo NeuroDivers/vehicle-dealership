@@ -116,16 +116,16 @@ export default {
               images: v.cloudflareImages || v.images || []
             }));
           } else {
-            console.log('Lambert scraper returned no vehicles, using sample data');
-            vehicles = this.getSampleLambertVehicles();
+            console.log('Lambert scraper returned no vehicles');
+            vehicles = [];
           }
         } else {
-          console.log('Lambert scraper request failed, using sample data');
-          vehicles = this.getSampleLambertVehicles();
+          console.log('Lambert scraper request failed');
+          vehicles = [];
         }
       } catch (error) {
-        console.log('Could not fetch from Lambert scraper, using sample data:', error.message);
-        vehicles = this.getSampleLambertVehicles();
+        console.log('Could not fetch from Lambert scraper:', error.message);
+        vehicles = [];
       }
       
       // Step 2: Save to database
