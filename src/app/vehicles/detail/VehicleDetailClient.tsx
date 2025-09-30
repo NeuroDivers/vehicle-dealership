@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { getVehicleEndpoint } from '@/lib/api-config';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Car, MapPin, Phone, Mail, Calendar, Fuel, Gauge } from 'lucide-react';
-import VehicleContactForm from './VehicleContactForm';
-import VehicleContactButton from './VehicleContactButton';
+import { ChevronLeft, ChevronRight, Car, MapPin, Phone, Mail, Calendar, Fuel, Gauge, ArrowLeft, Palette } from 'lucide-react';
+import Link from 'next/link';
 import VehicleSEO from './VehicleSEO';
 import { trackVehicleView } from '@/lib/analytics-config';
 
@@ -31,57 +30,19 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
   const themeColors = getThemeColors();
 
   useEffect(() => {
-    if (!vehicle) {
-      router.push('/vehicles');
-      return;
+    if (vehicle) {
+      // Track vehicle view for analytics
+      trackVehicleView({
+        vehicleId: vehicle.id,
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        price: vehicle.price,
+      });
     }
-    // Track vehicle view for analytics
-    trackVehicleView({
-      vehicleId: vehicle.id,
-      make: vehicle.make,
-      model: vehicle.model,
-      year: vehicle.year,
-      price: vehicle.price,
-    });
   }, [vehicle]);
 
-    // Fetch vehicle data
-    fetch(getVehicleEndpoint(`/${vehicleId}`))
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setError(true);
-        } else {
-          setVehicle(data);
-          // Track vehicle view for analytics
-          trackVehicleView({
-            vehicleId: data.id,
-            make: data.make,
-            model: data.model,
-            year: data.year,
-            price: data.price,
-          });
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to fetch vehicle:', err);
-        setError(true);
-        setLoading(false);
-      });
-  }, [vehicleId, router]);
-
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
-        <Loader2 className="h-16 w-16 text-gray-400 mx-auto mb-4 animate-spin" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading Vehicle...</h1>
-        <p className="text-gray-600">Please wait while we fetch the vehicle details.</p>
-      </div>
-    );
-  }
-
-  if (error || !vehicle) {
+  if (!vehicle) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center">
         <Car className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -111,14 +72,56 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
         // Fallback for other object formats
         return img.url;
       }
-      return img;
     }).filter((url: any) => url); // Filter out any undefined/null values
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* SEO Component */}
-      <VehicleSEO vehicle={vehicle} images={images} />
+        {/* Image Gallery */}
+        <div className="relative h-96 bg-gray-100 rounded-lg overflow-hidden">
+          {images.length > 0 ? (
+            <>
+              <Image
+                src={images[currentImageIndex]}
+                alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full hover:bg-white"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full hover:bg-white"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-2 h-2 rounded-full ${
+                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400">
+              <Car className="h-16 w-16" />
+            </div>
+          )}
+        </div>
       
       {/* Back Button */}
       <Link href="/vehicles" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6">
@@ -129,10 +132,6 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Image Section */}
         <div>
-          <VehicleImageGallery 
-            images={images}
-            vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-          />
           {vehicle.isSold === 1 && (
             <div className="mt-4 bg-red-100 text-red-800 px-4 py-2 rounded-lg text-center font-semibold">
               This Vehicle Has Been Sold
@@ -204,18 +203,39 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
               >
                 Get More Information
               </button>
-              <VehicleContactButton vehicle={vehicle} />
+              <button
+                onClick={() => setShowContactForm(true)}
+                className="w-full border-2 py-3 px-6 rounded-lg transition font-semibold hover:opacity-90"
+                style={{ borderColor: themeColors.primary, color: themeColors.primary }}
+              >
+                Contact Us About This Vehicle
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Contact Form Modal */}
-      <VehicleContactForm 
-        vehicle={vehicle} 
-        isOpen={showContactForm}
-        onClose={() => setShowContactForm(false)}
-      />
+      {/* Contact Form Modal - Placeholder */}
+      {showContactForm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-semibold mb-4">Contact Us</h3>
+            <p className="text-gray-600 mb-4">
+              Interested in the {vehicle.year} {vehicle.make} {vehicle.model}?
+            </p>
+            <p className="text-gray-600 mb-4">
+              Call us at: <a href="tel:555-0123" className="font-semibold" style={{ color: themeColors.primary }}>555-0123</a>
+            </p>
+            <button
+              onClick={() => setShowContactForm(false)}
+              className="w-full py-2 px-4 rounded-lg text-white font-semibold"
+              style={{ backgroundColor: themeColors.primary }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
