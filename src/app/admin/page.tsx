@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AIFeatureManager from '@/components/AIFeatureManager';
 import SiteInfoManager from '@/components/SiteInfoManager';
-import LambertScraperPanel from '@/components/admin/LambertScraperPanel';
+import LambertScraperPanelV2 from '@/components/admin/LambertScraperPanelV2';
 import VendorManagement from '@/components/admin/VendorManagement';
 
 interface Stats {
@@ -268,7 +268,7 @@ export default function AdminDashboard() {
 
       {/* Lambert Scraper Tab */}
       {activeTab === 'lambert' && (
-        <LambertScraperPanel />
+        <LambertScraperPanelV2 />
       )}
 
       {/* Vendors Tab */}
