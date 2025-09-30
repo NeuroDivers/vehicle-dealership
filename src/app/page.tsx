@@ -222,8 +222,24 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {featuredVehicles.length === 0 && (
+              <div className="col-span-3 text-center py-12">
+                <Car className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">
+                  {language === 'fr' ? 'Aucun véhicule disponible pour le moment' :
+                   language === 'es' ? 'No hay vehículos disponibles en este momento' :
+                   'No vehicles available at the moment'}
+                </p>
+              </div>
+            )}
             {featuredVehicles.map((vehicle) => {
-              const images = vehicle.images ? JSON.parse(vehicle.images) : [];
+              let images = [];
+              try {
+                images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
+              } catch (e) {
+                console.error('Error parsing images:', e);
+                images = [];
+              }
               const firstImage = images[0] || '/api/placeholder/400/300';
               return (
               <div key={vehicle.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">

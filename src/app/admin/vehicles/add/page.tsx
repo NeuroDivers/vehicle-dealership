@@ -24,6 +24,13 @@ export default function AddVehicle() {
     description: '',
     images: [] as string[],
     vin: '',
+    stockNumber: '',
+    fuelType: 'Gasoline',
+    transmission: 'Automatic',
+    drivetrain: 'FWD',
+    vendor_id: 'internal',
+    vendor_name: 'Internal Inventory',
+    vendor_stock_number: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -386,6 +393,84 @@ export default function AddVehicle() {
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g., Silver"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Stock Number
+              </label>
+              <input
+                type="text"
+                name="stockNumber"
+                value={formData.stockNumber}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., STK12345"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fuel Type
+              </label>
+              <select
+                name="fuelType"
+                value={formData.fuelType}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Gasoline">Gasoline</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Electric">Electric</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Transmission
+              </label>
+              <select
+                name="transmission"
+                value={formData.transmission}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Automatic">Automatic</option>
+                <option value="Manual">Manual</option>
+                <option value="CVT">CVT</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Drivetrain
+              </label>
+              <select
+                name="drivetrain"
+                value={formData.drivetrain}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="FWD">FWD (Front-Wheel Drive)</option>
+                <option value="RWD">RWD (Rear-Wheel Drive)</option>
+                <option value="AWD">AWD (All-Wheel Drive)</option>
+                <option value="4WD">4WD (Four-Wheel Drive)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Vendor Stock Number
+              </label>
+              <input
+                type="text"
+                name="vendor_stock_number"
+                value={formData.vendor_stock_number}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Leave empty for internal inventory"
               />
             </div>
           </div>
