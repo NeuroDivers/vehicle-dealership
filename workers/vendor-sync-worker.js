@@ -84,64 +84,43 @@ export default {
     try {
       console.log('Starting Lambert sync...');
       
-      // Step 1: Scrape Lambert website directly
-      const lambertUrl = 'https://automobile-lambert.com/occasion';
-      const response = await fetch(lambertUrl);
+      // For now, use sample data until we can properly scrape Lambert
+      // The actual Lambert scraper worker can be integrated later
+      console.log('Using sample Lambert data for testing...');
+      vehicles = this.getSampleLambertVehicles();
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch Lambert page: ${response.status}`);
-      }
-      
-      const html = await response.text();
-      
-      // Parse vehicles from HTML
-      const vehicleMatches = html.matchAll(/<div[^>]*class="[^"]*vehicle-card[^"]*"[^>]*>[\s\S]*?<\/div>/gi);
-      
-      for (const match of vehicleMatches) {
-        const vehicleHtml = match[0];
+      // Try to get real data from Lambert scraper if available
+      try {
+        const lambertScraperUrl = 'https://lambert-scraper.nick-damato0011527.workers.dev/api/lambert/scrape';
+        const scraperResponse = await fetch(lambertScraperUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
         
-        // Extract vehicle data (simplified - you may need to adjust based on actual HTML)
-        const titleMatch = vehicleHtml.match(/<h[23][^>]*>([^<]+)<\/h[23]>/i);
-        const priceMatch = vehicleHtml.match(/(\d+[\s,]?\d*)\s*\$/);
-        const yearMatch = vehicleHtml.match(/(\d{4})/);
-        const linkMatch = vehicleHtml.match(/href="([^"]+)"/);
-        
-        if (titleMatch && priceMatch) {
-          const title = titleMatch[1].trim();
-          const price = parseInt(priceMatch[1].replace(/[\s,]/g, ''));
-          const year = yearMatch ? parseInt(yearMatch[1]) : 0;
-          
-          // Parse make and model from title
-          const parts = title.split(' ');
-          const make = parts[0] || '';
-          const model = parts.slice(1).join(' ') || '';
-          
-          vehicles.push({
-            make,
-            model,
-            year,
-            price,
-            title,
-            vin: `LAMBERT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
-            stockNumber: `LAM${year}${make.substr(0, 2).toUpperCase()}${Math.floor(Math.random() * 10000)}`,
-            bodyType: '',
-            fuelType: '',
-            transmission: '',
-            drivetrain: '',
-            color: '',
-            odometer: 0,
-            description: title,
-            images: []
-          });
+        if (scraperResponse.ok) {
+          const scraperData = await scraperResponse.json();
+          if (scraperData.vehicles && scraperData.vehicles.length > 0) {
+            console.log(`Got ${scraperData.vehicles.length} vehicles from Lambert scraper`);
+            vehicles = scraperData.vehicles.map(v => ({
+              make: v.make || '',
+              model: v.model || '',
+              year: v.year || 0,
+              price: v.price || 0,
+              vin: v.vin || `LAM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              stockNumber: v.stockNumber || v.stock || '',
+              bodyType: v.bodyType || '',
+              fuelType: v.fuelType || '',
+              transmission: v.transmission || '',
+              drivetrain: v.drivetrain || '',
+              color: v.color || '',
+              odometer: v.odometer || v.mileage || 0,
+              description: v.description || `${v.year} ${v.make} ${v.model}`,
+              images: v.images || []
+            }));
+          }
         }
-      }
-      
-      console.log(`Found ${vehicles.length} vehicles on Lambert website`);
-      
-      // If no vehicles found with basic parsing, return sample data for testing
-      if (vehicles.length === 0) {
-        console.log('No vehicles found with parsing, using sample data...');
-        vehicles = this.getSampleLambertVehicles();
+      } catch (error) {
+        console.log('Could not fetch from Lambert scraper, using sample data:', error.message);
       }
       
       // Step 2: Save to database
