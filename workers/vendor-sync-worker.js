@@ -84,9 +84,9 @@ export default {
     try {
       console.log('Starting Lambert sync...');
       
-      // Try to get real data from enhanced Lambert scraper
+      // Try to get real data from Lambert scraper with Cloudflare Images upload
       try {
-        const lambertScraperUrl = 'https://lambert-scraper-enhanced.nick-damato0011527.workers.dev/api/scrape';
+        const lambertScraperUrl = 'https://lambert-scraper.nick-damato0011527.workers.dev/api/scrape-with-images';
         const scraperResponse = await fetch(lambertScraperUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
@@ -96,6 +96,11 @@ export default {
           const scraperData = await scraperResponse.json();
           if (scraperData.success && scraperData.vehicles && scraperData.vehicles.length > 0) {
             console.log(`Got ${scraperData.vehicles.length} vehicles from Lambert scraper`);
+            if (scraperData.imagesUploaded) {
+              console.log('✓ Images uploaded to Cloudflare Images');
+            }
+            
+            // Map vehicles from scraper
             vehicles = scraperData.vehicles.map(v => ({
               make: v.make || '',
               model: v.model || '',
@@ -107,7 +112,8 @@ export default {
               color: v.color || 'Unknown',
               odometer: v.odometer || v.mileage || 0,
               description: v.description || `${v.year} ${v.make} ${v.model}`,
-              images: v.images || []
+              // Use cloudflareImages if available, otherwise use original images
+              images: v.cloudflareImages || v.images || []
             }));
           } else {
             console.log('Lambert scraper returned no vehicles, using sample data');
@@ -268,6 +274,83 @@ export default {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+  },
+
+  async uploadImagesToCloudflare(imageUrls, vehicleId, env) {
+    const uploadedImages = [];
+    const accountId = env.CLOUDFLARE_ACCOUNT_ID || '928f2a6b07f166d57bb4b31b9100d1f4';
+    const apiToken = env.CLOUDFLARE_IMAGES_TOKEN;
+    
+    if (!apiToken) {
+      console.log('No Cloudflare Images token configured, keeping original URLs');
+      return imageUrls;
+    }
+    
+    for (let i = 0; i < imageUrls.length; i++) {
+      try {
+        const imageUrl = imageUrls[i];
+        console.log(`Uploading image ${i + 1}/${imageUrls.length}: ${imageUrl}`);
+        
+        // Download image from Lambert CDN
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) {
+          console.error(`Failed to download image: ${imageUrl}`);
+          uploadedImages.push(imageUrl); // Keep original URL
+          continue;
+        }
+        
+        const imageBlob = await imageResponse.blob();
+        
+        // Create unique ID for the image
+        const imageId = `${vehicleId}-${i + 1}`;
+        
+        // Upload to Cloudflare Images
+        const formData = new FormData();
+        formData.append('file', imageBlob);
+        formData.append('id', imageId);
+        formData.append('metadata', JSON.stringify({
+          vehicleId: vehicleId,
+          source: 'lambert',
+          originalUrl: imageUrl
+        }));
+        
+        const uploadResponse = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiToken}`
+            },
+            body: formData
+          }
+        );
+        
+        if (uploadResponse.ok) {
+          const result = await uploadResponse.json();
+          if (result.success) {
+            // Store the Cloudflare Images URL
+            const cfImageUrl = result.result.variants[0]; // Use first variant (usually public)
+            uploadedImages.push(cfImageUrl);
+            console.log(`Successfully uploaded image ${i + 1}: ${cfImageUrl}`);
+          } else {
+            console.error(`Upload failed for image ${i + 1}:`, result.errors);
+            uploadedImages.push(imageUrl); // Keep original URL
+          }
+        } else {
+          console.error(`Upload request failed for image ${i + 1}: ${uploadResponse.status}`);
+          uploadedImages.push(imageUrl); // Keep original URL
+        }
+        
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+      } catch (error) {
+        console.error(`Error uploading image ${i + 1}:`, error);
+        uploadedImages.push(imageUrls[i]); // Keep original URL on error
+      }
+    }
+    
+    return uploadedImages;
   },
 
   getSampleLambertVehicles() {

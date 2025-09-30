@@ -3,7 +3,6 @@ main = "vendor-sync-worker.js"
 compatibility_date = "2023-12-01"
 account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 
-# D1 Database binding
 [[d1_databases]]
 binding = "DB"
 database_name = "vehicle-dealership-analytics"
@@ -11,3 +10,8 @@ database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
 
 [vars]
 ENVIRONMENT = "production"
+CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+# To set the Cloudflare Images API token, run:
+# npx wrangler secret put CLOUDFLARE_IMAGES_TOKEN --config workers/wrangler-vendor-sync.toml
+# Then paste your Cloudflare Images API token when prompted

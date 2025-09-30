@@ -48,6 +48,46 @@ export default {
       }
     }
     
+    // Scrape with image upload to Cloudflare
+    if (url.pathname === '/api/scrape-with-images' && request.method === 'POST') {
+      try {
+        const vehicles = await this.scrapeLambertInventory();
+        
+        // Upload images to Cloudflare if token is available
+        if (env.CLOUDFLARE_IMAGES_TOKEN) {
+          for (const vehicle of vehicles) {
+            if (vehicle.images && vehicle.images.length > 0) {
+              console.log(`Uploading ${vehicle.images.length} images for ${vehicle.make} ${vehicle.model}...`);
+              vehicle.cloudflareImages = await this.uploadImagesToCloudflare(
+                vehicle.images,
+                vehicle.vin || vehicle.stockNumber,
+                env
+              );
+            }
+          }
+        }
+        
+        return new Response(JSON.stringify({
+          success: true,
+          vehicles: vehicles,
+          count: vehicles.length,
+          imagesUploaded: env.CLOUDFLARE_IMAGES_TOKEN ? true : false,
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        console.error('Scraping error:', error);
+        return new Response(JSON.stringify({
+          success: false,
+          error: error.message
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
     // Scrape Lambert inventory
     if (url.pathname === '/api/scrape' && request.method === 'POST') {
       try {
@@ -400,6 +440,79 @@ export default {
     if (lower.includes('green') || lower.includes('vert')) return 'Green';
     if (lower.includes('brown') || lower.includes('brun')) return 'Brown';
     return color;
+  },
+
+  async uploadImagesToCloudflare(imageUrls, vehicleId, env) {
+    const uploadedImages = [];
+    const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = env.CLOUDFLARE_IMAGES_TOKEN;
+    const accountHash = env.CLOUDFLARE_IMAGES_ACCOUNT_HASH;
+    
+    if (!apiToken) {
+      console.log('No Cloudflare Images token, keeping original URLs');
+      return imageUrls;
+    }
+    
+    for (let i = 0; i < Math.min(imageUrls.length, 5); i++) { // Limit to 5 images
+      try {
+        const imageUrl = imageUrls[i];
+        console.log(`Uploading image ${i + 1}: ${imageUrl}`);
+        
+        // Download image
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) {
+          console.error(`Failed to download: ${imageUrl}`);
+          continue;
+        }
+        
+        const imageBlob = await imageResponse.blob();
+        const imageId = `${vehicleId}-${i + 1}`.replace(/[^a-zA-Z0-9-]/g, '-');
+        
+        // Upload to Cloudflare Images
+        const formData = new FormData();
+        formData.append('file', imageBlob);
+        formData.append('id', imageId);
+        formData.append('metadata', JSON.stringify({
+          vehicleId: vehicleId,
+          source: 'lambert',
+          originalUrl: imageUrl,
+          index: i + 1
+        }));
+        
+        const uploadResponse = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiToken}`
+            },
+            body: formData
+          }
+        );
+        
+        if (uploadResponse.ok) {
+          const result = await uploadResponse.json();
+          if (result.success) {
+            // Use the account hash to build the delivery URL
+            const cfImageUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+            uploadedImages.push(cfImageUrl);
+            console.log(`✓ Uploaded: ${cfImageUrl}`);
+          } else {
+            console.error(`Upload failed:`, result.errors);
+          }
+        } else {
+          console.error(`Upload request failed: ${uploadResponse.status}`);
+        }
+        
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+      } catch (error) {
+        console.error(`Error uploading image ${i + 1}:`, error.message);
+      }
+    }
+    
+    return uploadedImages.length > 0 ? uploadedImages : imageUrls;
   },
 
   getSampleVehicles() {
