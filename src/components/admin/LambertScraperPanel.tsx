@@ -209,7 +209,12 @@ export default function LambertScraperPanel() {
       
       if (syncResponse.ok) {
         const syncResult = await syncResponse.json();
-        alert(`✅ Successfully synced ${syncResult.synced || scrapeResult.vehicles.length} Lambert vehicles to main inventory!`);
+        const message = `✅ Sync Complete!\n` +
+                       `• New vehicles: ${syncResult.new || 0}\n` +
+                       `• Updated: ${syncResult.updated || 0}\n` +
+                       `• Unchanged: ${syncResult.skipped || 0}\n` +
+                       `• Total processed: ${syncResult.total}`;
+        alert(message);
         await loadStats();
       } else {
         throw new Error('Failed to sync vehicles to main inventory');

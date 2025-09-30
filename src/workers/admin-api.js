@@ -153,6 +153,8 @@ export default {
         }
         
         let synced = 0;
+        let updated = 0;
+        let skipped = 0;
         let errors = [];
         
         // Save each vehicle to the main Vehicle table
@@ -161,45 +163,61 @@ export default {
             // Generate a unique ID for the vehicle
             const vehicleId = `lam_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             
-            // Check if vehicle already exists by VIN
+            // Check if vehicle already exists by VIN (if VIN is valid)
             let existingVehicle = null;
-            if (vehicle.vin) {
+            if (vehicle.vin && vehicle.vin.length === 17) {
               existingVehicle = await env.DB.prepare(
-                'SELECT id FROM vehicles WHERE vin = ? LIMIT 1'
+                'SELECT id, price, odometer FROM vehicles WHERE vin = ? LIMIT 1'
               ).bind(vehicle.vin).first();
             }
             
             // If no VIN match, check by stock number
             if (!existingVehicle && vehicle.stock_number) {
               existingVehicle = await env.DB.prepare(
-                'SELECT id FROM vehicles WHERE stockNumber = ? LIMIT 1'
+                'SELECT id, price, odometer FROM vehicles WHERE stockNumber = ? LIMIT 1'
               ).bind(vehicle.stock_number).first();
             }
             
+            // If still no match, check by make/model/year combination
+            if (!existingVehicle && vehicle.make && vehicle.model && vehicle.year) {
+              existingVehicle = await env.DB.prepare(
+                'SELECT id, price, odometer FROM vehicles WHERE make = ? AND model = ? AND year = ? LIMIT 1'
+              ).bind(vehicle.make, vehicle.model, vehicle.year).first();
+            }
+            
             if (existingVehicle) {
-              // Update existing vehicle
-              await env.DB.prepare(`
-                UPDATE vehicles SET
-                  make = ?, model = ?, year = ?, price = ?,
-                  odometer = ?, bodyType = ?, color = ?,
-                  description = ?, images = ?,
-                  stockNumber = ?, vin = ?,
-                  updatedAt = CURRENT_TIMESTAMP
-                WHERE id = ?
-              `).bind(
-                vehicle.make || '',
-                vehicle.model || '',
-                vehicle.year || null,
-                vehicle.price || null,
-                vehicle.odometer || null,
-                vehicle.body_type || '',
-                vehicle.color_exterior || '',
-                vehicle.description || '',
-                JSON.stringify(vehicle.images || []),
-                vehicle.stock_number || '',
-                vehicle.vin || '',
-                existingVehicle.id
-              ).run();
+              // Check if data has changed
+              const hasChanged = existingVehicle.price !== vehicle.price || 
+                                existingVehicle.odometer !== vehicle.odometer;
+              
+              if (hasChanged) {
+                // Update existing vehicle
+                await env.DB.prepare(`
+                  UPDATE vehicles SET
+                    make = ?, model = ?, year = ?, price = ?,
+                    odometer = ?, bodyType = ?, color = ?,
+                    description = ?, images = ?,
+                    stockNumber = ?, vin = ?,
+                    updatedAt = CURRENT_TIMESTAMP
+                  WHERE id = ?
+                `).bind(
+                  vehicle.make || '',
+                  vehicle.model || '',
+                  vehicle.year || null,
+                  vehicle.price || null,
+                  vehicle.odometer || null,
+                  vehicle.body_type || '',
+                  vehicle.color_exterior || '',
+                  vehicle.description || '',
+                  JSON.stringify(vehicle.images || []),
+                  vehicle.stock_number || '',
+                  vehicle.vin || '',
+                  existingVehicle.id
+                ).run();
+                updated++;
+              } else {
+                skipped++;
+              }
             } else {
               // Insert new vehicle into vehicles table
               // Use default year if missing (required field)
@@ -251,7 +269,7 @@ export default {
               'SYNCED'
             ).run();
             
-            synced++;
+              synced++;
           } catch (error) {
             console.error('Error syncing vehicle:', error);
             errors.push({ vehicle: vehicle.title || vehicle.url, error: error.message });
@@ -260,7 +278,9 @@ export default {
         
         return jsonResponse({
           success: true,
-          synced,
+          new: synced,
+          updated,
+          skipped,
           total: vehicles.length,
           errors,
           timestamp: new Date().toISOString()

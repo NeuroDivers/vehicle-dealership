@@ -75,24 +75,102 @@ export default {
         return jsonResponse(result, corsHeaders);
       }
       
+      // New endpoint for paginated scraping
+      if (pathname === '/api/lambert/scrape-page' && request.method === 'POST') {
+        const { page = 1, limit = 20 } = await request.json().catch(() => ({}));
+        
+        const config = {
+          baseUrl: 'https://www.automobile-lambert.com',
+          listingPath: '/cars/',
+          maxPages: 1,  // Only scrape the requested page
+          perPage: limit,
+          scrapeDelay: 50,
+          downloadImages: false
+        };
+        
+        console.log(`Scraping Lambert page ${page} with limit ${limit}...`);
+        
+        try {
+          // Get vehicles from specific page
+          const listingUrl = `${config.baseUrl}${config.listingPath}?paged=${page}&cars_pp=${limit}`;
+          const response = await fetch(listingUrl);
+          
+          if (!response.ok) {
+            return jsonResponse({ success: false, error: 'Failed to fetch page' }, corsHeaders);
+          }
+          
+          const html = await response.text();
+          const vehicleUrls = [];
+          
+          // Extract vehicle URLs from this page
+          const patterns = [
+            /href="(https?:\/\/[^"]*\/cars\/[^"\/]+\/)"/g,
+            /href="(\/cars\/[^"\/]+\/)"/g
+          ];
+          
+          for (const regex of patterns) {
+            let match;
+            while ((match = regex.exec(html)) !== null) {
+              const url = match[1];
+              if (url.match(/\/cars\/[a-z0-9-]+\/?$/i)) {
+                const fullUrl = url.startsWith('http') ? url : `${config.baseUrl}${url}`;
+                if (!vehicleUrls.includes(fullUrl)) {
+                  vehicleUrls.push(fullUrl);
+                }
+              }
+            }
+          }
+          
+          // Scrape details for vehicles on this page
+          const vehicles = [];
+          for (const url of vehicleUrls) {
+            try {
+              await sleep(config.scrapeDelay);
+              const vehicleData = await scrapeVehicleDetails(url, config);
+              if (vehicleData) {
+                vehicles.push(vehicleData);
+              }
+            } catch (error) {
+              console.error(`Error scraping ${url}:`, error.message);
+            }
+          }
+          
+          return jsonResponse({
+            success: true,
+            page,
+            totalOnPage: vehicles.length,
+            vehicles,
+            hasMore: vehicleUrls.length === limit,
+            timestamp: new Date().toISOString()
+          }, corsHeaders);
+          
+        } catch (error) {
+          console.error('Page scrape error:', error);
+          return jsonResponse({
+            success: false,
+            error: error.message
+          }, corsHeaders);
+        }
+      }
+      
       if (pathname === '/api/lambert/scrape-with-images' && request.method === 'POST') {
         const config = {
           baseUrl: 'https://www.automobile-lambert.com',
           listingPath: '/cars/',
-          maxPages: 1,  // Reduce to 1 page to avoid timeout
+          maxPages: 3,  // Increase to get more vehicles (3 pages = ~60 vehicles)
           perPage: 20,
-          scrapeDelay: 100,  // Faster scraping
+          scrapeDelay: 50,  // Even faster scraping
           downloadImages: false  // Skip image uploads for now
         };
         
-        console.log('Starting Lambert scrape (optimized)...');
+        console.log('Starting Lambert scrape (full inventory)...');
         
         try {
           const vehicleUrls = await discoverVehicleUrls(config);
           console.log(`Found ${vehicleUrls.length} vehicles to scrape`);
           
           const vehicles = [];
-          const maxVehicles = Math.min(vehicleUrls.length, 10); // Reduce to 10 vehicles max
+          const maxVehicles = Math.min(vehicleUrls.length, 50); // Increase limit to 50 vehicles
           
           for (let i = 0; i < maxVehicles; i++) {
             try {
