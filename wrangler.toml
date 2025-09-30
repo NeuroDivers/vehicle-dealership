@@ -2,6 +2,7 @@ name = "vehicle-dealership-analytics"
 main = "src/worker.js"
 compatibility_date = "2023-12-01"
 compatibility_flags = ["nodejs_compat"]
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 
 # D1 Database binding
 [[d1_databases]]
