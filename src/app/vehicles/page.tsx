@@ -366,10 +366,7 @@ export default function VehiclesPage() {
         imageUrl = img.url;
       }
       
-      // Use thumbnail variant for Cloudflare Images
-      if (imageUrl && imageUrl.includes('imagedelivery.net')) {
-        imageUrl = imageUrl.replace('/public', '/thumbnail');
-      }
+      // Cloudflare Images - use public variant
       
       return imageUrl;
     }).filter((url: any) => url);

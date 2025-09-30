@@ -262,10 +262,7 @@ export default function Home() {
               }
               let firstImage = images[0] || '/api/placeholder/400/300';
               
-              // Use thumbnail variant for Cloudflare Images
-              if (firstImage && firstImage.includes('imagedelivery.net')) {
-                firstImage = firstImage.replace('/public', '/thumbnail');
-              }
+              // Cloudflare Images - use public variant
               
               return (
               <div key={vehicle.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
@@ -369,10 +366,7 @@ export default function Home() {
                 }
                 let firstImage = images[0] || '/api/placeholder/400/300';
                 
-                // Use thumbnail variant for Cloudflare Images
-                if (firstImage && firstImage.includes('imagedelivery.net')) {
-                  firstImage = firstImage.replace('/public', '/thumbnail');
-                }
+                // Cloudflare Images - use public variant
                 
                 return (
                   <Link
