@@ -118,8 +118,8 @@ export default {
               color: v.color || 'Unknown',
               odometer: v.odometer || v.mileage || 0,
               description: v.description || `${v.year} ${v.make} ${v.model}`,
-              // Use cloudflareImages if available, otherwise use original images
-              images: v.cloudflareImages || v.images || []
+              // The scraper already replaces v.images with Cloudflare URLs!
+              images: v.images || []
             }));
           } else {
             console.log('Lambert scraper returned no vehicles or empty response');
