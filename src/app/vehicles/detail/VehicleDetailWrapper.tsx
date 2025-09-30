@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getVehicleEndpoint } from '@/lib/api-config';
-import VehicleDetailClient from './VehicleDetailClient';
+import VehicleDetailClient from './VehicleDetailImproved';
 
 export default function VehicleDetailWrapper() {
   const [vehicle, setVehicle] = useState<any>(null);

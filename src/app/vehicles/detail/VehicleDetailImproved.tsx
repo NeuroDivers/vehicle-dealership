@@ -145,14 +145,14 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Enhanced Image Gallery */}
         <div>
-          <div className="relative h-[500px] bg-gray-100 rounded-xl overflow-hidden shadow-lg">
+          <div className="relative h-[400px] md:h-[450px] lg:h-[500px] bg-gray-100 rounded-xl overflow-hidden shadow-lg">
             {images.length > 0 ? (
               <>
                 <Image
                   src={images[currentImageIndex]}
                   alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority
                 />
@@ -185,13 +185,13 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
           
           {/* Thumbnail Gallery */}
           {images.length > 1 && (
-            <div className="mt-4 grid grid-cols-6 gap-2">
-              {images.slice(0, 6).map((img, index) => (
+            <div className="mt-4 grid grid-cols-4 md:grid-cols-6 gap-2">
+              {images.map((img, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
-                  className={`relative h-20 rounded-lg overflow-hidden border-2 transition ${
-                    index === currentImageIndex ? 'border-blue-500' : 'border-transparent'
+                  className={`relative h-16 md:h-20 rounded-lg overflow-hidden border-2 transition hover:opacity-80 ${
+                    index === currentImageIndex ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-300'
                   }`}
                 >
                   <Image
@@ -201,6 +201,9 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                     className="object-cover"
                     sizes="100px"
                   />
+                  {index === currentImageIndex && (
+                    <div className="absolute inset-0 bg-blue-500/20" />
+                  )}
                 </button>
               ))}
             </div>

@@ -122,16 +122,15 @@ export default function LambertScraperPanel() {
       if (response.ok) {
         const result = await response.json();
         
-        // Update stats with real data
+        // Update stats with real data - DON'T set newVehicles here yet
         const vehiclesFound = result.stats?.vehiclesFound || 0;
-        const newVehicles = result.stats?.new || vehiclesFound;
         
         setStats({
           vehiclesFound,
           imagesUploaded: result.stats?.imagesUploaded || 0,
           syncedToMain: result.stats?.syncedToMain || 0,
-          newVehicles,
-          updatedVehicles: result.stats?.updated || 0,
+          newVehicles: 0, // Will be updated after checking existing vehicles
+          updatedVehicles: 0, // Will be updated after checking existing vehicles
           lastRun: new Date().toISOString(),
           status: 'success'
         });
@@ -169,6 +168,18 @@ export default function LambertScraperPanel() {
                 lastSynced: new Date().toISOString()
               };
             });
+            
+            // Count actual new vs existing vehicles
+            const actualNewVehicles = formattedVehicles.filter((v: any) => v.status === 'new').length;
+            const actualExistingVehicles = formattedVehicles.filter((v: any) => v.status === 'existing').length;
+            
+            // Update stats with correct counts
+            setStats(prev => ({
+              ...prev,
+              newVehicles: actualNewVehicles,
+              updatedVehicles: actualExistingVehicles
+            }));
+            
             setRecentVehicles(formattedVehicles);
           } catch (error) {
             // If we can't check existing vehicles, mark all as new

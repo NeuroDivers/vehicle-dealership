@@ -103,37 +103,61 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
 
   useEffect(() => {
-    // Load settings from localStorage
-    const stored = localStorage.getItem('siteInfo');
-    if (stored) {
+    // Try to load settings from API first (for public access)
+    const loadSettings = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        // Migrate old format to new format if needed
-        if (!parsed.themeColors && parsed.themeColor) {
-          // Old format had themeColor as a string
-          const colorMap: any = {
-            blue: { primary: '#2563eb', secondary: '#1e3a8a', accent: '#3b82f6' },
-            red: { primary: '#dc2626', secondary: '#991b1b', accent: '#ef4444' },
-            green: { primary: '#16a34a', secondary: '#15803d', accent: '#22c55e' },
-            purple: { primary: '#9333ea', secondary: '#6b21a8', accent: '#a855f7' }
-          };
-          parsed.themeColors = colorMap[parsed.themeColor] || colorMap.blue;
-          delete parsed.themeColor;
-        } else if (!parsed.themeColors) {
-          // No theme colors at all, use defaults
-          parsed.themeColors = {
-            primary: '#2563eb',
-            secondary: '#1e3a8a',
-            accent: '#3b82f6'
-          };
+        // Try to fetch from the admin API which has the settings
+        const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
+                      'https://vehicle-admin-api.nick-damato0011527.workers.dev';
+        const response = await fetch(`${apiUrl}/api/admin/settings`);
+        
+        if (response.ok) {
+          const apiSettings = await response.json();
+          if (apiSettings && apiSettings.themeColors) {
+            setSettings(apiSettings);
+            // Cache in localStorage for offline use
+            localStorage.setItem('siteInfo', JSON.stringify(apiSettings));
+            return;
+          }
         }
-        setSettings(parsed);
-        // Save migrated version back to localStorage
-        localStorage.setItem('siteInfo', JSON.stringify(parsed));
-      } catch (e) {
-        console.error('Failed to parse site settings:', e);
+      } catch (error) {
+        console.log('Could not load settings from API, falling back to localStorage');
       }
-    }
+      
+      // Fallback to localStorage if API fails
+      const stored = localStorage.getItem('siteInfo');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          // Migrate old format to new format if needed
+          if (!parsed.themeColors && parsed.themeColor) {
+            // Old format had themeColor as a string
+            const colorMap: any = {
+              blue: { primary: '#2563eb', secondary: '#1e3a8a', accent: '#3b82f6' },
+              red: { primary: '#dc2626', secondary: '#991b1b', accent: '#ef4444' },
+              green: { primary: '#16a34a', secondary: '#15803d', accent: '#22c55e' },
+              purple: { primary: '#9333ea', secondary: '#6b21a8', accent: '#a855f7' }
+            };
+            parsed.themeColors = colorMap[parsed.themeColor] || colorMap.blue;
+            delete parsed.themeColor;
+          } else if (!parsed.themeColors) {
+            // No theme colors at all, use defaults
+            parsed.themeColors = {
+              primary: '#2563eb',
+              secondary: '#1e3a8a',
+              accent: '#3b82f6'
+            };
+          }
+          setSettings(parsed);
+          // Save migrated version back to localStorage
+          localStorage.setItem('siteInfo', JSON.stringify(parsed));
+        } catch (e) {
+          console.error('Failed to parse site settings:', e);
+        }
+      }
+    };
+    
+    loadSettings();
   }, []);
 
   const updateSettings = (newSettings: SiteSettings) => {
