@@ -253,6 +253,49 @@ export default {
         });
       }
 
+      // GET /api/admin/settings - Get site settings
+      if (url.pathname === '/api/admin/settings' && request.method === 'GET') {
+        const result = await env.DB.prepare(`
+          SELECT settings_json FROM site_settings WHERE id = 1
+        `).first();
+        
+        if (result && result.settings_json) {
+          return new Response(result.settings_json, {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Return default settings if none exist
+        return new Response(JSON.stringify({
+          siteName: 'Autoprêt 123',
+          themeColors: {
+            primary: '#10b981',
+            secondary: '#059669',
+            accent: '#34d399'
+          }
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // POST /api/admin/settings - Save site settings
+      if (url.pathname === '/api/admin/settings' && request.method === 'POST') {
+        const settings = await request.json();
+        
+        // Upsert settings
+        await env.DB.prepare(`
+          INSERT INTO site_settings (id, settings_json, updated_at)
+          VALUES (1, ?, datetime('now'))
+          ON CONFLICT(id) DO UPDATE SET 
+            settings_json = excluded.settings_json,
+            updated_at = datetime('now')
+        `).bind(JSON.stringify(settings)).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       // GET /api/vendor-stats - Get real vendor statistics
       if (url.pathname === '/api/vendor-stats' && request.method === 'GET') {
         // Get Lambert stats

@@ -168,9 +168,23 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     loadSettings();
   }, []);
 
-  const updateSettings = (newSettings: SiteSettings) => {
+  const updateSettings = async (newSettings: SiteSettings) => {
     setSettings(newSettings);
     localStorage.setItem('siteInfo', JSON.stringify(newSettings));
+    
+    // Also save to API so other devices can access
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
+                    'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      await fetch(`${apiUrl}/api/admin/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings)
+      });
+      console.log('✓ Settings saved to database');
+    } catch (error) {
+      console.error('Failed to save settings to API:', error);
+    }
   };
 
   const getThemeColors = () => {
