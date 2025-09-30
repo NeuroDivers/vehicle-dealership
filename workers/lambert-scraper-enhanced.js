@@ -13,41 +13,11 @@ export default {
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
-
     // Handle preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Test specific vehicle URL
-    if (url.pathname === '/api/test-vehicle' && request.method === 'POST') {
-      try {
-        const { vehicleUrl } = await request.json();
-        console.log(`Testing vehicle URL: ${vehicleUrl}`);
-        
-        const vehicle = await this.scrapeVehicleDetails(vehicleUrl);
-        
-        return new Response(JSON.stringify({
-          success: true,
-          vehicle: vehicle,
-          url: vehicleUrl,
-          timestamp: new Date().toISOString()
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      } catch (error) {
-        console.error('Test scraping error:', error);
-        return new Response(JSON.stringify({
-          success: false,
-          error: error.message,
-          url: vehicleUrl
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-    }
-    
     if (url.pathname === '/api/scrape-with-images' && request.method === 'POST') {
       try {
         const vehicles = await this.scrapeLambertInventory();
@@ -87,15 +57,34 @@ export default {
       }
     }
     
-    // Scrape Lambert inventory
+    // Scrape Lambert inventory (now with Cloudflare Images by default!)
     if (url.pathname === '/api/scrape' && request.method === 'POST') {
       try {
         const vehicles = await this.scrapeLambertInventory();
+        
+        // Upload images to Cloudflare if token is available
+        if (env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN) {
+          console.log('🖼️  Uploading images to Cloudflare Images...');
+          for (const vehicle of vehicles) {
+            if (vehicle.images && vehicle.images.length > 0) {
+              console.log(`Uploading ${vehicle.images.length} images for ${vehicle.make} ${vehicle.model}...`);
+              const uploadedImages = await this.uploadImagesToCloudflare(
+                vehicle.images,
+                vehicle.vin || `${vehicle.year}-${vehicle.make}-${vehicle.model}`.replace(/\s+/g, '-'),
+                env
+              );
+              vehicle.images = uploadedImages;
+            }
+          }
+        } else {
+          console.log('⚠️  No Cloudflare Images token - keeping original URLs');
+        }
         
         return new Response(JSON.stringify({
           success: true,
           vehicles: vehicles,
           count: vehicles.length,
+          imagesUploaded: env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN ? true : false,
           timestamp: new Date().toISOString()
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
