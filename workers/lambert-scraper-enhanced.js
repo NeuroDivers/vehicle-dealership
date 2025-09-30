@@ -335,8 +335,8 @@ export default {
       vehicle.fuelType = this.normalizeFuelType(fuelMatch[1].trim());
     }
     
-    // Extract body style (Lambert format: "Carrosserie PICKUP TRUCK TRUCK")
-    const bodyMatch = html.match(/(?:Carrosserie|Body Style|Type de carrosserie)[:\s]+([^<\n]+)/i);
+    // Extract body style (Carrosserie)
+    const bodyMatch = html.match(/<span>Carrosserie<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
     if (bodyMatch) {
       vehicle.bodyType = this.normalizeBodyType(bodyMatch[1].trim());
     } else {
@@ -419,12 +419,13 @@ export default {
 
   normalizeBodyType(body) {
     const lower = body.toLowerCase();
+    // Check for SUV first (before sedan to catch "sport utility vehicle")
+    if (lower.includes('suv') || lower.includes('vus') || lower.includes('sport utility')) return 'SUV';
     if (lower.includes('sedan') || lower.includes('berline')) return 'Sedan';
-    if (lower.includes('suv') || lower.includes('vus')) return 'SUV';
     if (lower.includes('truck') || lower.includes('camion') || lower.includes('pickup')) return 'Truck';
     if (lower.includes('van') || lower.includes('fourgon')) return 'Van';
     if (lower.includes('coupe') || lower.includes('coupé')) return 'Coupe';
-    if (lower.includes('hatch')) return 'Hatchback';
+    if (lower.includes('hatch') || lower.includes('hayon')) return 'Hatchback';
     if (lower.includes('wagon') || lower.includes('familiale')) return 'Wagon';
     if (lower.includes('convertible') || lower.includes('décapotable')) return 'Convertible';
     return body;
