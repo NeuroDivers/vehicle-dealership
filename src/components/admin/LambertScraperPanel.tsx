@@ -24,7 +24,7 @@ interface LambertVehicle {
   vin?: string;
   stock?: string;
   images: string[];
-  status: 'new' | 'updated' | 'unchanged';
+  status: 'new' | 'updated' | 'unchanged' | 'existing';
   lastSynced?: string;
 }
 
@@ -138,20 +138,54 @@ export default function LambertScraperPanel() {
         
         // If we have sample vehicles, update the recent vehicles list
         if (result.vehicles && result.vehicles.length > 0) {
-          const formattedVehicles = result.vehicles.map((v: any, index: number) => ({
-            id: `lam_${index}`,
-            title: v.title || `${v.year} ${v.make} ${v.model}`,
-            price: v.price || 0,
-            year: v.year,
-            make: v.make,
-            model: v.model,
-            vin: v.vin,
-            stock: v.stock_number,
-            images: v.images || [],
-            status: 'new' as const,
-            lastSynced: new Date().toISOString()
-          }));
-          setRecentVehicles(formattedVehicles);
+          // Check which vehicles already exist in the database
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
+                        'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+          
+          try {
+            const existingResponse = await fetch(`${apiUrl}/api/vehicles`);
+            const existingVehicles = await existingResponse.json();
+            
+            const formattedVehicles = result.vehicles.map((v: any, index: number) => {
+              // Check if vehicle exists by VIN or stock number
+              const exists = existingVehicles.some((existing: any) => 
+                (v.vin && existing.vin === v.vin) ||
+                (v.stock_number && existing.stockNumber === v.stock_number) ||
+                (v.make === existing.make && v.model === existing.model && v.year === existing.year)
+              );
+              
+              return {
+                id: `lam_${index}`,
+                title: v.title || `${v.year} ${v.make} ${v.model}`,
+                price: v.price || 0,
+                year: v.year,
+                make: v.make,
+                model: v.model,
+                vin: v.vin,
+                stock: v.stock_number,
+                images: v.images || [],
+                status: exists ? 'existing' as const : 'new' as const,
+                lastSynced: new Date().toISOString()
+              };
+            });
+            setRecentVehicles(formattedVehicles);
+          } catch (error) {
+            // If we can't check existing vehicles, mark all as new
+            const formattedVehicles = result.vehicles.map((v: any, index: number) => ({
+              id: `lam_${index}`,
+              title: v.title || `${v.year} ${v.make} ${v.model}`,
+              price: v.price || 0,
+              year: v.year,
+              make: v.make,
+              model: v.model,
+              vin: v.vin,
+              stock: v.stock_number,
+              images: v.images || [],
+              status: 'new' as const,
+              lastSynced: new Date().toISOString()
+            }));
+            setRecentVehicles(formattedVehicles);
+          }
         }
         
         alert(`✅ Scraping completed! Found ${vehiclesFound} real vehicles from Lambert!`);
@@ -440,10 +474,11 @@ export default function LambertScraperPanel() {
                   <div className="text-right">
                     <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                       vehicle.status === 'new' ? 'bg-green-100 text-green-800' :
+                      vehicle.status === 'existing' ? 'bg-gray-100 text-gray-800' :
                       vehicle.status === 'updated' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
+                      'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {vehicle.status}
+                      {vehicle.status === 'existing' ? 'Already in Inventory' : vehicle.status}
                     </span>
                     {vehicle.lastSynced && (
                       <p className="text-xs text-gray-500 mt-2">

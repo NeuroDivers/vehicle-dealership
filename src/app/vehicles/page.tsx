@@ -26,6 +26,7 @@ export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('price-asc');
   const [filters, setFilters] = useState({
     bodyType: '',
     fuelType: '',
@@ -62,9 +63,9 @@ export default function VehiclesPage() {
       });
   }, []);
 
-  // Filter vehicles based on search and filters
+  // Filter and sort vehicles based on search, filters, and sort option
   const filteredVehicles = useMemo(() => {
-    return vehicles.filter(vehicle => {
+    const filtered = vehicles.filter(vehicle => {
       // Search filter
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = 
@@ -91,7 +92,29 @@ export default function VehiclesPage() {
 
       return true;
     });
-  }, [vehicles, searchTerm, filters]);
+
+    // Sort the filtered vehicles
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-asc':
+          return a.price - b.price;
+        case 'price-desc':
+          return b.price - a.price;
+        case 'year-desc':
+          return b.year - a.year;
+        case 'year-asc':
+          return a.year - b.year;
+        case 'make-asc':
+          return a.make.localeCompare(b.make);
+        case 'odometer-asc':
+          return a.odometer - b.odometer;
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [vehicles, searchTerm, filters, sortBy]);
 
   // Get unique body types for filter dropdown
   const bodyTypes = useMemo(() => {
@@ -189,24 +212,44 @@ export default function VehiclesPage() {
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
             <Filter className="h-4 w-4 mr-2" />
-            Filters
           </button>
-          
-          {(searchTerm || Object.values(filters).some(v => v)) && (
-            <button
-              onClick={clearFilters}
-              className="inline-flex items-center px-4 py-2 text-sm text-red-600 hover:text-red-800"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Clear All
-            </button>
-          )}
+        </div>
+        
+        {/* Results Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-4">
+            {(searchTerm || Object.values(filters).some(v => v)) && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center text-sm text-gray-600 hover:text-gray-800"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear All
+              </button>
+            )}
+            
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Sort by:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="year-desc">Year: Newest First</option>
+                <option value="year-asc">Year: Oldest First</option>
+                <option value="make-asc">Make: A to Z</option>
+                <option value="odometer-asc">Mileage: Low to High</option>
+              </select>
+            </div>
+          </div>
           
           <span className="text-sm text-gray-600">
             {filteredVehicles.length} {filteredVehicles.length === 1 ? 'vehicle' : 'vehicles'} found
           </span>
         </div>
-
         {/* Filters Panel */}
         {showFilters && (
           <div className="bg-white rounded-lg shadow p-6 mb-8">
@@ -337,7 +380,25 @@ export default function VehiclesPage() {
                       {vehicle.year} {vehicle.make} {vehicle.model}
                     </h2>
                     <div className="text-sm text-gray-600 mb-3">
-                      <p>{vehicle.color} • {vehicle.bodyType}</p>
+                      <div className="flex items-center gap-2">
+                        {vehicle.color && (
+                          <>
+                            {vehicle.color.startsWith('#') ? (
+                              <div className="flex items-center gap-1">
+                                <div 
+                                  className="w-4 h-4 rounded border border-gray-300" 
+                                  style={{ backgroundColor: vehicle.color }}
+                                  title={vehicle.color}
+                                />
+                                <span>Color</span>
+                              </div>
+                            ) : (
+                              <span>{vehicle.color}</span>
+                            )}
+                          </>
+                        )}
+                        <span>• {vehicle.bodyType}</span>
+                      </div>
                       <p>{vehicle.odometer.toLocaleString()} km</p>
                     </div>
                     <p className="text-2xl font-bold text-green-600 mb-3">
