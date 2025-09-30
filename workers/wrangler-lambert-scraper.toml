@@ -1,0 +1,7 @@
+name = "lambert-scraper-worker"
+main = "lambert-scraper-worker.js"
+compatibility_date = "2023-12-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+[vars]
+ENVIRONMENT = "production"

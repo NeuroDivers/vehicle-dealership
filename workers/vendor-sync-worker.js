@@ -84,14 +84,9 @@ export default {
     try {
       console.log('Starting Lambert sync...');
       
-      // For now, use sample data until we can properly scrape Lambert
-      // The actual Lambert scraper worker can be integrated later
-      console.log('Using sample Lambert data for testing...');
-      vehicles = this.getSampleLambertVehicles();
-      
-      // Try to get real data from Lambert scraper if available
+      // Try to get real data from Lambert scraper
       try {
-        const lambertScraperUrl = 'https://lambert-scraper.nick-damato0011527.workers.dev/api/lambert/scrape';
+        const lambertScraperUrl = 'https://lambert-scraper-worker.nick-damato0011527.workers.dev/api/scrape';
         const scraperResponse = await fetch(lambertScraperUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
@@ -99,7 +94,7 @@ export default {
         
         if (scraperResponse.ok) {
           const scraperData = await scraperResponse.json();
-          if (scraperData.vehicles && scraperData.vehicles.length > 0) {
+          if (scraperData.success && scraperData.vehicles && scraperData.vehicles.length > 0) {
             console.log(`Got ${scraperData.vehicles.length} vehicles from Lambert scraper`);
             vehicles = scraperData.vehicles.map(v => ({
               make: v.make || '',
@@ -109,18 +104,22 @@ export default {
               vin: v.vin || `LAM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               stockNumber: v.stockNumber || v.stock || '',
               bodyType: v.bodyType || '',
-              fuelType: v.fuelType || '',
-              transmission: v.transmission || '',
-              drivetrain: v.drivetrain || '',
-              color: v.color || '',
+              color: v.color || 'Unknown',
               odometer: v.odometer || v.mileage || 0,
               description: v.description || `${v.year} ${v.make} ${v.model}`,
               images: v.images || []
             }));
+          } else {
+            console.log('Lambert scraper returned no vehicles, using sample data');
+            vehicles = this.getSampleLambertVehicles();
           }
+        } else {
+          console.log('Lambert scraper request failed, using sample data');
+          vehicles = this.getSampleLambertVehicles();
         }
       } catch (error) {
         console.log('Could not fetch from Lambert scraper, using sample data:', error.message);
+        vehicles = this.getSampleLambertVehicles();
       }
       
       // Step 2: Save to database
