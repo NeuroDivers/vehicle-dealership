@@ -84,9 +84,9 @@ export default {
     try {
       console.log('Starting Lambert sync...');
       
-      // Try to get real data from Lambert scraper
+      // Try to get real data from enhanced Lambert scraper
       try {
-        const lambertScraperUrl = 'https://lambert-scraper-worker.nick-damato0011527.workers.dev/api/scrape';
+        const lambertScraperUrl = 'https://lambert-scraper-enhanced.nick-damato0011527.workers.dev/api/scrape';
         const scraperResponse = await fetch(lambertScraperUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
