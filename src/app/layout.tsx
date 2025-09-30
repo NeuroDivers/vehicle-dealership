@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
+import NavigationMobile from "@/components/NavigationMobile";
 import Footer from "@/components/Footer";
 import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 
@@ -32,7 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <SiteSettingsProvider>
-          <Navigation />
+          <NavigationMobile />
           <div className="flex-grow">
             {children}
           </div>

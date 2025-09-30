@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { getVehicleEndpoint } from '@/lib/api-config';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Car, Calendar, Gauge, Palette, Loader2 } from 'lucide-react';
-import VehicleImageGallery from '../components/VehicleImageGallery';
-import VehicleContactButton from '../components/VehicleContactButton';
-import VehicleContactForm from '../components/VehicleContactForm';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import Image from 'next/image';
+import { ChevronLeft, ChevronRight, Car, MapPin, Phone, Mail, Calendar, Fuel, Gauge } from 'lucide-react';
+import VehicleContactForm from './VehicleContactForm';
+import VehicleContactButton from './VehicleContactButton';
 import VehicleSEO from './VehicleSEO';
 import { trackVehicleView } from '@/lib/analytics-config';
 
@@ -25,21 +24,26 @@ interface Vehicle {
   isSold: number;
 }
 
-export default function VehicleDetailClient() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const vehicleId = searchParams?.get('id');
-  
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
+  const { getThemeColors } = useSiteSettings();
+  const themeColors = getThemeColors();
 
   useEffect(() => {
-    if (!vehicleId) {
+    if (!vehicle) {
       router.push('/vehicles');
       return;
     }
+    // Track vehicle view for analytics
+    trackVehicleView({
+      vehicleId: vehicle.id,
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year,
+      price: vehicle.price,
+    });
+  }, [vehicle]);
 
     // Fetch vehicle data
     fetch(getVehicleEndpoint(`/${vehicleId}`))
@@ -195,7 +199,8 @@ export default function VehicleDetailClient() {
             <div className="space-y-4">
               <button
                 onClick={() => setShowContactForm(true)}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition font-semibold"
+                className="w-full text-white py-3 px-6 rounded-lg transition font-semibold hover:opacity-90"
+                style={{ backgroundColor: themeColors.primary }}
               >
                 Get More Information
               </button>
