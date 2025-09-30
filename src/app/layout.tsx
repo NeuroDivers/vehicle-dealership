@@ -19,6 +19,9 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Auto Dealership",
   description: "Your trusted vehicle dealership",
+  other: {
+    'color-scheme': 'light only',
+  },
 };
 
 export default function RootLayout({
