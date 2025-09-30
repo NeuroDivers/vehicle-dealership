@@ -202,19 +202,22 @@ export default {
               ).run();
             } else {
               // Insert new vehicle into vehicles table
+              // Use default year if missing (required field)
+              const vehicleYear = vehicle.year || new Date().getFullYear();
+              
               await env.DB.prepare(`
                 INSERT INTO vehicles (
                   make, model, year, price, odometer, bodyType, color,
                   description, images, isSold, stockNumber, vin
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               `).bind(
-                vehicle.make || '',
-                vehicle.model || '',
-                vehicle.year || null,
-                vehicle.price || null,
-                vehicle.odometer || null,
-                vehicle.body_type || '',
-                vehicle.color_exterior || '',
+                vehicle.make || 'Unknown',
+                vehicle.model || 'Unknown',
+                vehicleYear,  // Use current year as default if missing
+                vehicle.price || 0,
+                vehicle.odometer || 0,
+                vehicle.body_type || 'Unknown',
+                vehicle.color_exterior || 'Unknown',
                 vehicle.description || '',
                 JSON.stringify(vehicle.images || []),
                 0,  // isSold = false

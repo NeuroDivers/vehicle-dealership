@@ -533,11 +533,20 @@ async function scrapeVehicleDetails(url, config) {
   data.title = title;
 
   // Extract year/make/model from title
-  const titleParts = title.match(/(\d{4})\s+([A-Za-z]+)\s+(.+)/);
+  // Updated regex to handle hyphenated makes like Mercedes-Benz
+  const titleParts = title.match(/(\d{4})\s+([A-Za-z-]+)\s+(.+)/);
   if (titleParts) {
     data.year = parseInt(titleParts[1]);
     data.make = titleParts[2];
     data.model = titleParts[3];
+  }
+  
+  // Fallback: if year not found, try to extract just the year
+  if (!data.year) {
+    const yearMatch = title.match(/\b(19|20)\d{2}\b/);
+    if (yearMatch) {
+      data.year = parseInt(yearMatch[0]);
+    }
   }
 
   // Extract price - try multiple patterns
