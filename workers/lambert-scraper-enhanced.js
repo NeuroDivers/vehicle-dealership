@@ -60,14 +60,60 @@ export default {
     // Scrape Lambert inventory (now with Cloudflare Images by default!)
     if (url.pathname === '/api/scrape' && request.method === 'POST') {
       try {
-        const vehicles = await this.scrapeLambertInventory();
+        const startTime = Date.now();
+        console.log('🚀 Starting Lambert scrape with smart optimization...');
         
-        // Upload images to Cloudflare if token is available
+        // Get existing vehicles from database for comparison
+        let existingVehicles = [];
+        if (env.DB) {
+          const { results } = await env.DB.prepare(`
+            SELECT vin, stockNumber, vendor_stock_number, year, make, model, price, odometer
+            FROM vehicles 
+            WHERE vendor_id = 'lambert' OR vendor_name LIKE '%Lambert%'
+          `).all();
+          existingVehicles = results || [];
+          console.log(`📊 Found ${existingVehicles.length} existing Lambert vehicles in database`);
+        }
+        
+        const vehicles = await this.scrapeLambertInventory();
+        console.log(`🔍 Scraped ${vehicles.length} vehicles from Lambert website`);
+        
+        // Smart comparison: identify new, updated, and unchanged vehicles
+        let newVehicles = [];
+        let updatedVehicles = [];
+        let unchangedVehicles = [];
+        
+        for (const vehicle of vehicles) {
+          const existing = existingVehicles.find(v => 
+            (vehicle.vin && v.vin === vehicle.vin) ||
+            (vehicle.stockNumber && v.stockNumber === vehicle.stockNumber)
+          );
+          
+          if (!existing) {
+            newVehicles.push(vehicle);
+          } else {
+            // Check if vehicle data changed
+            const priceChanged = existing.price !== vehicle.price;
+            const odometerChanged = existing.odometer !== vehicle.odometer;
+            
+            if (priceChanged || odometerChanged) {
+              updatedVehicles.push(vehicle);
+            } else {
+              unchangedVehicles.push(vehicle);
+            }
+          }
+        }
+        
+        console.log(`📈 Analysis: ${newVehicles.length} new, ${updatedVehicles.length} updated, ${unchangedVehicles.length} unchanged`);
+        
+        // Only upload images for NEW vehicles (optimization!)
+        const vehiclesToProcess = [...newVehicles, ...updatedVehicles];
+        
         if (env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN) {
-          console.log('🖼️  Uploading images to Cloudflare Images...');
-          for (const vehicle of vehicles) {
+          console.log(`🖼️  Uploading images for ${newVehicles.length} new vehicles only...`);
+          for (const vehicle of newVehicles) {
             if (vehicle.images && vehicle.images.length > 0) {
-              console.log(`Uploading ${vehicle.images.length} images for ${vehicle.make} ${vehicle.model}...`);
+              console.log(`Uploading ${vehicle.images.length} images for NEW: ${vehicle.make} ${vehicle.model}...`);
               const uploadedImages = await this.uploadImagesToCloudflare(
                 vehicle.images,
                 vehicle.vin || `${vehicle.year}-${vehicle.make}-${vehicle.model}`.replace(/\s+/g, '-'),
@@ -76,15 +122,28 @@ export default {
               vehicle.images = uploadedImages;
             }
           }
+          
+          // For updated vehicles, keep existing images (no re-upload)
+          console.log(`⚡ Skipping image upload for ${updatedVehicles.length} updated vehicles (images already exist)`);
         } else {
           console.log('⚠️  No Cloudflare Images token - keeping original URLs');
         }
+        
+        const duration = Math.round((Date.now() - startTime) / 1000);
         
         return new Response(JSON.stringify({
           success: true,
           vehicles: vehicles,
           count: vehicles.length,
+          stats: {
+            new: newVehicles.length,
+            updated: updatedVehicles.length,
+            unchanged: unchangedVehicles.length,
+            total: vehicles.length
+          },
           imagesUploaded: env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN ? true : false,
+          imagesUploadedCount: newVehicles.reduce((sum, v) => sum + (v.images?.length || 0), 0),
+          duration: duration,
           timestamp: new Date().toISOString()
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
