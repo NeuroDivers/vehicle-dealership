@@ -24,7 +24,9 @@ export default function Footer() {
   }
 
   const currentYear = new Date().getFullYear();
-  const copyright = settings.copyright[currentLang].replace('2024', currentYear.toString());
+  const copyright = settings.copyright[currentLang]
+    .replace('2024', currentYear.toString())
+    .replace('(c)', '©');
 
   return (
     <footer className="bg-gray-900 text-white mt-auto">

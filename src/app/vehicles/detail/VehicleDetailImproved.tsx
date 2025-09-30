@@ -1,0 +1,382 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getVehicleEndpoint } from '@/lib/api-config';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import Image from 'next/image';
+import { 
+  ChevronLeft, ChevronRight, Car, MapPin, Phone, Mail, 
+  Calendar, Fuel, Gauge, ArrowLeft, Palette, Shield,
+  CheckCircle, Info, Star, Heart, Share2, Printer
+} from 'lucide-react';
+import Link from 'next/link';
+import { trackVehicleView } from '@/lib/analytics-config';
+
+export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const { settings, getThemeColors } = useSiteSettings();
+  const themeColors = getThemeColors();
+  
+  // Get current language
+  const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('en');
+  
+  useEffect(() => {
+    const storedLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
+    if (storedLang) {
+      setCurrentLang(storedLang);
+    }
+    
+    // Listen for language changes
+    const handleLangChange = () => {
+      const newLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
+      if (newLang) setCurrentLang(newLang);
+    };
+    
+    window.addEventListener('languageChange', handleLangChange);
+    return () => window.removeEventListener('languageChange', handleLangChange);
+  }, []);
+
+  useEffect(() => {
+    if (vehicle) {
+      trackVehicleView({
+        vehicleId: vehicle.id,
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        price: vehicle.price,
+      });
+    }
+  }, [vehicle]);
+
+  if (!vehicle) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+        <Car className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Vehicle Not Found</h1>
+        <p className="text-gray-600 mb-8">Sorry, we couldn&apos;t find the vehicle you&apos;re looking for.</p>
+        <Link href="/vehicles" className="text-blue-600 hover:text-blue-800">
+          ← Back to Inventory
+        </Link>
+      </div>
+    );
+  }
+
+  // Process images
+  let images: string[] = [];
+  if (vehicle.images) {
+    const imageData = typeof vehicle.images === 'string' ? 
+      JSON.parse(vehicle.images) : vehicle.images;
+    
+    images = imageData.map((img: any) => {
+      if (typeof img === 'string') {
+        return img;
+      } else if (img.variants) {
+        return img.variants.gallery || img.variants.public || img.variants.thumbnail;
+      } else if (img.url) {
+        return img.url;
+      }
+      return null;
+    }).filter((url: any) => url);
+  }
+
+  // Get disclaimer text based on language
+  const getDisclaimer = () => {
+    const disclaimers = settings?.disclaimers || {
+      en: "This vehicle is offered for sale subject to prior sale. All information provided is believed to be accurate but is not guaranteed. Please verify all details with our sales team.",
+      fr: "Ce véhicule est offert à la vente sous réserve de vente préalable. Toutes les informations fournies sont considérées comme exactes mais ne sont pas garanties. Veuillez vérifier tous les détails avec notre équipe de vente.",
+      es: "Este vehículo se ofrece a la venta sujeto a venta previa. Toda la información proporcionada se considera precisa pero no está garantizada. Por favor verifique todos los detalles con nuestro equipo de ventas."
+    };
+    return disclaimers[currentLang] || disclaimers.en;
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+        text: `Check out this ${vehicle.year} ${vehicle.make} ${vehicle.model} for $${vehicle.price?.toLocaleString()}`,
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('Link copied to clipboard!');
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Breadcrumb & Actions Bar */}
+      <div className="flex justify-between items-center mb-6">
+        <Link href="/vehicles" className="inline-flex items-center text-gray-600 hover:text-gray-900">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Inventory
+        </Link>
+        
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setIsFavorite(!isFavorite)}
+            className="p-2 rounded-lg hover:bg-gray-100 transition"
+            title="Add to favorites"
+          >
+            <Heart className={`h-5 w-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+          </button>
+          <button
+            onClick={handleShare}
+            className="p-2 rounded-lg hover:bg-gray-100 transition"
+            title="Share"
+          >
+            <Share2 className="h-5 w-5 text-gray-400" />
+          </button>
+          <button
+            onClick={handlePrint}
+            className="p-2 rounded-lg hover:bg-gray-100 transition print:hidden"
+            title="Print"
+          >
+            <Printer className="h-5 w-5 text-gray-400" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Enhanced Image Gallery */}
+        <div>
+          <div className="relative h-[500px] bg-gray-100 rounded-xl overflow-hidden shadow-lg">
+            {images.length > 0 ? (
+              <>
+                <Image
+                  src={images[currentImageIndex]}
+                  alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                />
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white transition"
+                    >
+                      <ChevronLeft className="h-6 w-6" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white transition"
+                    >
+                      <ChevronRight className="h-6 w-6" />
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 px-3 py-1 rounded-full">
+                      <span className="text-white text-sm">{currentImageIndex + 1} / {images.length}</span>
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                <Car className="h-24 w-24" />
+              </div>
+            )}
+          </div>
+          
+          {/* Thumbnail Gallery */}
+          {images.length > 1 && (
+            <div className="mt-4 grid grid-cols-6 gap-2">
+              {images.slice(0, 6).map((img, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`relative h-20 rounded-lg overflow-hidden border-2 transition ${
+                    index === currentImageIndex ? 'border-blue-500' : 'border-transparent'
+                  }`}
+                >
+                  <Image
+                    src={img}
+                    alt={`Thumbnail ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="100px"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {vehicle.isSold === 1 && (
+            <div className="mt-4 bg-red-100 text-red-800 px-4 py-3 rounded-lg text-center font-semibold">
+              This Vehicle Has Been Sold
+            </div>
+          )}
+        </div>
+
+        {/* Enhanced Details Section */}
+        <div>
+          {/* Title & Price */}
+          <div className="mb-6">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              {vehicle.year} {vehicle.make} {vehicle.model}
+            </h1>
+            <div className="flex items-baseline space-x-4">
+              <p className="text-4xl font-bold" style={{ color: themeColors.primary }}>
+                ${vehicle.price ? vehicle.price.toLocaleString() : 'Call for Price'}
+              </p>
+              {vehicle.originalPrice && vehicle.originalPrice > vehicle.price && (
+                <p className="text-xl text-gray-500 line-through">
+                  ${vehicle.originalPrice.toLocaleString()}
+                </p>
+              )}
+            </div>
+          </div>
+          
+          {/* Key Features Grid */}
+          <div className="bg-gray-50 rounded-xl p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4 flex items-center">
+              <Info className="h-5 w-5 mr-2" style={{ color: themeColors.primary }} />
+              Key Information
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600">Year</p>
+                    <p className="font-semibold text-lg">{vehicle.year}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Gauge className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600">Mileage</p>
+                    <p className="font-semibold text-lg">
+                      {vehicle.odometer ? `${vehicle.odometer.toLocaleString()} km` : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Car className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600">Body Type</p>
+                    <p className="font-semibold text-lg">{vehicle.bodyType || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Palette className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600">Color</p>
+                    <div className="flex items-center space-x-2">
+                      {vehicle.color?.startsWith('#') ? (
+                        <>
+                          <div 
+                            className="w-6 h-6 rounded border border-gray-300" 
+                            style={{ backgroundColor: vehicle.color }}
+                          />
+                          <span className="font-semibold text-lg">Custom</span>
+                        </>
+                      ) : (
+                        <span className="font-semibold text-lg">{vehicle.color || 'N/A'}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          {vehicle.description && (
+            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-semibold mb-3">Description</h2>
+              <p className="text-gray-700 leading-relaxed">{vehicle.description}</p>
+            </div>
+          )}
+
+          {/* Disclaimer Section */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start space-x-3">
+              <Shield className="h-5 w-5 text-yellow-600 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-yellow-900 mb-1">
+                  {currentLang === 'fr' ? 'Avis de non-responsabilité' : 
+                   currentLang === 'es' ? 'Descargo de responsabilidad' : 
+                   'Disclaimer'}
+                </h3>
+                <p className="text-sm text-yellow-800">
+                  {getDisclaimer()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA Section */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
+            <h2 className="text-xl font-semibold mb-4">Interested in this vehicle?</h2>
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowContactForm(true)}
+                className="w-full text-white py-4 px-6 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition"
+                style={{ backgroundColor: themeColors.primary }}
+              >
+                Get More Information
+              </button>
+              <button
+                onClick={() => setShowContactForm(true)}
+                className="w-full border-2 py-4 px-6 rounded-lg font-semibold text-lg hover:bg-white transition"
+                style={{ borderColor: themeColors.primary, color: themeColors.primary }}
+              >
+                Schedule a Test Drive
+              </button>
+              <div className="flex items-center justify-center space-x-2 text-gray-600 mt-4">
+                <Phone className="h-4 w-4" />
+                <span>Or call us directly at</span>
+                <a 
+                  href={`tel:${settings.contactPhone}`} 
+                  className="font-semibold"
+                  style={{ color: themeColors.primary }}
+                >
+                  {settings.contactPhone}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Form Modal */}
+      {showContactForm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-2xl font-semibold mb-4">Contact Us</h3>
+            <p className="text-gray-600 mb-4">
+              Interested in the {vehicle.year} {vehicle.make} {vehicle.model}?
+            </p>
+            <p className="text-gray-600 mb-6">
+              Call us at: <a href={`tel:${settings.contactPhone}`} className="font-semibold" style={{ color: themeColors.primary }}>
+                {settings.contactPhone}
+              </a>
+            </p>
+            <button
+              onClick={() => setShowContactForm(false)}
+              className="w-full py-3 px-4 rounded-lg text-white font-semibold"
+              style={{ backgroundColor: themeColors.primary }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

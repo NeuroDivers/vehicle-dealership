@@ -37,6 +37,11 @@ interface SiteSettings {
     accent: string;
     headerText?: string;
   };
+  disclaimers?: {
+    en: string;
+    fr: string;
+    es: string;
+  };
 }
 
 const defaultSettings: SiteSettings = {
@@ -69,6 +74,11 @@ const defaultSettings: SiteSettings = {
     secondary: '#1e3a8a', // blue-900
     accent: '#3b82f6', // blue-500
     headerText: '#000000' // black for header text
+  },
+  disclaimers: {
+    en: "This vehicle is offered for sale subject to prior sale. All information provided is believed to be accurate but is not guaranteed. Please verify all details with our sales team.",
+    fr: "Ce véhicule est offert à la vente sous réserve de vente préalable. Toutes les informations fournies sont considérées comme exactes mais ne sont pas garanties. Veuillez vérifier tous les détails avec notre équipe de vente.",
+    es: "Este vehículo se ofrece a la venta sujeto a venta previa. Toda la información proporcionada se considera precisa pero no está garantizada. Por favor verifique todos los detalles con nuestro equipo de ventas."
   }
 };
 
