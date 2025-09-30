@@ -102,6 +102,23 @@ export default function Home() {
   useEffect(() => {
     setMounted(true);
     loadFeaturedVehicles();
+    
+    // Get initial language from localStorage (set by header)
+    const storedLang = localStorage.getItem('language') as 'fr' | 'en' | 'es';
+    if (storedLang) {
+      setLanguage(storedLang);
+    }
+    
+    // Listen for language changes from header
+    const handleLanguageChange = () => {
+      const newLang = localStorage.getItem('language') as 'fr' | 'en' | 'es';
+      if (newLang) {
+        setLanguage(newLang);
+      }
+    };
+    
+    window.addEventListener('languageChange', handleLanguageChange);
+    return () => window.removeEventListener('languageChange', handleLanguageChange);
   }, []);
 
   const loadFeaturedVehicles = async () => {
@@ -140,23 +157,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
-      {/* Language Selector */}
-      <div className="fixed top-20 right-4 z-50 bg-white rounded-lg shadow-lg p-2 flex space-x-2">
-        {(['fr', 'en', 'es'] as const).map((lang) => (
-          <button
-            key={lang}
-            onClick={() => setLanguage(lang)}
-            className={`px-3 py-1 rounded font-medium transition ${
-              language === lang
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {lang.toUpperCase()}
-          </button>
-        ))}
-      </div>
-
       {/* Hero Section */}
       <section 
         className="relative h-[600px] flex items-center justify-center text-white"
