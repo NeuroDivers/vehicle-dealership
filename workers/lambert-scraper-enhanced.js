@@ -445,7 +445,24 @@ export default {
             : `https://www.automobile-lambert.com/${url}`;
         }
         
-        if (!seen.has(url) && images.length < 15) { // Limit to 15 images
+        // Filter out unwanted images
+        const unwantedPatterns = [
+          'Cert.png',                    // Certification badge
+          'CarfaxCanada',                // Carfax logo
+          'carfax',                      // Any carfax related
+          'logo',                        // Site logos
+          'icon',                        // Icons
+          'badge',                       // Badges
+          'placeholder',                 // Placeholders
+          '/wp-content/themes/',         // Theme images
+          '/wp-content/plugins/'         // Plugin images
+        ];
+        
+        const isUnwanted = unwantedPatterns.some(pattern => 
+          url.toLowerCase().includes(pattern.toLowerCase())
+        );
+        
+        if (!isUnwanted && !seen.has(url) && images.length < 15) { // Limit to 15 images
           seen.add(url);
           images.push(url);
         }
