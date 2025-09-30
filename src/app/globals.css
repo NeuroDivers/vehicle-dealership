@@ -31,6 +31,9 @@ body {
   /* Force light mode colors */
   color: #171717;
   background-color: #ffffff;
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 @layer utilities {

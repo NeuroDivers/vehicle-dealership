@@ -210,22 +210,22 @@ export default function Home() {
           </p>
           
           {/* Search Bar */}
-          <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-xl p-2 flex">
+          <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-xl p-2 flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1 px-4 py-3 text-gray-800 outline-none"
+              className="flex-1 px-4 py-3 text-gray-800 outline-none rounded min-w-0"
             />
             <button
               onClick={handleSearch}
-              className="px-6 py-3 rounded-md font-semibold transition flex items-center space-x-2"
+              className="px-6 py-3 rounded-md font-semibold transition flex items-center justify-center space-x-2 whitespace-nowrap"
               style={{ backgroundColor: themeColors.primary, color: 'white' }}
             >
               <Search className="h-5 w-5" />
-              <span>{t.searchButton}</span>
+              <span className="hidden sm:inline">{t.searchButton}</span>
             </button>
           </div>
         </div>
@@ -288,7 +288,7 @@ export default function Home() {
                     ${vehicle.price.toLocaleString()}
                   </div>
                   <Link
-                    href={`/vehicles/${vehicle.id}`}
+                    href={`/vehicles/detail?id=${vehicle.id}`}
                     className="block text-center py-2 rounded-md transition"
                     style={{ 
                       backgroundColor: themeColors.accent,
@@ -377,7 +377,7 @@ export default function Home() {
                 return (
                   <Link
                     key={vehicle.id}
-                    href={`/vehicles/${vehicle.id}`}
+                    href={`/vehicles/detail?id=${vehicle.id}`}
                     className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group"
                   >
                     <div className="h-48 bg-gray-200 relative overflow-hidden">
