@@ -223,9 +223,15 @@ export default function VehiclesPage() {
         <div className="mb-6 flex flex-wrap items-center gap-4">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
           >
             <Filter className="h-4 w-4 mr-2" />
+            <span>Filters</span>
+            {Object.values(filters).some(v => v) && (
+              <span className="ml-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                {Object.values(filters).filter(v => v).length}
+              </span>
+            )}
           </button>
         </div>
         
@@ -264,10 +270,29 @@ export default function VehiclesPage() {
             {filteredVehicles.length} {filteredVehicles.length === 1 ? 'vehicle' : 'vehicles'} found
           </span>
         </div>
-        {/* Filters Panel */}
+        {/* Filters Panel - Slide-in Modal on Mobile, Regular Panel on Desktop */}
         {showFilters && (
-          <div className="bg-white rounded-lg shadow p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <>
+            {/* Mobile Overlay */}
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+              onClick={() => setShowFilters(false)}
+            />
+            
+            {/* Filters Container */}
+            <div className="fixed md:relative inset-y-0 right-0 md:inset-auto w-full max-w-sm md:max-w-none bg-white md:rounded-lg shadow-lg md:shadow p-6 mb-0 md:mb-8 z-50 md:z-auto overflow-y-auto md:overflow-visible transform transition-transform duration-300 ease-in-out">
+              {/* Mobile Header */}
+              <div className="flex justify-between items-center mb-4 md:hidden">
+                <h3 className="text-lg font-semibold">Filters</h3>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Body Type</label>
                 <select
@@ -341,8 +366,25 @@ export default function VehiclesPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              </div>
+              
+              {/* Mobile Apply Button */}
+              <div className="mt-6 md:hidden flex gap-2">
+                <button
+                  onClick={clearFilters}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Apply Filters
+                </button>
+              </div>
             </div>
-          </div>
+          </>
         )}
         
         {/* Vehicle Grid */}

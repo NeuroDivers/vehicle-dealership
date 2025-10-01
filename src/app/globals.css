@@ -7,9 +7,9 @@
   --foreground: #171717;
   
   /* Theme colors - green by default */
-  --color-primary: #10b981;
-  --color-secondary: #059669;
-  --color-accent: #34d399;
+  --color-primary: #16a44a;
+  --color-secondary: #15803d;
+  --color-accent: #22c55e;
   
   /* Force light mode - override system dark mode */
   color-scheme: light;
