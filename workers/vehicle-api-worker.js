@@ -125,6 +125,100 @@ export default {
         }
       }
 
+      // GET /api/staff - Get all staff
+      if (url.pathname === '/api/staff' && request.method === 'GET') {
+        const { results } = await env.DB.prepare(`
+          SELECT id, email, name, role, phone, is_active, last_login, created_at
+          FROM staff
+          ORDER BY created_at DESC
+        `).all();
+        
+        return new Response(JSON.stringify(results), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // POST /api/staff - Create new staff member
+      if (url.pathname === '/api/staff' && request.method === 'POST') {
+        const staffData = await request.json();
+        const staffId = `staff-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        await env.DB.prepare(`
+          INSERT INTO staff (id, email, name, password_hash, role, phone, is_active, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        `).bind(
+          staffId,
+          staffData.email,
+          staffData.name,
+          staffData.password || 'changeme123',
+          staffData.role || 'staff',
+          staffData.phone || '',
+          staffData.is_active !== undefined ? staffData.is_active : 1
+        ).run();
+        
+        return new Response(JSON.stringify({ success: true, id: staffId }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // PUT /api/staff/[id] - Update staff member
+      if (url.pathname.match(/^\/api\/staff\/[\w-]+$/) && request.method === 'PUT') {
+        const staffId = url.pathname.split('/')[3];
+        const updates = await request.json();
+        
+        let updateFields = [];
+        let values = [];
+        
+        if (updates.name !== undefined) {
+          updateFields.push('name = ?');
+          values.push(updates.name);
+        }
+        if (updates.email !== undefined) {
+          updateFields.push('email = ?');
+          values.push(updates.email);
+        }
+        if (updates.role !== undefined) {
+          updateFields.push('role = ?');
+          values.push(updates.role);
+        }
+        if (updates.phone !== undefined) {
+          updateFields.push('phone = ?');
+          values.push(updates.phone);
+        }
+        if (updates.is_active !== undefined) {
+          updateFields.push('is_active = ?');
+          values.push(updates.is_active);
+        }
+        if (updates.password !== undefined) {
+          updateFields.push('password_hash = ?');
+          values.push(updates.password);
+        }
+        
+        updateFields.push('updated_at = datetime(\'now\')');
+        values.push(staffId);
+        
+        await env.DB.prepare(`
+          UPDATE staff SET ${updateFields.join(', ')} WHERE id = ?
+        `).bind(...values).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // DELETE /api/staff/[id] - Delete staff member
+      if (url.pathname.match(/^\/api\/staff\/[\w-]+$/) && request.method === 'DELETE') {
+        const staffId = url.pathname.split('/')[3];
+        
+        await env.DB.prepare(`
+          DELETE FROM staff WHERE id = ?
+        `).bind(staffId).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       // GET /api/vehicles - Get all vehicles
       if (url.pathname === '/api/vehicles' && request.method === 'GET') {
         const { results } = await env.DB.prepare(`
