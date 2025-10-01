@@ -238,22 +238,32 @@ export default {
         else if (timeRange === '1m') daysAgo = 30;
         else if (timeRange === '3m') daysAgo = 90;
         
+        // Helper function to safely query analytics tables
+        const safeQuery = async (query) => {
+          try {
+            return await query;
+          } catch (error) {
+            console.log('Analytics table query failed (table may not exist):', error.message);
+            return null;
+          }
+        };
+        
         // Get vehicle views
-        const vehicleViews = await env.DB.prepare(`
+        const vehicleViews = await safeQuery(env.DB.prepare(`
           SELECT COUNT(*) as totalViews, COUNT(DISTINCT vehicle_id) as uniqueVehicles, COUNT(DISTINCT visitor_id) as uniqueVisitors
           FROM vehicle_views
           WHERE viewed_at >= datetime('now', '-${daysAgo} days')
-        `).first();
+        `).first());
         
         // Get search stats
-        const searchStats = await env.DB.prepare(`
+        const searchStats = await safeQuery(env.DB.prepare(`
           SELECT COUNT(*) as totalSearches, COUNT(DISTINCT query) as uniqueQueries, AVG(result_count) as avgResults
           FROM search_analytics
           WHERE searched_at >= datetime('now', '-${daysAgo} days')
-        `).first();
+        `).first());
         
         // Get lead stats
-        const leadStats = await env.DB.prepare(`
+        const leadStats = await safeQuery(env.DB.prepare(`
           SELECT 
             COUNT(*) as totalLeads,
             SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as newLeads,
@@ -263,10 +273,10 @@ export default {
             AVG(score) as avgLeadScore
           FROM leads
           WHERE created_at >= datetime('now', '-${daysAgo} days')
-        `).first();
+        `).first());
         
         // Get top vehicles
-        const topVehicles = await env.DB.prepare(`
+        const topVehiclesResult = await safeQuery(env.DB.prepare(`
           SELECT v.id as vehicle_id, v.make, v.model, v.year, COUNT(*) as viewCount
           FROM vehicle_views vv
           JOIN vehicles v ON vv.vehicle_id = v.id
@@ -274,20 +284,20 @@ export default {
           GROUP BY v.id, v.make, v.model, v.year
           ORDER BY viewCount DESC
           LIMIT 10
-        `).all();
+        `).all());
         
         // Get popular searches
-        const popularSearches = await env.DB.prepare(`
+        const popularSearchesResult = await safeQuery(env.DB.prepare(`
           SELECT query, COUNT(*) as count, AVG(result_count) as avgResults
           FROM search_analytics
           WHERE searched_at >= datetime('now', '-${daysAgo} days')
           GROUP BY query
           ORDER BY count DESC
           LIMIT 10
-        `).all();
+        `).all());
         
         // Get staff performance
-        const staffPerformance = await env.DB.prepare(`
+        const staffPerformanceResult = await safeQuery(env.DB.prepare(`
           SELECT assigned_to, COUNT(*) as totalLeads, 
                  SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closedLeads,
                  AVG(score) as avgScore
@@ -295,26 +305,26 @@ export default {
           WHERE created_at >= datetime('now', '-${daysAgo} days') AND assigned_to IS NOT NULL
           GROUP BY assigned_to
           ORDER BY totalLeads DESC
-        `).all();
+        `).all());
         
         // Get daily trends
-        const dailyTrends = await env.DB.prepare(`
+        const dailyTrendsResult = await safeQuery(env.DB.prepare(`
           SELECT DATE(viewed_at) as date, COUNT(*) as views
           FROM vehicle_views
           WHERE viewed_at >= datetime('now', '-${daysAgo} days')
           GROUP BY DATE(viewed_at)
           ORDER BY date ASC
-        `).all();
+        `).all());
         
         // Get referrer stats
-        const referrerStats = await env.DB.prepare(`
+        const referrerStatsResult = await safeQuery(env.DB.prepare(`
           SELECT referrer as source, COUNT(*) as count
           FROM vehicle_views
           WHERE viewed_at >= datetime('now', '-${daysAgo} days') AND referrer IS NOT NULL
           GROUP BY referrer
           ORDER BY count DESC
           LIMIT 10
-        `).all();
+        `).all());
         
         const dashboardData = {
           overview: {
@@ -337,11 +347,11 @@ export default {
               avgLeadScore: Math.round((leadStats?.avgLeadScore || 0) * 10) / 10
             }
           },
-          topVehicles: topVehicles?.results || [],
-          popularSearches: popularSearches?.results || [],
-          staffPerformance: staffPerformance?.results || [],
-          dailyTrends: dailyTrends?.results || [],
-          referrerStats: referrerStats?.results || []
+          topVehicles: topVehiclesResult?.results || [],
+          popularSearches: popularSearchesResult?.results || [],
+          staffPerformance: staffPerformanceResult?.results || [],
+          dailyTrends: dailyTrendsResult?.results || [],
+          referrerStats: referrerStatsResult?.results || []
         };
         
         return new Response(JSON.stringify(dashboardData), {
