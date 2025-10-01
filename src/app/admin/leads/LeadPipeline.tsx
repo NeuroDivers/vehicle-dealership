@@ -555,7 +555,6 @@ export default function LeadPipeline() {
                     value={selectedLead.assigned_to || ''}
                     onChange={(e) => {
                       assignLead(selectedLead.id, e.target.value);
-                      setSelectedLead({ ...selectedLead, assigned_to: e.target.value });
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -574,7 +573,6 @@ export default function LeadPipeline() {
                     value={selectedLead.status}
                     onChange={(e) => {
                       updateLeadStatus(selectedLead.id, e.target.value);
-                      setSelectedLead({ ...selectedLead, status: e.target.value as Lead['status'] });
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
