@@ -97,6 +97,7 @@ export default {
           
           if (staff) {
             return new Response(JSON.stringify({
+              authenticated: true,
               success: true,
               user: staff
             }), {
@@ -104,6 +105,7 @@ export default {
             });
           } else {
             return new Response(JSON.stringify({
+              authenticated: false,
               success: false,
               error: 'Invalid token'
             }), {
@@ -113,6 +115,7 @@ export default {
           }
         } catch (e) {
           return new Response(JSON.stringify({
+            authenticated: false,
             success: false,
             error: 'Invalid token format'
           }), {
