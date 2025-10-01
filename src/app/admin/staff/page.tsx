@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { 
@@ -61,7 +61,7 @@ export default function StaffManagement() {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev'}/api/staff`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -104,7 +104,7 @@ export default function StaffManagement() {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev'}/api/staff`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff`,
         {
           method: 'POST',
           headers: {

@@ -3,7 +3,7 @@
 
 // SINGLE SOURCE OF TRUTH: Use only the analytics D1 database for everything
 // This eliminates sync issues and simplifies the architecture
-const D1_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev';
+const D1_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
 
 // All APIs point to the same D1-backed Worker
 const VEHICLE_API_URL = D1_API_URL;

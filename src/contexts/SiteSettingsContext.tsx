@@ -106,8 +106,8 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     const loadSettings = async () => {
       try {
         // Try to fetch from the admin API which has the settings
-        const apiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 
-                      'https://vehicle-admin-api.nick-damato0011527.workers.dev';
+        const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
+                      'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
         const response = await fetch(`${apiUrl}/api/admin/settings`);
         
         if (response.ok) {

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -33,7 +33,7 @@ function ResetPasswordForm() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev'}/api/auth/validate-reset-token`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/auth/validate-reset-token`,
         {
           method: 'POST',
           headers: {
@@ -74,7 +74,7 @@ function ResetPasswordForm() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev'}/api/auth/reset-password`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/auth/reset-password`,
         {
           method: 'POST',
           headers: {
