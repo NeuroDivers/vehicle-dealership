@@ -3,6 +3,8 @@
  * Handles all vehicle-related API endpoints
  */
 
+import bcrypt from 'bcryptjs';
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -29,16 +31,21 @@ export default {
         
         console.log('Login attempt:', { email, passwordLength: password?.length });
         
-        // Query staff table
+        // Query staff table - get user by email first
         const staff = await env.DB.prepare(`
-          SELECT id, email, name, role, is_active 
+          SELECT id, email, name, role, is_active, password_hash
           FROM staff 
-          WHERE email = ? AND password_hash = ? AND is_active = 1
-        `).bind(email, password).first();
+          WHERE email = ? AND is_active = 1
+        `).bind(email).first();
         
         console.log('Staff found:', staff ? 'Yes' : 'No');
         
-        if (staff) {
+        // Verify password using bcrypt
+        if (staff && await bcrypt.compare(password, staff.password_hash)) {
+          console.log('Password verified successfully');
+          
+          // Remove password_hash from response
+          delete staff.password_hash;
           // Update last login
           await env.DB.prepare(`
             UPDATE staff SET last_login = datetime('now') WHERE id = ?
@@ -143,6 +150,10 @@ export default {
         const staffData = await request.json();
         const staffId = `staff-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
+        // Hash the password
+        const plainPassword = staffData.password || 'changeme123';
+        const hashedPassword = await bcrypt.hash(plainPassword, 10);
+        
         await env.DB.prepare(`
           INSERT INTO staff (id, email, name, password_hash, role, phone, is_active, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
@@ -150,7 +161,7 @@ export default {
           staffId,
           staffData.email,
           staffData.name,
-          staffData.password || 'changeme123',
+          hashedPassword,
           staffData.role || 'staff',
           staffData.phone || '',
           staffData.is_active !== undefined ? staffData.is_active : 1
@@ -191,7 +202,8 @@ export default {
         }
         if (updates.password !== undefined) {
           updateFields.push('password_hash = ?');
-          values.push(updates.password);
+          const hashedPassword = await bcrypt.hash(updates.password, 10);
+          values.push(hashedPassword);
         }
         
         updateFields.push('updated_at = datetime(\'now\')');
