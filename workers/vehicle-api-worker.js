@@ -359,6 +359,45 @@ export default {
         });
       }
 
+      // POST /api/analytics/vehicle-views - Track vehicle view
+      if (url.pathname === '/api/analytics/vehicle-views' && request.method === 'POST') {
+        try {
+          const viewData = await request.json();
+          
+          // Generate unique ID
+          const viewId = `view_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Try to insert into vehicle_views table
+          try {
+            await env.DB.prepare(`
+              INSERT INTO vehicle_views (
+                id, vehicle_id, visitor_id, session_id, referrer, user_agent, viewed_at
+              ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            `).bind(
+              viewId,
+              viewData.vehicleId || null,
+              viewData.visitorId || null,
+              viewData.sessionId || null,
+              viewData.referrer || null,
+              viewData.userAgent || null
+            ).run();
+          } catch (dbError) {
+            // Silently fail if table doesn't exist yet
+            console.log('Vehicle views table not available:', dbError.message);
+          }
+          
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('Error tracking vehicle view:', error);
+          // Return success anyway - analytics tracking shouldn't break the site
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
       // GET /api/vehicles - Get all vehicles
       if (url.pathname === '/api/vehicles' && request.method === 'GET') {
         const { results } = await env.DB.prepare(`
