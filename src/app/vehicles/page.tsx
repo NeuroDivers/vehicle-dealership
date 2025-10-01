@@ -46,13 +46,19 @@ export default function VehiclesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // Check URL params for fuel type filter (for Electric vehicles link)
+  // Check URL params for fuel type filter and search term
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const fuelTypeParam = urlParams.get('fuelType');
+    const searchParam = urlParams.get('search');
+    
     if (fuelTypeParam) {
       setFilters(prev => ({ ...prev, fuelType: fuelTypeParam }));
       setShowFilters(true);
+    }
+    
+    if (searchParam) {
+      setSearchTerm(searchParam);
     }
   }, []);
 

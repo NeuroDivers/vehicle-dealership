@@ -23,6 +23,49 @@ export default {
     }
 
     try {
+      // POST /api/auth/login - Staff login
+      if (url.pathname === '/api/auth/login' && request.method === 'POST') {
+        const { email, password } = await request.json();
+        
+        // Query staff table
+        const staff = await env.DB.prepare(`
+          SELECT id, email, name, role, is_active 
+          FROM staff 
+          WHERE email = ? AND password_hash = ? AND is_active = 1
+        `).bind(email, password).first();
+        
+        if (staff) {
+          // Update last login
+          await env.DB.prepare(`
+            UPDATE staff SET last_login = datetime('now') WHERE id = ?
+          `).bind(staff.id).run();
+          
+          // Generate simple token (in production, use proper JWT)
+          const token = btoa(`${staff.id}:${Date.now()}`);
+          
+          return new Response(JSON.stringify({
+            success: true,
+            token,
+            user: {
+              id: staff.id,
+              email: staff.email,
+              name: staff.name,
+              role: staff.role
+            }
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } else {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Invalid email or password'
+          }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
       // GET /api/vehicles - Get all vehicles
       if (url.pathname === '/api/vehicles' && request.method === 'GET') {
         const { results } = await env.DB.prepare(`
