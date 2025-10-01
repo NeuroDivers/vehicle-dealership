@@ -72,24 +72,50 @@ export default {
   async scrapeNaniAutoInventory() {
     const vehicles = [];
     const baseUrl = 'https://naniauto.com';
+    const allVehicleUrls = new Set();
     
     try {
-      // Fetch the inventory page
-      console.log('Fetching NaniAuto inventory page...');
-      const response = await fetch(`${baseUrl}/fr/inventory/`);
+      // Scrape multiple pages (pagination)
+      let page = 1;
+      let hasMorePages = true;
+      const maxPages = 10; // Safety limit
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch inventory: ${response.status}`);
+      while (hasMorePages && page <= maxPages) {
+        console.log(`Fetching NaniAuto inventory page ${page}...`);
+        const pageUrl = page === 1 
+          ? `${baseUrl}/fr/inventory/` 
+          : `${baseUrl}/fr/inventory/p/${page}/`;
+        
+        const response = await fetch(pageUrl);
+        
+        if (!response.ok) {
+          console.log(`Page ${page} returned ${response.status}, stopping pagination`);
+          break;
+        }
+        
+        const html = await response.text();
+        
+        // Extract vehicle URLs from this page
+        const vehicleUrls = this.extractVehicleUrls(html, baseUrl);
+        console.log(`Found ${vehicleUrls.length} vehicle URLs on page ${page}`);
+        
+        if (vehicleUrls.length === 0) {
+          // No more vehicles, stop pagination
+          hasMorePages = false;
+          break;
+        }
+        
+        // Add to set (automatically handles duplicates)
+        vehicleUrls.forEach(url => allVehicleUrls.add(url));
+        
+        page++;
+        await new Promise(resolve => setTimeout(resolve, 500)); // Delay between pages
       }
       
-      const html = await response.text();
-      
-      // Extract vehicle URLs from the inventory page
-      const vehicleUrls = this.extractVehicleUrls(html, baseUrl);
-      console.log(`Found ${vehicleUrls.length} vehicle URLs`);
+      console.log(`Total unique vehicle URLs found: ${allVehicleUrls.size}`);
       
       // Scrape each vehicle detail page
-      for (const vehicleUrl of vehicleUrls) {
+      for (const vehicleUrl of allVehicleUrls) {
         try {
           await new Promise(resolve => setTimeout(resolve, 500)); // Delay to be polite
           const vehicle = await this.scrapeVehicleDetails(vehicleUrl);
