@@ -881,6 +881,75 @@ export default {
         });
       }
 
+      // POST /api/call-logs - Log a call
+      if (url.pathname === '/api/call-logs' && request.method === 'POST') {
+        const callData = await request.json();
+        
+        const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        await env.DB.prepare(`
+          INSERT INTO call_logs (
+            id, lead_id, staff_name, duration_minutes, notes, outcome, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        `).bind(
+          callId,
+          callData.lead_id,
+          callData.staff_name || 'Unknown',
+          callData.duration_minutes || 0,
+          callData.notes || '',
+          callData.outcome || 'answered'
+        ).run();
+        
+        return new Response(JSON.stringify({ success: true, id: callId }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // POST /api/lead-notes - Add a note to a lead
+      if (url.pathname === '/api/lead-notes' && request.method === 'POST') {
+        const noteData = await request.json();
+        
+        const noteId = `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        await env.DB.prepare(`
+          INSERT INTO lead_notes (
+            id, lead_id, staff_name, note_text, note_type, created_at
+          ) VALUES (?, ?, ?, ?, ?, datetime('now'))
+        `).bind(
+          noteId,
+          noteData.lead_id,
+          noteData.staff_name || 'Unknown',
+          noteData.note_text,
+          noteData.note_type || 'note'
+        ).run();
+        
+        return new Response(JSON.stringify({ success: true, id: noteId }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // GET /api/leads/[id]/activity - Get activity history for a lead
+      if (url.pathname.match(/^\/api\/leads\/[\w-]+\/activity$/) && request.method === 'GET') {
+        const leadId = url.pathname.split('/')[3];
+        
+        // Get call logs
+        const callLogs = await env.DB.prepare(`
+          SELECT * FROM call_logs WHERE lead_id = ? ORDER BY created_at DESC
+        `).bind(leadId).all();
+        
+        // Get notes
+        const notes = await env.DB.prepare(`
+          SELECT * FROM lead_notes WHERE lead_id = ? ORDER BY created_at DESC
+        `).bind(leadId).all();
+        
+        return new Response(JSON.stringify({
+          callLogs: callLogs.results || [],
+          notes: notes.results || []
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       return new Response('Not found', { 
         status: 404,
         headers: corsHeaders 

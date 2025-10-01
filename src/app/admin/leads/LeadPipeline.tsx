@@ -21,6 +21,7 @@ import {
   UserPlus,
   Search
 } from 'lucide-react';
+import Toast from '@/components/Toast';
 
 interface Lead {
   id: string;
@@ -77,6 +78,7 @@ export default function LeadPipeline() {
   const [callOutcome, setCallOutcome] = useState('answered');
   const [leadNotes, setLeadNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     fetchLeads();
@@ -207,11 +209,15 @@ export default function LeadPipeline() {
         setLeads(prev => prev.map(lead => 
           lead.id === selectedLead.id ? selectedLead : lead
         ));
-        alert('Lead saved successfully!');
+        setToast({ message: 'Lead saved successfully!', type: 'success' });
+        setShowLeadModal(false);
+        setSelectedLead(null);
+      } else {
+        setToast({ message: 'Failed to save lead', type: 'error' });
       }
     } catch (error) {
       console.error('Failed to save lead:', error);
-      alert('Failed to save lead');
+      setToast({ message: 'Failed to save lead', type: 'error' });
     }
   };
 
