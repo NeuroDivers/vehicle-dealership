@@ -88,7 +88,8 @@ export default function LeadPipeline() {
     if (selectedLead && showLeadModal) {
       fetchLeadActivity(selectedLead.id);
     }
-  }, [selectedLead, showLeadModal]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLeadModal]);
   const fetchLeads = async () => {
     try {
       const response = await fetch(
