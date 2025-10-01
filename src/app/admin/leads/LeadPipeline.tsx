@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Phone,
   Mail,
@@ -387,16 +387,25 @@ export default function LeadPipeline() {
 
   const LeadCard = ({ lead }: { lead: Lead }) => {
     const assignedStaff = staff.find(s => s.id === lead.assigned_to);
+    const [isDragging, setIsDragging] = React.useState(false);
     
     return (
       <div
         draggable
-        onDragStart={(e) => handleDragStart(e, lead)}
-        onClick={() => {
-          setSelectedLead(lead);
-          setShowLeadModal(true);
+        onDragStart={(e) => {
+          setIsDragging(true);
+          handleDragStart(e, lead);
         }}
-        className="bg-white rounded-lg shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
+        onDragEnd={() => {
+          setTimeout(() => setIsDragging(false), 100);
+        }}
+        onClick={() => {
+          if (!isDragging) {
+            setSelectedLead(lead);
+            setShowLeadModal(true);
+          }
+        }}
+        className="bg-white rounded-lg shadow-sm p-4 mb-3 cursor-move hover:shadow-md transition-shadow border border-gray-200"
       >
         {/* Lead Score Badge */}
         <div className="flex justify-between items-start mb-2">
