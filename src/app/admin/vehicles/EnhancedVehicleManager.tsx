@@ -53,6 +53,7 @@ export default function EnhancedVehicleManager() {
   const [showAvailable, setShowAvailable] = useState(true);
   const [selectedBodyType, setSelectedBodyType] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
+  const [selectedVendor, setSelectedVendor] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [sortBy, setSortBy] = useState<'price' | 'year' | 'odometer' | 'date'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -98,6 +99,9 @@ export default function EnhancedVehicleManager() {
       // Year filter
       if (selectedYear && vehicle.year.toString() !== selectedYear) return false;
       
+      // Vendor filter
+      if (selectedVendor && vehicle.vendor_id !== selectedVendor) return false;
+      
       // Price range filter
       if (priceRange.min && vehicle.price < parseFloat(priceRange.min)) return false;
       if (priceRange.max && vehicle.price > parseFloat(priceRange.max)) return false;
@@ -126,7 +130,7 @@ export default function EnhancedVehicleManager() {
     });
     
     return filtered;
-  }, [vehicles, searchTerm, showSold, showAvailable, selectedBodyType, selectedYear, priceRange, sortBy, sortOrder]);
+  }, [vehicles, searchTerm, showSold, showAvailable, selectedBodyType, selectedYear, selectedVendor, priceRange, sortBy, sortOrder]);
 
   // Get unique values for filters
   const bodyTypes = useMemo(() => {
@@ -137,6 +141,16 @@ export default function EnhancedVehicleManager() {
   const years = useMemo(() => {
     const yearSet = new Set(vehicles.map(v => v.year.toString()));
     return Array.from(yearSet).sort((a, b) => b.localeCompare(a));
+  }, [vehicles]);
+  
+  const vendors = useMemo(() => {
+    const vendorMap = new Map();
+    vehicles.forEach(v => {
+      if (v.vendor_id) {
+        vendorMap.set(v.vendor_id, v.vendor_name || v.vendor_id);
+      }
+    });
+    return Array.from(vendorMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [vehicles]);
 
   const deleteVehicleById = async (id: string) => {
@@ -300,6 +314,7 @@ export default function EnhancedVehicleManager() {
     setSearchTerm('');
     setSelectedBodyType('');
     setSelectedYear('');
+    setSelectedVendor('');
     setPriceRange({ min: '', max: '' });
     setShowSold(false);
     setShowAvailable(true);
@@ -378,7 +393,7 @@ export default function EnhancedVehicleManager() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
           {/* Search */}
           <div className="md:col-span-2">
             <div className="relative">
@@ -436,6 +451,18 @@ export default function EnhancedVehicleManager() {
             <option value="">All Years</option>
             {years.map(year => (
               <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+          
+          {/* Vendor */}
+          <select
+            value={selectedVendor}
+            onChange={(e) => setSelectedVendor(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Vendors</option>
+            {vendors.map(([id, name]) => (
+              <option key={id} value={id}>{name}</option>
             ))}
           </select>
           
