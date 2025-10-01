@@ -835,6 +835,52 @@ export default {
         });
       }
 
+      // PUT /api/leads/[id] - Update a lead
+      if (url.pathname.match(/^\/api\/leads\/[\w-]+$/) && request.method === 'PUT') {
+        const leadId = url.pathname.split('/')[3];
+        const updateData = await request.json();
+        
+        // Build UPDATE query dynamically
+        const updates = [];
+        const bindings = [];
+        
+        if (updateData.status !== undefined) {
+          updates.push('status = ?');
+          bindings.push(updateData.status);
+        }
+        if (updateData.assigned_to !== undefined) {
+          updates.push('assigned_to = ?');
+          bindings.push(updateData.assigned_to);
+        }
+        if (updateData.notes !== undefined) {
+          updates.push('notes = ?');
+          bindings.push(updateData.notes);
+        }
+        if (updateData.follow_up_date !== undefined) {
+          updates.push('follow_up_date = ?');
+          bindings.push(updateData.follow_up_date);
+        }
+        
+        if (updates.length === 0) {
+          return new Response(JSON.stringify({ error: 'No fields to update' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        bindings.push(leadId);
+        
+        await env.DB.prepare(`
+          UPDATE leads 
+          SET ${updates.join(', ')}
+          WHERE id = ?
+        `).bind(...bindings).run();
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       return new Response('Not found', { 
         status: 404,
         headers: corsHeaders 

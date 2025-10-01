@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import {
@@ -71,6 +71,12 @@ export default function LeadPipeline() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterScore, setFilterScore] = useState(0);
   const [filterAssignee, setFilterAssignee] = useState('all');
+  const [showCallModal, setShowCallModal] = useState(false);
+  const [callDuration, setCallDuration] = useState('');
+  const [callNotes, setCallNotes] = useState('');
+  const [callOutcome, setCallOutcome] = useState('answered');
+  const [leadNotes, setLeadNotes] = useState<any[]>([]);
+  const [newNote, setNewNote] = useState('');
 
   useEffect(() => {
     fetchLeads();
@@ -177,6 +183,84 @@ export default function LeadPipeline() {
     } catch (error) {
       console.error('Failed to assign lead:', error);
     }
+  };
+
+  const saveLead = async () => {
+    if (!selectedLead) return;
+    
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: selectedLead.status,
+            assigned_to: selectedLead.assigned_to,
+            notes: selectedLead.notes,
+            follow_up_date: selectedLead.follow_up_date
+          })
+        }
+      );
+      
+      if (response.ok) {
+        setLeads(prev => prev.map(lead => 
+          lead.id === selectedLead.id ? selectedLead : lead
+        ));
+        alert('Lead saved successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to save lead:', error);
+      alert('Failed to save lead');
+    }
+  };
+
+  const handleCallClick = () => {
+    if (selectedLead) {
+      window.location.href = `tel:${selectedLead.customer_phone}`;
+      setShowCallModal(true);
+    }
+  };
+
+  const logCall = async () => {
+    if (!selectedLead) return;
+    
+    const callLog = {
+      id: `call_${Date.now()}`,
+      lead_id: selectedLead.id,
+      staff_name: 'Current User', // TODO: Get from auth
+      duration_minutes: parseInt(callDuration) || 0,
+      notes: callNotes,
+      outcome: callOutcome,
+      created_at: new Date().toISOString()
+    };
+    
+    setLeadNotes(prev => [callLog, ...prev]);
+    setShowCallModal(false);
+    setCallDuration('');
+    setCallNotes('');
+    setCallOutcome('answered');
+    
+    // Update lead status to contacted if it was new
+    if (selectedLead.status === 'new') {
+      await updateLeadStatus(selectedLead.id, 'contacted');
+    }
+  };
+
+  const addNote = () => {
+    if (!selectedLead || !newNote.trim()) return;
+    
+    const note = {
+      id: `note_${Date.now()}`,
+      lead_id: selectedLead.id,
+      staff_name: 'Current User',
+      note_text: newNote,
+      note_type: 'note',
+      created_at: new Date().toISOString()
+    };
+    
+    setLeadNotes(prev => [note, ...prev]);
+    setNewNote('');
   };
 
   const handleDragStart = (e: React.DragEvent, lead: Lead) => {
@@ -461,16 +545,68 @@ export default function LeadPipeline() {
                   />
                 </div>
 
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-gray-900 mb-2">Activity History</h3>
+                  <div className="bg-gray-50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                    {leadNotes.length === 0 ? (
+                      <p className="text-sm text-gray-500">No activity yet</p>
+                    ) : (
+                      leadNotes.map(note => (
+                        <div key={note.id} className="mb-2 pb-2 border-b border-gray-200 last:border-0">
+                          <div className="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>{note.staff_name}</span>
+                            <span>{new Date(note.created_at).toLocaleString()}</span>
+                          </div>
+                          <p className="text-sm">{note.note_text || note.notes}</p>
+                          {note.duration_minutes && (
+                            <span className="text-xs text-gray-600">Duration: {note.duration_minutes} min</span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Add a quick note..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      onKeyPress={(e) => e.key === 'Enter' && addNote()}
+                    />
+                    <button
+                      onClick={addNote}
+                      className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-sm"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
-                  <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center">
+                  <button 
+                    onClick={handleCallClick}
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                  >
                     <Phone className="h-4 w-4 mr-2" />
                     Call
                   </button>
-                  <button className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center">
+                  <button 
+                    onClick={() => window.location.href = `mailto:${selectedLead.customer_email}`}
+                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center"
+                  >
                     <Mail className="h-4 w-4 mr-2" />
                     Email
                   </button>
                 </div>
+
+                <button
+                  onClick={saveLead}
+                  className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 font-semibold"
+                >
+                  Save Changes
+                </button>
               </div>
             </div>
           </div>
@@ -583,7 +719,84 @@ export default function LeadPipeline() {
       </div>
 
       {/* Lead Modal */}
-      {showLeadModal && <LeadModal />}
+      {showLeadModal && selectedLead && renderLeadModal()}
+
+      {/* Call Log Modal */}
+      {showCallModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Log Call</h2>
+                <button
+                  onClick={() => setShowCallModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Call Duration (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    value={callDuration}
+                    onChange={(e) => setCallDuration(e.target.value)}
+                    placeholder="5"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Outcome
+                  </label>
+                  <select
+                    value={callOutcome}
+                    onChange={(e) => setCallOutcome(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="answered">Answered</option>
+                    <option value="voicemail">Voicemail</option>
+                    <option value="no-answer">No Answer</option>
+                    <option value="busy">Busy</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Call Notes
+                  </label>
+                  <textarea
+                    value={callNotes}
+                    onChange={(e) => setCallNotes(e.target.value)}
+                    placeholder="What was discussed?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowCallModal(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={logCall}
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+                  >
+                    Save Call Log
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
