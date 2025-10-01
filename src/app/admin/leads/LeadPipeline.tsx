@@ -385,25 +385,25 @@ export default function LeadPipeline() {
     return filteredLeads.filter(lead => lead.status === stageId);
   };
 
-  const LeadCard = ({ lead }: { lead: Lead }) => {
+  const LeadCard = React.memo(({ lead }: { lead: Lead }) => {
     const assignedStaff = staff.find(s => s.id === lead.assigned_to);
-    const [isDragging, setIsDragging] = React.useState(false);
+    const dragStartTime = React.useRef<number>(0);
     
     return (
       <div
         draggable
         onDragStart={(e) => {
-          setIsDragging(true);
+          dragStartTime.current = Date.now();
           handleDragStart(e, lead);
         }}
-        onDragEnd={() => {
-          setTimeout(() => setIsDragging(false), 100);
-        }}
-        onClick={() => {
-          if (!isDragging) {
+        onClick={(e) => {
+          // Only open modal if it wasn't a drag (drag takes >200ms)
+          const timeSinceDragStart = Date.now() - dragStartTime.current;
+          if (timeSinceDragStart < 200 || dragStartTime.current === 0) {
             setSelectedLead(lead);
             setShowLeadModal(true);
           }
+          dragStartTime.current = 0;
         }}
         className="bg-white rounded-lg shadow-sm p-4 mb-3 cursor-move hover:shadow-md transition-shadow border border-gray-200"
       >
@@ -461,7 +461,7 @@ export default function LeadPipeline() {
         )}
       </div>
     );
-  };
+  });
 
   const LeadModal = () => {
     if (!selectedLead) return null;
