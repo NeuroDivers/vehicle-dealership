@@ -228,6 +228,127 @@ export default {
         });
       }
 
+      // GET /api/analytics/dashboard - Get analytics dashboard data
+      if (url.pathname === '/api/analytics/dashboard' && request.method === 'GET') {
+        const timeRange = url.searchParams.get('timeRange') || '7d';
+        
+        // Parse time range
+        let daysAgo = 7;
+        if (timeRange.endsWith('d')) daysAgo = parseInt(timeRange);
+        else if (timeRange === '1m') daysAgo = 30;
+        else if (timeRange === '3m') daysAgo = 90;
+        
+        // Get vehicle views
+        const vehicleViews = await env.DB.prepare(`
+          SELECT COUNT(*) as totalViews, COUNT(DISTINCT vehicle_id) as uniqueVehicles, COUNT(DISTINCT visitor_id) as uniqueVisitors
+          FROM vehicle_views
+          WHERE viewed_at >= datetime('now', '-${daysAgo} days')
+        `).first();
+        
+        // Get search stats
+        const searchStats = await env.DB.prepare(`
+          SELECT COUNT(*) as totalSearches, COUNT(DISTINCT query) as uniqueQueries, AVG(result_count) as avgResults
+          FROM search_analytics
+          WHERE searched_at >= datetime('now', '-${daysAgo} days')
+        `).first();
+        
+        // Get lead stats
+        const leadStats = await env.DB.prepare(`
+          SELECT 
+            COUNT(*) as totalLeads,
+            SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as newLeads,
+            SUM(CASE WHEN status = 'contacted' THEN 1 ELSE 0 END) as contactedLeads,
+            SUM(CASE WHEN status = 'qualified' THEN 1 ELSE 0 END) as qualifiedLeads,
+            SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closedLeads,
+            AVG(score) as avgLeadScore
+          FROM leads
+          WHERE created_at >= datetime('now', '-${daysAgo} days')
+        `).first();
+        
+        // Get top vehicles
+        const topVehicles = await env.DB.prepare(`
+          SELECT v.id as vehicle_id, v.make, v.model, v.year, COUNT(*) as viewCount
+          FROM vehicle_views vv
+          JOIN vehicles v ON vv.vehicle_id = v.id
+          WHERE vv.viewed_at >= datetime('now', '-${daysAgo} days')
+          GROUP BY v.id, v.make, v.model, v.year
+          ORDER BY viewCount DESC
+          LIMIT 10
+        `).all();
+        
+        // Get popular searches
+        const popularSearches = await env.DB.prepare(`
+          SELECT query, COUNT(*) as count, AVG(result_count) as avgResults
+          FROM search_analytics
+          WHERE searched_at >= datetime('now', '-${daysAgo} days')
+          GROUP BY query
+          ORDER BY count DESC
+          LIMIT 10
+        `).all();
+        
+        // Get staff performance
+        const staffPerformance = await env.DB.prepare(`
+          SELECT assigned_to, COUNT(*) as totalLeads, 
+                 SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closedLeads,
+                 AVG(score) as avgScore
+          FROM leads
+          WHERE created_at >= datetime('now', '-${daysAgo} days') AND assigned_to IS NOT NULL
+          GROUP BY assigned_to
+          ORDER BY totalLeads DESC
+        `).all();
+        
+        // Get daily trends
+        const dailyTrends = await env.DB.prepare(`
+          SELECT DATE(viewed_at) as date, COUNT(*) as views
+          FROM vehicle_views
+          WHERE viewed_at >= datetime('now', '-${daysAgo} days')
+          GROUP BY DATE(viewed_at)
+          ORDER BY date ASC
+        `).all();
+        
+        // Get referrer stats
+        const referrerStats = await env.DB.prepare(`
+          SELECT referrer as source, COUNT(*) as count
+          FROM vehicle_views
+          WHERE viewed_at >= datetime('now', '-${daysAgo} days') AND referrer IS NOT NULL
+          GROUP BY referrer
+          ORDER BY count DESC
+          LIMIT 10
+        `).all();
+        
+        const dashboardData = {
+          overview: {
+            vehicleViews: {
+              totalViews: vehicleViews?.totalViews || 0,
+              uniqueVehicles: vehicleViews?.uniqueVehicles || 0,
+              uniqueVisitors: vehicleViews?.uniqueVisitors || 0
+            },
+            searchStats: {
+              totalSearches: searchStats?.totalSearches || 0,
+              uniqueQueries: searchStats?.uniqueQueries || 0,
+              avgResults: Math.round(searchStats?.avgResults || 0)
+            },
+            leadStats: {
+              totalLeads: leadStats?.totalLeads || 0,
+              newLeads: leadStats?.newLeads || 0,
+              contactedLeads: leadStats?.contactedLeads || 0,
+              qualifiedLeads: leadStats?.qualifiedLeads || 0,
+              closedLeads: leadStats?.closedLeads || 0,
+              avgLeadScore: Math.round((leadStats?.avgLeadScore || 0) * 10) / 10
+            }
+          },
+          topVehicles: topVehicles?.results || [],
+          popularSearches: popularSearches?.results || [],
+          staffPerformance: staffPerformance?.results || [],
+          dailyTrends: dailyTrends?.results || [],
+          referrerStats: referrerStats?.results || []
+        };
+        
+        return new Response(JSON.stringify(dashboardData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       // GET /api/vehicles - Get all vehicles
       if (url.pathname === '/api/vehicles' && request.method === 'GET') {
         const { results } = await env.DB.prepare(`
