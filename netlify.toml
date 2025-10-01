@@ -8,6 +8,14 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Analytics endpoints need proper POST support via function
+[[redirects]]
+  from = "/api/analytics/*"
+  to = "/.netlify/functions/analytics-proxy/:splat"
+  status = 200
+  force = true
+
+# All other API calls go directly to Worker
 [[redirects]]
   from = "/api/*"
   to = "https://vehicle-dealership-api.nick-damato0011527.workers.dev/api/:splat"
