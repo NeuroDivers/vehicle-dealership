@@ -29,8 +29,6 @@ export default {
       if (url.pathname === '/api/auth/login' && request.method === 'POST') {
         const { email, password } = await request.json();
         
-        console.log('Login attempt:', { email, passwordLength: password?.length });
-        
         // Query staff table - get user by email first
         const staff = await env.DB.prepare(`
           SELECT id, email, name, role, is_active, password_hash
@@ -38,11 +36,10 @@ export default {
           WHERE email = ? AND is_active = 1
         `).bind(email).first();
         
-        console.log('Staff found:', staff ? 'Yes' : 'No');
-        
         // Verify password using bcrypt
-        if (staff && await bcrypt.compare(password, staff.password_hash)) {
-          console.log('Password verified successfully');
+        const passwordMatch = staff ? await bcrypt.compare(password, staff.password_hash) : false;
+        
+        if (staff && passwordMatch) {
           
           // Remove password_hash from response
           delete staff.password_hash;
