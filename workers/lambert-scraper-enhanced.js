@@ -67,7 +67,7 @@ export default {
         let existingVehicles = [];
         if (env.DB) {
           const { results } = await env.DB.prepare(`
-            SELECT vin, stockNumber, vendor_stock_number, year, make, model, price, odometer
+            SELECT vin, stockNumber, vendor_stock_number, year, make, model, price, odometer, fuelType, transmission
             FROM vehicles 
             WHERE vendor_id = 'lambert' OR vendor_name LIKE '%Lambert%'
           `).all();
@@ -92,12 +92,17 @@ export default {
           if (!existing) {
             newVehicles.push(vehicle);
           } else {
-            // Check if vehicle data changed
+            // Check if vehicle data changed or critical fields are missing
             const priceChanged = existing.price !== vehicle.price;
             const odometerChanged = existing.odometer !== vehicle.odometer;
+            const missingFuelType = !existing.fuelType && vehicle.fuelType;
+            const missingTransmission = !existing.transmission && vehicle.transmission;
             
-            if (priceChanged || odometerChanged) {
+            if (priceChanged || odometerChanged || missingFuelType || missingTransmission) {
               updatedVehicles.push(vehicle);
+              if (missingFuelType || missingTransmission) {
+                console.log(`🔄 Updating ${vehicle.make} ${vehicle.model} - adding missing fields`);
+              }
             } else {
               unchangedVehicles.push(vehicle);
             }
