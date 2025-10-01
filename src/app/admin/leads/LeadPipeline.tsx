@@ -83,6 +83,29 @@ export default function LeadPipeline() {
     fetchStaff();
   }, []);
 
+  // Load activity when a lead is selected
+  useEffect(() => {
+    if (selectedLead) {
+      const loadActivity = async () => {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/activity`
+          );
+          if (response.ok) {
+            const activity = await response.json();
+            setLeadNotes(activity);
+          }
+        } catch (error) {
+          console.error('Failed to load activity:', error);
+          setLeadNotes([]);
+        }
+      };
+      loadActivity();
+    } else {
+      setLeadNotes([]);
+    }
+  }, [selectedLead?.id]);
+
   const fetchLeads = async () => {
     try {
       const response = await fetch(
@@ -426,24 +449,6 @@ export default function LeadPipeline() {
     const [localNotes, setLocalNotes] = useState(selectedLead.notes || '');
     const [localQuickNote, setLocalQuickNote] = useState('');
     const assignedStaff = staff.find(s => s.id === selectedLead.assigned_to);
-    
-    // Load activity history when modal opens
-    useEffect(() => {
-      const loadActivity = async () => {
-        try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/activity`
-          );
-          if (response.ok) {
-            const activity = await response.json();
-            setLeadNotes(activity);
-          }
-        } catch (error) {
-          console.error('Failed to load activity:', error);
-        }
-      };
-      loadActivity();
-    }, [selectedLead.id]);
     
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
