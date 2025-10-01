@@ -359,12 +359,20 @@ export default {
       vehicle.odometer = 0;
     }
     
-    // Extract transmission (French: Transmission, Boîte)
-    const transMatch = html.match(/(Transmission|Boîte)[:\s]+([^<\n]+)/i);
-    if (transMatch) {
-      const trans = transMatch[2].trim().toLowerCase();
-      vehicle.transmission = trans.includes('auto') ? 'Automatic' : 
-                            trans.includes('manuel') ? 'Manual' : transMatch[2].trim();
+    // Extract transmission - updated pattern for Lambert HTML
+    let transMatch = html.match(/<li[^>]*class="car_transmission"[^>]*>\s*<span>Transmission<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
+    if (!transMatch) {
+      // Fallback to old pattern
+      transMatch = html.match(/(Transmission|Boîte)[:\s]+([^<\n]+)/i);
+      if (transMatch) {
+        const trans = transMatch[2].trim().toLowerCase();
+        vehicle.transmission = trans.includes('auto') ? 'Automatic' : 
+                              trans.includes('manuel') ? 'Manual' : transMatch[2].trim();
+      }
+    } else {
+      const trans = transMatch[1].trim();
+      vehicle.transmission = this.normalizeTransmission(trans);
+      console.log(`✅ Lambert Transmission found: ${trans} -> ${vehicle.transmission}`);
     }
     
     // Extract drivetrain (French: Traction, Entraînement)
@@ -376,10 +384,18 @@ export default {
                           drive.includes('rwd') || drive.includes('arrière') ? 'RWD' : driveMatch[2].trim();
     }
     
-    // Extract fuel type
-    const fuelMatch = html.match(/<span>CARBURANT<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
+    // Extract fuel type - updated pattern for Lambert HTML
+    let fuelMatch = html.match(/<li[^>]*class="car_fuel_type"[^>]*>\s*<span>CARBURANT<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
+    if (!fuelMatch) {
+      // Fallback to old pattern
+      fuelMatch = html.match(/<span>CARBURANT<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
+    }
     if (fuelMatch) {
-      vehicle.fuelType = this.normalizeFuelType(fuelMatch[1].trim());
+      const rawFuel = fuelMatch[1].trim();
+      vehicle.fuelType = this.normalizeFuelType(rawFuel);
+      console.log(`✅ Lambert Fuel Type found: ${rawFuel} -> ${vehicle.fuelType}`);
+    } else {
+      console.log('⚠️  Lambert Fuel Type not found in HTML');
     }
     
     // Extract body style (Carrosserie)
@@ -479,6 +495,14 @@ export default {
     if (lower.includes('diesel')) return 'Diesel';
     if (lower.includes('gas') || lower.includes('essence')) return 'Gasoline';
     return 'Gasoline';
+  },
+
+  normalizeTransmission(trans) {
+    const lower = trans.toLowerCase();
+    if (lower.includes('auto') || lower.includes('automatique')) return 'Automatic';
+    if (lower.includes('man') || lower.includes('manuel')) return 'Manual';
+    if (lower.includes('cvt')) return 'CVT';
+    return trans; // Return original if no match
   },
 
   normalizeBodyType(body) {
