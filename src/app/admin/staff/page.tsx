@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { 
@@ -148,41 +148,123 @@ export default function StaffManagement() {
   const handleEditStaff = async () => {
     if (!selectedStaff) return;
     
-    // In a real implementation, this would call your API
-    console.log('Updating staff:', selectedStaff.id, formData);
+    // Validate passwords if provided
+    if (formData.password || formData.confirmPassword) {
+      if (formData.password !== formData.confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
+    }
     
-    // Reset form and close modal
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      role: 'staff',
-      password: '',
-      confirmPassword: ''
-    });
-    setShowEditModal(false);
-    setSelectedStaff(null);
-    
-    // Refresh staff list
-    await fetchStaff();
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      // Build update object - only include fields that should be updated
+      const updateData: any = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        role: formData.role
+      };
+      
+      // Only include password if it was provided
+      if (formData.password) {
+        updateData.password = formData.password;
+      }
+      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff/${selectedStaff.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(updateData)
+        }
+      );
+      
+      if (response.ok) {
+        // Reset form and close modal
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          role: 'staff',
+          password: '',
+          confirmPassword: ''
+        });
+        setShowEditModal(false);
+        setSelectedStaff(null);
+        
+        // Refresh staff list
+        await fetchStaff();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update staff member');
+      }
+    } catch (error) {
+      console.error('Error updating staff:', error);
+      alert('Failed to update staff member');
+    }
   };
 
   const handleDeleteStaff = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this staff member?')) return;
+    if (!confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) return;
     
-    // In a real implementation, this would call your API
-    console.log('Deleting staff:', id);
-    
-    // Refresh staff list
-    await fetchStaff();
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.ok) {
+        // Refresh staff list
+        await fetchStaff();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to delete staff member');
+      }
+    } catch (error) {
+      console.error('Error deleting staff:', error);
+      alert('Failed to delete staff member');
+    }
   };
 
   const handleToggleActive = async (staffMember: StaffMember) => {
-    // In a real implementation, this would call your API
-    console.log('Toggling active status:', staffMember.id);
-    
-    // Refresh staff list
-    await fetchStaff();
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff/${staffMember.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            is_active: staffMember.isActive ? 0 : 1
+          })
+        }
+      );
+      
+      if (response.ok) {
+        // Refresh staff list
+        await fetchStaff();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update staff status');
+      }
+    } catch (error) {
+      console.error('Error toggling staff status:', error);
+      alert('Failed to update staff status');
+    }
   };
 
   const filteredStaff = staff.filter(member => {
