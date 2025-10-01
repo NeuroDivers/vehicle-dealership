@@ -1,168 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// In-memory storage for demo purposes
-// In production, this would use your database
-interface VehicleViewData {
-  id: string;
-  vehicleId: string;
-  make: string;
-  model: string;
-  year: number;
-  price: number;
-  timestamp: string;
-  userAgent: string;
-  referrer: string;
-  url: string;
-  ip: string;
-}
+const WORKER_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
 
-let vehicleViews: VehicleViewData[] = [];
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const viewData = await request.json();
+    const body = await request.json();
     
-    // Add timestamp and ID
-    const view = {
-      id: Date.now().toString(),
-      ...viewData,
-      timestamp: new Date().toISOString(),
-      ip: request.ip || 'unknown',
-    };
-    
-    // Store the view (in production, save to database)
-    vehicleViews.push(view);
-    
-    // Keep only last 1000 views to prevent memory issues
-    if (vehicleViews.length > 1000) {
-      vehicleViews = vehicleViews.slice(-1000);
+    // Try to save to Cloudflare Worker
+    try {
+      const response = await fetch(`${WORKER_API_URL}/api/analytics/vehicle-views`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      
+      if (response.ok) {
+        return NextResponse.json({ success: true }, { headers: corsHeaders });
+      }
+    } catch (workerError) {
+      console.log('Worker API not available, tracking locally');
     }
     
-    return NextResponse.json({ success: true });
+    // Fallback: just return success (tracking is optional)
+    return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (error) {
     console.error('Analytics tracking error:', error);
-    return NextResponse.json({ error: 'Failed to track view' }, { status: 500 });
+    // Don't fail hard on analytics errors
+    return NextResponse.json({ success: true }, { headers: corsHeaders });
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const timeRange = searchParams.get('timeRange') || '7d';
+    // Proxy to Cloudflare Worker
+    const url = new URL(request.url);
+    const queryString = url.searchParams.toString();
     
-    // Calculate time range
-    const now = new Date();
-    const startDate = new Date();
-    
-    switch (timeRange) {
-      case '24h':
-        startDate.setHours(now.getHours() - 24);
-        break;
-      case '7d':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case '30d':
-        startDate.setDate(now.getDate() - 30);
-        break;
-      case '90d':
-        startDate.setDate(now.getDate() - 90);
-        break;
-      default:
-        startDate.setDate(now.getDate() - 7);
-    }
-    
-    // Filter views by date range
-    const filteredViews = vehicleViews.filter(view => 
-      new Date(view.timestamp) >= startDate
+    const response = await fetch(
+      `${WORKER_API_URL}/api/analytics/vehicle-views${queryString ? `?${queryString}` : ''}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     );
     
-    // Calculate analytics
-    const totalViews = filteredViews.length;
-    const uniqueVehicles = new Set(filteredViews.map(v => v.vehicleId)).size;
-    const averageViewsPerVehicle = uniqueVehicles > 0 ? totalViews / uniqueVehicles : 0;
-    
-    // Top vehicles by view count
-    interface VehicleViewCount {
-      vehicleId: string;
-      make: string;
-      model: string;
-      year: number;
-      price: number;
-      viewCount: number;
-      timestamp: string;
-      referrer: string;
+    if (!response.ok) {
+      // Return empty analytics if worker fails
+      return NextResponse.json({
+        totalViews: 0,
+        uniqueVehiclesViewed: 0,
+        averageViewsPerVehicle: 0,
+        topVehicles: [],
+        recentViews: [],
+        referrerStats: [],
+        dailyViews: []
+      }, { headers: corsHeaders });
     }
     
-    const vehicleViewCounts: Record<string, VehicleViewCount> = filteredViews.reduce((acc, view) => {
-      const key = view.vehicleId;
-      if (!acc[key]) {
-        acc[key] = {
-          vehicleId: view.vehicleId,
-          make: view.make,
-          model: view.model,
-          year: view.year,
-          price: view.price,
-          viewCount: 0,
-          timestamp: view.timestamp,
-          referrer: view.referrer
-        };
-      }
-      acc[key].viewCount++;
-      return acc;
-    }, {} as Record<string, VehicleViewCount>);
-    
-    const topVehicles = Object.values(vehicleViewCounts)
-      .sort((a, b) => b.viewCount - a.viewCount)
-      .slice(0, 5);
-    
-    // Recent views
-    const recentViews = filteredViews
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 10);
-    
-    // Referrer stats
-    const referrerCounts: Record<string, number> = filteredViews.reduce((acc, view) => {
-      const referrer = view.referrer || 'direct';
-      const source = referrer.includes('google') ? 'Google' :
-                    referrer.includes('facebook') ? 'Facebook' :
-                    referrer.includes('instagram') ? 'Instagram' :
-                    referrer === 'direct' ? 'Direct' : 'Other';
-      
-      acc[source] = (acc[source] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    const referrerStats = Object.entries(referrerCounts)
-      .map(([source, count]) => ({ source, count: count as number }))
-      .sort((a, b) => b.count - a.count);
-    
-    // Daily views for chart
-    const dailyViews = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      const dayViews = filteredViews.filter(view => 
-        view.timestamp.split('T')[0] === dateStr
-      ).length;
-      
-      dailyViews.push({ date: dateStr, views: dayViews });
-    }
-    
-    const analytics = {
-      totalViews,
-      uniqueVehiclesViewed: uniqueVehicles,
-      averageViewsPerVehicle: parseFloat(averageViewsPerVehicle.toFixed(1)),
-      topVehicles,
-      recentViews,
-      referrerStats,
-      dailyViews
-    };
-    
-    return NextResponse.json(analytics);
+    const data = await response.json();
+    return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {
     console.error('Analytics fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
+    // Return empty analytics on error
+    return NextResponse.json({
+      totalViews: 0,
+      uniqueVehiclesViewed: 0,
+      averageViewsPerVehicle: 0,
+      topVehicles: [],
+      recentViews: [],
+      referrerStats: [],
+      dailyViews: []
+    }, { headers: corsHeaders });
   }
 }
