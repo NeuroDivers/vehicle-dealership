@@ -385,28 +385,32 @@ export default function LeadPipeline() {
     return filteredLeads.filter(lead => lead.status === stageId);
   };
 
-  const LeadCard = React.memo(({ lead }: { lead: Lead }) => {
+  const LeadCard = ({ lead }: { lead: Lead }) => {
     const assignedStaff = staff.find(s => s.id === lead.assigned_to);
-    const dragStartTime = React.useRef<number>(0);
     
     return (
       <div
-        draggable
-        onDragStart={(e) => {
-          dragStartTime.current = Date.now();
-          handleDragStart(e, lead);
+        onClick={() => {
+          setSelectedLead(lead);
+          setShowLeadModal(true);
         }}
-        onClick={(e) => {
-          // Only open modal if it wasn't a drag (drag takes >200ms)
-          const timeSinceDragStart = Date.now() - dragStartTime.current;
-          if (timeSinceDragStart < 200 || dragStartTime.current === 0) {
-            setSelectedLead(lead);
-            setShowLeadModal(true);
-          }
-          dragStartTime.current = 0;
-        }}
-        className="bg-white rounded-lg shadow-sm p-4 mb-3 cursor-move hover:shadow-md transition-shadow border border-gray-200"
+        className="bg-white rounded-lg shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow border border-gray-200 relative"
       >
+        {/* Drag Handle */}
+        <div 
+          draggable
+          onDragStart={(e) => {
+            e.stopPropagation();
+            handleDragStart(e, lead);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-2 right-2 cursor-move p-1 hover:bg-gray-100 rounded"
+          title="Drag to move"
+        >
+          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z"></path>
+          </svg>
+        </div>
         {/* Lead Score Badge */}
         <div className="flex justify-between items-start mb-2">
           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getScoreColor(lead.lead_score)}`}>
@@ -461,7 +465,7 @@ export default function LeadPipeline() {
         )}
       </div>
     );
-  });
+  };
 
   const LeadModal = () => {
     if (!selectedLead) return null;
