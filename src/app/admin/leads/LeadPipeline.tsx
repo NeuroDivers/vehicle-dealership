@@ -78,6 +78,7 @@ export default function LeadPipeline() {
   const [callOutcome, setCallOutcome] = useState('answered');
   const [leadNotes, setLeadNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
+  const [editableNotes, setEditableNotes] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
@@ -87,6 +88,7 @@ export default function LeadPipeline() {
   useEffect(() => {
     if (selectedLead && showLeadModal) {
       fetchLeadActivity(selectedLead.id);
+      setEditableNotes(selectedLead.notes || '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLeadModal]);
@@ -220,15 +222,16 @@ export default function LeadPipeline() {
           body: JSON.stringify({
             status: selectedLead.status,
             assigned_to: selectedLead.assigned_to,
-            notes: selectedLead.notes,
+            notes: editableNotes,
             follow_up_date: selectedLead.follow_up_date
           })
         }
       );
       
       if (response.ok) {
+        const updatedLead = { ...selectedLead, notes: editableNotes };
         setLeads(prev => prev.map(lead => 
-          lead.id === selectedLead.id ? selectedLead : lead
+          lead.id === selectedLead.id ? updatedLead : lead
         ));
         setToast({ message: 'Lead saved successfully!', type: 'success' });
         setShowLeadModal(false);
@@ -595,8 +598,8 @@ export default function LeadPipeline() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Notes</h3>
                   <textarea
-                    value={selectedLead.notes || ''}
-                    onChange={(e) => setSelectedLead({ ...selectedLead, notes: e.target.value })}
+                    value={editableNotes}
+                    onChange={(e) => setEditableNotes(e.target.value)}
                     placeholder="Add notes about this lead..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
                   />
