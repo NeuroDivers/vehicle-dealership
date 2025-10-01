@@ -404,6 +404,7 @@ export default function LeadPipeline() {
     if (!selectedLead) return null;
     
     const [localNotes, setLocalNotes] = useState(selectedLead.notes || '');
+    const [localQuickNote, setLocalQuickNote] = useState('');
     const assignedStaff = staff.find(s => s.id === selectedLead.assigned_to);
     
     return (
@@ -576,14 +577,40 @@ export default function LeadPipeline() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
+                      value={localQuickNote}
+                      onChange={(e) => setLocalQuickNote(e.target.value)}
                       placeholder="Add a quick note..."
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                      onKeyPress={(e) => e.key === 'Enter' && addNote()}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && localQuickNote.trim()) {
+                          const note = {
+                            id: `note_${Date.now()}`,
+                            lead_id: selectedLead.id,
+                            staff_name: 'Current User',
+                            note_text: localQuickNote,
+                            note_type: 'note',
+                            created_at: new Date().toISOString()
+                          };
+                          setLeadNotes(prev => [note, ...prev]);
+                          setLocalQuickNote('');
+                        }
+                      }}
                     />
                     <button
-                      onClick={addNote}
+                      onClick={() => {
+                        if (localQuickNote.trim()) {
+                          const note = {
+                            id: `note_${Date.now()}`,
+                            lead_id: selectedLead.id,
+                            staff_name: 'Current User',
+                            note_text: localQuickNote,
+                            note_type: 'note',
+                            created_at: new Date().toISOString()
+                          };
+                          setLeadNotes(prev => [note, ...prev]);
+                          setLocalQuickNote('');
+                        }
+                      }}
                       className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-sm"
                     >
                       Add
