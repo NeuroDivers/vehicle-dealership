@@ -396,23 +396,23 @@ export default function LeadPipeline() {
         }}
         className="bg-white rounded-lg shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow border border-gray-200 relative"
       >
-        {/* Drag Handle */}
-        <div 
-          draggable
-          onDragStart={(e) => {
-            e.stopPropagation();
-            handleDragStart(e, lead);
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="absolute top-2 right-2 cursor-move p-1 hover:bg-gray-100 rounded"
-          title="Drag to move"
-        >
-          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z"></path>
-          </svg>
-        </div>
         {/* Lead Score Badge */}
         <div className="flex justify-between items-start mb-2">
+          {/* Drag Handle */}
+          <div 
+            draggable
+            onDragStart={(e) => {
+              e.stopPropagation();
+              handleDragStart(e, lead);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="cursor-move p-1 hover:bg-gray-100 rounded mr-2"
+            title="Drag to move"
+          >
+            <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z"></path>
+            </svg>
+          </div>
           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getScoreColor(lead.lead_score)}`}>
             Score: {lead.lead_score}
           </span>
@@ -657,15 +657,8 @@ export default function LeadPipeline() {
 
                 <div className="flex gap-2">
                   <button 
-                    onClick={handleCallClick}
-                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center"
-                  >
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call
-                  </button>
-                  <button 
                     onClick={() => window.location.href = `mailto:${selectedLead.customer_email}`}
-                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center"
+                    className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center"
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     Email
