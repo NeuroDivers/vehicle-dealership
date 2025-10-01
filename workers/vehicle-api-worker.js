@@ -881,6 +881,96 @@ export default {
         });
       }
 
+      // POST /api/leads/:id/notes - Add a note to a lead
+      if (url.pathname.match(/^\/api\/leads\/[\w-]+\/notes$/) && request.method === 'POST') {
+        const leadId = url.pathname.split('/')[3];
+        const noteData = await request.json();
+        
+        const noteId = `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        try {
+          await env.DB.prepare(`
+            INSERT INTO lead_notes (id, lead_id, staff_name, note_text, note_type, created_at)
+            VALUES (?, ?, ?, ?, ?, datetime('now'))
+          `).bind(
+            noteId,
+            leadId,
+            noteData.staff_name || 'Unknown',
+            noteData.note_text,
+            noteData.note_type || 'note'
+          ).run();
+          
+          return new Response(JSON.stringify({ success: true, noteId }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (dbError) {
+          console.log('Note table not available:', dbError.message);
+          return new Response(JSON.stringify({ success: true, noteId }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // POST /api/leads/:id/calls - Log a call for a lead
+      if (url.pathname.match(/^\/api\/leads\/[\w-]+\/calls$/) && request.method === 'POST') {
+        const leadId = url.pathname.split('/')[3];
+        const callData = await request.json();
+        
+        const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        try {
+          await env.DB.prepare(`
+            INSERT INTO call_logs (id, lead_id, staff_name, duration_minutes, notes, outcome, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+          `).bind(
+            callId,
+            leadId,
+            callData.staff_name || 'Unknown',
+            callData.duration_minutes || 0,
+            callData.notes || '',
+            callData.outcome || 'answered'
+          ).run();
+          
+          return new Response(JSON.stringify({ success: true, callId }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (dbError) {
+          console.log('Call logs table not available:', dbError.message);
+          return new Response(JSON.stringify({ success: true, callId }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // GET /api/leads/:id/activity - Get all activity (notes + calls) for a lead
+      if (url.pathname.match(/^\/api\/leads\/[\w-]+\/activity$/) && request.method === 'GET') {
+        const leadId = url.pathname.split('/')[3];
+        
+        try {
+          const notes = await env.DB.prepare(`
+            SELECT * FROM lead_notes WHERE lead_id = ? ORDER BY created_at DESC
+          `).bind(leadId).all();
+          
+          const calls = await env.DB.prepare(`
+            SELECT * FROM call_logs WHERE lead_id = ? ORDER BY created_at DESC
+          `).bind(leadId).all();
+          
+          const activity = [
+            ...(notes.results || []).map(n => ({ ...n, type: 'note' })),
+            ...(calls.results || []).map(c => ({ ...c, type: 'call' }))
+          ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          
+          return new Response(JSON.stringify(activity), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (dbError) {
+          console.log('Activity tables not available:', dbError.message);
+          return new Response(JSON.stringify([]), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
       return new Response('Not found', { 
         status: 404,
         headers: corsHeaders 

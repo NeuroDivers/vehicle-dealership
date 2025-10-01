@@ -242,6 +242,26 @@ export default function LeadPipeline() {
     };
     
     setLeadNotes(prev => [callLog, ...prev]);
+    
+    // Save to database
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/calls`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            staff_name: 'Current User',
+            duration_minutes: parseInt(callDuration) || 0,
+            notes: callNotes,
+            outcome: callOutcome
+          })
+        }
+      );
+    } catch (error) {
+      console.error('Failed to save call log:', error);
+    }
+    
     setShowCallModal(false);
     setCallDuration('');
     setCallNotes('');
@@ -406,6 +426,24 @@ export default function LeadPipeline() {
     const [localNotes, setLocalNotes] = useState(selectedLead.notes || '');
     const [localQuickNote, setLocalQuickNote] = useState('');
     const assignedStaff = staff.find(s => s.id === selectedLead.assigned_to);
+    
+    // Load activity history when modal opens
+    useEffect(() => {
+      const loadActivity = async () => {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/activity`
+          );
+          if (response.ok) {
+            const activity = await response.json();
+            setLeadNotes(activity);
+          }
+        } catch (error) {
+          console.error('Failed to load activity:', error);
+        }
+      };
+      loadActivity();
+    }, [selectedLead.id]);
     
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -581,7 +619,7 @@ export default function LeadPipeline() {
                       onChange={(e) => setLocalQuickNote(e.target.value)}
                       placeholder="Add a quick note..."
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                      onKeyPress={(e) => {
+                      onKeyPress={async (e) => {
                         if (e.key === 'Enter' && localQuickNote.trim()) {
                           const note = {
                             id: `note_${Date.now()}`,
@@ -593,11 +631,29 @@ export default function LeadPipeline() {
                           };
                           setLeadNotes(prev => [note, ...prev]);
                           setLocalQuickNote('');
+                          
+                          // Save to database
+                          try {
+                            await fetch(
+                              `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/notes`,
+                              {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  staff_name: 'Current User',
+                                  note_text: localQuickNote,
+                                  note_type: 'note'
+                                })
+                              }
+                            );
+                          } catch (error) {
+                            console.error('Failed to save note:', error);
+                          }
                         }
                       }}
                     />
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (localQuickNote.trim()) {
                           const note = {
                             id: `note_${Date.now()}`,
@@ -608,7 +664,26 @@ export default function LeadPipeline() {
                             created_at: new Date().toISOString()
                           };
                           setLeadNotes(prev => [note, ...prev]);
+                          const noteText = localQuickNote;
                           setLocalQuickNote('');
+                          
+                          // Save to database
+                          try {
+                            await fetch(
+                              `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/notes`,
+                              {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  staff_name: 'Current User',
+                                  note_text: noteText,
+                                  note_type: 'note'
+                                })
+                              }
+                            );
+                          } catch (error) {
+                            console.error('Failed to save note:', error);
+                          }
                         }
                       }}
                       className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-sm"
