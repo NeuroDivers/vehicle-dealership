@@ -719,7 +719,7 @@ export default function LeadPipeline() {
       </div>
 
       {/* Lead Modal */}
-      {showLeadModal && selectedLead && renderLeadModal()}
+      {showLeadModal && selectedLead && <LeadModal />}
 
       {/* Call Log Modal */}
       {showCallModal && (
