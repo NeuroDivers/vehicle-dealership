@@ -19,7 +19,9 @@ import {
   CheckSquare,
   Square,
   Download,
-  Upload
+  Upload,
+  Grid,
+  LayoutGrid
 } from 'lucide-react';
 
 interface Vehicle {
@@ -57,6 +59,9 @@ export default function EnhancedVehicleManager() {
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [sortBy, setSortBy] = useState<'price' | 'year' | 'odometer' | 'date'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // View mode
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   
   // Bulk selection
   const [selectedVehicles, setSelectedVehicles] = useState<Set<string>>(new Set());
@@ -342,13 +347,42 @@ export default function EnhancedVehicleManager() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Vehicle Inventory Management</h1>
-        <Link
-          href="/admin/vehicles/add"
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
-        >
-          <Plus className="h-5 w-5" />
-          <span>Add Vehicle</span>
-        </Link>
+        <div className="flex items-center space-x-3">
+          {/* View Toggle */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1.5 rounded-md flex items-center space-x-1 transition-colors ${
+                viewMode === 'table'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Table view"
+            >
+              <Grid className="h-4 w-4" />
+              <span className="text-sm font-medium hidden sm:inline">Table</span>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3 py-1.5 rounded-md flex items-center space-x-1 transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Grid view"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span className="text-sm font-medium hidden sm:inline">Grid</span>
+            </button>
+          </div>
+          <Link
+            href="/admin/vehicles/add"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Add Vehicle</span>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -560,7 +594,7 @@ export default function EnhancedVehicleManager() {
         </div>
       )}
 
-      {/* Vehicles Table */}
+      {/* Vehicles Display */}
       {filteredVehicles.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <Car className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -581,7 +615,7 @@ export default function EnhancedVehicleManager() {
             </Link>
           )}
         </div>
-      ) : (
+      ) : viewMode === 'table' ? (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -735,6 +769,136 @@ export default function EnhancedVehicleManager() {
               </tbody>
             </table>
           </div>
+        </div>
+      ) : (
+        /* Grid View */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredVehicles.map((vehicle) => {
+            const images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
+            // Extract the first image URL properly
+            let firstImageUrl = null;
+            if (images.length > 0) {
+              const img = images[0];
+              if (typeof img === 'string') {
+                firstImageUrl = img;
+              } else if (img && img.variants) {
+                firstImageUrl = img.variants.public || img.variants.gallery;
+              } else if (img && img.url) {
+                firstImageUrl = img.url;
+              } else if (img && img.id) {
+                firstImageUrl = img.id;
+              }
+            }
+            
+            return (
+              <div
+                key={vehicle.id}
+                className={`bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow ${
+                  vehicle.isSold === 1 ? 'opacity-75' : ''
+                } ${
+                  selectedVehicles.has(vehicle.id) ? 'ring-2 ring-blue-500' : ''
+                }`}
+              >
+                {/* Image */}
+                <div className="relative">
+                  {firstImageUrl ? (
+                    <img
+                      src={firstImageUrl}
+                      alt={`${vehicle.make} ${vehicle.model}`}
+                      className="w-full h-48 object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-400">No image</span>
+                    </div>
+                  )}
+                  
+                  {/* Checkbox */}
+                  <div className="absolute top-2 left-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedVehicles.has(vehicle.id)}
+                      onChange={() => toggleSelectVehicle(vehicle.id)}
+                      className="rounded w-5 h-5 bg-white shadow"
+                    />
+                  </div>
+                  
+                  {/* Status Badge */}
+                  <div className="absolute top-2 right-2">
+                    <button
+                      onClick={() => handleToggleSold(vehicle)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium shadow ${
+                        vehicle.isSold === 1
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}
+                    >
+                      {vehicle.isSold === 1 ? 'Sold' : 'Available'}
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Content */}
+                <div className="p-4">
+                  {/* Title */}
+                  <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                    {vehicle.year} {vehicle.make} {vehicle.model}
+                  </h3>
+                  
+                  {/* Details */}
+                  <div className="space-y-1 text-sm text-gray-600 mb-3">
+                    <div className="flex items-center space-x-1">
+                      <Car className="h-4 w-4" />
+                      <span>{vehicle.color} • {vehicle.bodyType}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Gauge className="h-4 w-4" />
+                      <span>{vehicle.odometer.toLocaleString()} km</span>
+                    </div>
+                    {vehicle.vendor_name && (
+                      <div className="text-xs text-gray-500">
+                        Vendor: {vehicle.vendor_name}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Price */}
+                  <div className="text-2xl font-bold text-gray-900 mb-4">
+                    ${vehicle.price.toLocaleString()}
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex space-x-2 border-t pt-3">
+                    <Link
+                      href={`/vehicles/detail?id=${vehicle.id}`}
+                      target="_blank"
+                      className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded border border-gray-300"
+                      title="View on site"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span>View</span>
+                    </Link>
+                    <Link
+                      href={`/admin/vehicles/edit?id=${vehicle.id}`}
+                      className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded border border-blue-300"
+                      title="Edit vehicle"
+                    >
+                      <Edit className="h-4 w-4" />
+                      <span>Edit</span>
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(vehicle.id)}
+                      disabled={deletingId === vehicle.id}
+                      className="flex items-center justify-center px-3 py-2 text-sm text-red-600 hover:text-red-900 hover:bg-red-50 rounded border border-red-300 disabled:opacity-50"
+                      title="Delete vehicle"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
