@@ -107,28 +107,40 @@ export default function AdminDashboard() {
         </div>
       </div>
       
-      {/* Tabs */}
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="border-b">
-          <nav className="flex space-x-8 px-6 overflow-x-auto">
-            {(isDevUser ? ['overview', 'site', 'vehicles', 'vendors', 'settings', 'ai'] as const : ['overview', 'site', 'vehicles', 'vendors', 'settings'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize whitespace-nowrap ${
-                  activeTab === tab
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {tab === 'ai' ? '🤖 AI Features' : 
-                 tab === 'site' ? '🏢 Site Info' : 
-                 tab === 'vendors' ? '📦 Vendors' : 
-                 tab}
-              </button>
-            ))}
-          </nav>
-        </div>
+      {/* Quick Access Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <button
+          onClick={() => setActiveTab('site')}
+          className={`bg-white rounded-lg shadow p-4 text-left hover:shadow-md transition ${
+            activeTab === 'site' ? 'ring-2 ring-blue-500' : ''
+          }`}
+        >
+          <div className="text-2xl mb-2">🏢</div>
+          <h3 className="font-semibold">Site Info</h3>
+          <p className="text-sm text-gray-600">Manage site settings</p>
+        </button>
+        <button
+          onClick={() => setActiveTab('vendors')}
+          className={`bg-white rounded-lg shadow p-4 text-left hover:shadow-md transition ${
+            activeTab === 'vendors' ? 'ring-2 ring-blue-500' : ''
+          }`}
+        >
+          <div className="text-2xl mb-2">📦</div>
+          <h3 className="font-semibold">Vendors</h3>
+          <p className="text-sm text-gray-600">Manage vehicle vendors</p>
+        </button>
+        {isDevUser && (
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`bg-white rounded-lg shadow p-4 text-left hover:shadow-md transition ${
+              activeTab === 'ai' ? 'ring-2 ring-blue-500' : ''
+            }`}
+          >
+            <div className="text-2xl mb-2">🤖</div>
+            <h3 className="font-semibold">AI Features</h3>
+            <p className="text-sm text-gray-600">Configure AI tools</p>
+          </button>
+        )}
       </div>
 
       {/* Tab Content */}
