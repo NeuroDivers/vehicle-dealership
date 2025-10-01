@@ -84,11 +84,7 @@ export default function LeadPipeline() {
     fetchLeads();
     fetchStaff();
   }, []);
-  useEffect(() => {
-    if (selectedLead && showLeadModal) {
-      fetchLeadActivity(selectedLead.id);
-    }
-  }, [selectedLead, showLeadModal]);
+
   const fetchLeads = async () => {
     try {
       const response = await fetch(
@@ -144,23 +140,7 @@ export default function LeadPipeline() {
       setStaff([]);
     }
   };
-  const fetchLeadActivity = async (leadId: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${leadId}/activity`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const combined = [
-          ...data.callLogs.map((log: any) => ({ ...log, type: 'call' })),
-          ...data.notes.map((note: any) => ({ ...note, type: 'note' }))
-        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        setLeadNotes(combined);
-      }
-    } catch (error) {
-      console.error('Failed to fetch activity:', error);
-    }
-  };
+
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
     try {
       const response = await fetch(
@@ -251,72 +231,42 @@ export default function LeadPipeline() {
   const logCall = async () => {
     if (!selectedLead) return;
     
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/call-logs`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            lead_id: selectedLead.id,
-            staff_name: 'Current User',
-            duration_minutes: parseInt(callDuration) || 0,
-            notes: callNotes,
-            outcome: callOutcome
-          })
-        }
-      );
-      
-      if (response.ok) {
-        setToast({ message: 'Call logged successfully!', type: 'success' });
-        setShowCallModal(false);
-        setCallDuration('');
-        setCallNotes('');
-        setCallOutcome('answered');
-        
-        if (selectedLead.status === 'new') {
-          await updateLeadStatus(selectedLead.id, 'contacted');
-        }
-        
-        await fetchLeadActivity(selectedLead.id);
-      } else {
-        setToast({ message: 'Failed to log call', type: 'error' });
-      }
-    } catch (error) {
-      console.error('Failed to log call:', error);
-      setToast({ message: 'Failed to log call', type: 'error' });
+    const callLog = {
+      id: `call_${Date.now()}`,
+      lead_id: selectedLead.id,
+      staff_name: 'Current User', // TODO: Get from auth
+      duration_minutes: parseInt(callDuration) || 0,
+      notes: callNotes,
+      outcome: callOutcome,
+      created_at: new Date().toISOString()
+    };
+    
+    setLeadNotes(prev => [callLog, ...prev]);
+    setShowCallModal(false);
+    setCallDuration('');
+    setCallNotes('');
+    setCallOutcome('answered');
+    
+    // Update lead status to contacted if it was new
+    if (selectedLead.status === 'new') {
+      await updateLeadStatus(selectedLead.id, 'contacted');
     }
   };
-  
-  const addNote = async () => {
+
+  const addNote = () => {
     if (!selectedLead || !newNote.trim()) return;
     
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/lead-notes`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            lead_id: selectedLead.id,
-            staff_name: 'Current User',
-            note_text: newNote,
-            note_type: 'note'
-          })
-        }
-      );
-      
-      if (response.ok) {
-        setNewNote('');
-        setToast({ message: 'Note added!', type: 'success' });
-        await fetchLeadActivity(selectedLead.id);
-      } else {
-        setToast({ message: 'Failed to add note', type: 'error' });
-      }
-    } catch (error) {
-      console.error('Failed to add note:', error);
-      setToast({ message: 'Failed to add note', type: 'error' });
-    }
+    const note = {
+      id: `note_${Date.now()}`,
+      lead_id: selectedLead.id,
+      staff_name: 'Current User',
+      note_text: newNote,
+      note_type: 'note',
+      created_at: new Date().toISOString()
+    };
+    
+    setLeadNotes(prev => [note, ...prev]);
+    setNewNote('');
   };
 
   const handleDragStart = (e: React.DragEvent, lead: Lead) => {
@@ -853,7 +803,6 @@ export default function LeadPipeline() {
           </div>
         </div>
       )}
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
