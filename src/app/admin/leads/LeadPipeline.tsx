@@ -185,8 +185,13 @@ export default function LeadPipeline() {
     }
   };
 
-  const saveLead = async () => {
+  const saveLead = async (notesToSave?: string) => {
     if (!selectedLead) return;
+    
+    const updatedLead = {
+      ...selectedLead,
+      notes: notesToSave !== undefined ? notesToSave : selectedLead.notes
+    };
     
     try {
       const response = await fetch(
@@ -195,18 +200,19 @@ export default function LeadPipeline() {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            status: selectedLead.status,
-            assigned_to: selectedLead.assigned_to,
-            notes: selectedLead.notes,
-            follow_up_date: selectedLead.follow_up_date
+            status: updatedLead.status,
+            assigned_to: updatedLead.assigned_to,
+            notes: updatedLead.notes,
+            follow_up_date: updatedLead.follow_up_date
           })
         }
       );
       
       if (response.ok) {
         setLeads(prev => prev.map(lead => 
-          lead.id === selectedLead.id ? selectedLead : lead
+          lead.id === selectedLead.id ? updatedLead : lead
         ));
+        setSelectedLead(updatedLead);
         alert('Lead saved successfully!');
       }
     } catch (error) {
@@ -397,6 +403,7 @@ export default function LeadPipeline() {
   const LeadModal = () => {
     if (!selectedLead) return null;
     
+    const [localNotes, setLocalNotes] = useState(selectedLead.notes || '');
     const assignedStaff = staff.find(s => s.id === selectedLead.assigned_to);
     
     return (
@@ -538,8 +545,8 @@ export default function LeadPipeline() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Notes</h3>
                   <textarea
-                    value={selectedLead.notes || ''}
-                    onChange={(e) => setSelectedLead({ ...selectedLead, notes: e.target.value })}
+                    value={localNotes}
+                    onChange={(e) => setLocalNotes(e.target.value)}
                     placeholder="Add notes about this lead..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
                   />
@@ -602,7 +609,7 @@ export default function LeadPipeline() {
                 </div>
 
                 <button
-                  onClick={saveLead}
+                  onClick={() => saveLead(localNotes)}
                   className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 font-semibold"
                 >
                   Save Changes
