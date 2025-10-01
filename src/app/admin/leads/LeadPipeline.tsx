@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Phone,
   Mail,
@@ -21,7 +21,6 @@ import {
   UserPlus,
   Search
 } from 'lucide-react';
-import Toast from '@/components/Toast';
 
 interface Lead {
   id: string;
@@ -72,22 +71,18 @@ export default function LeadPipeline() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterScore, setFilterScore] = useState(0);
   const [filterAssignee, setFilterAssignee] = useState('all');
+  const [showCallModal, setShowCallModal] = useState(false);
+  const [callDuration, setCallDuration] = useState('');
+  const [callNotes, setCallNotes] = useState('');
+  const [callOutcome, setCallOutcome] = useState('answered');
   const [leadNotes, setLeadNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
-  const [editableNotes, setEditableNotes] = useState('');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     fetchLeads();
     fetchStaff();
   }, []);
-  useEffect(() => {
-    if (selectedLead && showLeadModal) {
-      fetchLeadActivity(selectedLead.id);
-      setEditableNotes(selectedLead.notes || '');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showLeadModal]);
+
   const fetchLeads = async () => {
     try {
       const response = await fetch(
@@ -143,23 +138,7 @@ export default function LeadPipeline() {
       setStaff([]);
     }
   };
-  const fetchLeadActivity = async (leadId: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${leadId}/activity`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const combined = [
-          ...data.callLogs.map((log: any) => ({ ...log, type: 'call' })),
-          ...data.notes.map((note: any) => ({ ...note, type: 'note' }))
-        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        setLeadNotes(combined);
-      }
-    } catch (error) {
-      console.error('Failed to fetch activity:', error);
-    }
-  };
+
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
     try {
       const response = await fetch(
@@ -218,58 +197,70 @@ export default function LeadPipeline() {
           body: JSON.stringify({
             status: selectedLead.status,
             assigned_to: selectedLead.assigned_to,
-            notes: editableNotes,
+            notes: selectedLead.notes,
             follow_up_date: selectedLead.follow_up_date
           })
         }
       );
       
       if (response.ok) {
-        const updatedLead = { ...selectedLead, notes: editableNotes };
         setLeads(prev => prev.map(lead => 
-          lead.id === selectedLead.id ? updatedLead : lead
+          lead.id === selectedLead.id ? selectedLead : lead
         ));
-        setToast({ message: 'Lead saved successfully!', type: 'success' });
-        setShowLeadModal(false);
-        setSelectedLead(null);
-      } else {
-        setToast({ message: 'Failed to save lead', type: 'error' });
+        alert('Lead saved successfully!');
       }
     } catch (error) {
       console.error('Failed to save lead:', error);
-      setToast({ message: 'Failed to save lead', type: 'error' });
+      alert('Failed to save lead');
     }
   };
 
-  const addNote = async () => {
+  const handleCallClick = () => {
+    if (selectedLead) {
+      window.location.href = `tel:${selectedLead.customer_phone}`;
+      setShowCallModal(true);
+    }
+  };
+
+  const logCall = async () => {
+    if (!selectedLead) return;
+    
+    const callLog = {
+      id: `call_${Date.now()}`,
+      lead_id: selectedLead.id,
+      staff_name: 'Current User', // TODO: Get from auth
+      duration_minutes: parseInt(callDuration) || 0,
+      notes: callNotes,
+      outcome: callOutcome,
+      created_at: new Date().toISOString()
+    };
+    
+    setLeadNotes(prev => [callLog, ...prev]);
+    setShowCallModal(false);
+    setCallDuration('');
+    setCallNotes('');
+    setCallOutcome('answered');
+    
+    // Update lead status to contacted if it was new
+    if (selectedLead.status === 'new') {
+      await updateLeadStatus(selectedLead.id, 'contacted');
+    }
+  };
+
+  const addNote = () => {
     if (!selectedLead || !newNote.trim()) return;
     
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/lead-notes`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            lead_id: selectedLead.id,
-            staff_name: 'Current User',
-            note_text: newNote,
-            note_type: 'note'
-          })
-        }
-      );
-      
-      if (response.ok) {
-        setNewNote('');
-        setToast({ message: 'Note added!', type: 'success' });
-        await fetchLeadActivity(selectedLead.id);
-      } else {
-        setToast({ message: 'Failed to add note', type: 'error' });
-      }
-    } catch (error) {
-      console.error('Failed to add note:', error);
-      setToast({ message: 'Failed to add note', type: 'error' });
-    }
+    const note = {
+      id: `note_${Date.now()}`,
+      lead_id: selectedLead.id,
+      staff_name: 'Current User',
+      note_text: newNote,
+      note_type: 'note',
+      created_at: new Date().toISOString()
+    };
+    
+    setLeadNotes(prev => [note, ...prev]);
+    setNewNote('');
   };
 
   const handleDragStart = (e: React.DragEvent, lead: Lead) => {
@@ -339,29 +330,16 @@ export default function LeadPipeline() {
     
     return (
       <div
+        draggable
+        onDragStart={(e) => handleDragStart(e, lead)}
         onClick={() => {
           setSelectedLead(lead);
           setShowLeadModal(true);
         }}
-        className="bg-white rounded-lg shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow border border-gray-200 relative"
+        className="bg-white rounded-lg shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
       >
         {/* Lead Score Badge */}
         <div className="flex justify-between items-start mb-2">
-          {/* Drag Handle */}
-          <div 
-            draggable
-            onDragStart={(e) => {
-              e.stopPropagation();
-              handleDragStart(e, lead);
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="cursor-move p-1 hover:bg-gray-100 rounded mr-2"
-            title="Drag to move"
-          >
-            <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z"></path>
-            </svg>
-          </div>
           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getScoreColor(lead.lead_score)}`}>
             Score: {lead.lead_score}
           </span>
@@ -517,6 +495,7 @@ export default function LeadPipeline() {
                     value={selectedLead.assigned_to || ''}
                     onChange={(e) => {
                       assignLead(selectedLead.id, e.target.value);
+                      setSelectedLead({ ...selectedLead, assigned_to: e.target.value });
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -535,6 +514,7 @@ export default function LeadPipeline() {
                     value={selectedLead.status}
                     onChange={(e) => {
                       updateLeadStatus(selectedLead.id, e.target.value);
+                      setSelectedLead({ ...selectedLead, status: e.target.value as Lead['status'] });
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -558,8 +538,8 @@ export default function LeadPipeline() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Notes</h3>
                   <textarea
-                    value={editableNotes}
-                    onChange={(e) => setEditableNotes(e.target.value)}
+                    value={selectedLead.notes || ''}
+                    onChange={(e) => setSelectedLead({ ...selectedLead, notes: e.target.value })}
                     placeholder="Add notes about this lead..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
                   />
@@ -606,8 +586,15 @@ export default function LeadPipeline() {
 
                 <div className="flex gap-2">
                   <button 
+                    onClick={handleCallClick}
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                  >
+                    <Phone className="h-4 w-4 mr-2" />
+                    Call
+                  </button>
+                  <button 
                     onClick={() => window.location.href = `mailto:${selectedLead.customer_email}`}
-                    className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center"
+                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center"
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     Email
@@ -734,7 +721,82 @@ export default function LeadPipeline() {
       {/* Lead Modal */}
       {showLeadModal && selectedLead && <LeadModal />}
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {/* Call Log Modal */}
+      {showCallModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Log Call</h2>
+                <button
+                  onClick={() => setShowCallModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Call Duration (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    value={callDuration}
+                    onChange={(e) => setCallDuration(e.target.value)}
+                    placeholder="5"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Outcome
+                  </label>
+                  <select
+                    value={callOutcome}
+                    onChange={(e) => setCallOutcome(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="answered">Answered</option>
+                    <option value="voicemail">Voicemail</option>
+                    <option value="no-answer">No Answer</option>
+                    <option value="busy">Busy</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Call Notes
+                  </label>
+                  <textarea
+                    value={callNotes}
+                    onChange={(e) => setCallNotes(e.target.value)}
+                    placeholder="What was discussed?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowCallModal(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={logCall}
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+                  >
+                    Save Call Log
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
