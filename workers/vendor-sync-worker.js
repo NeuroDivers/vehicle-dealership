@@ -515,19 +515,23 @@ export default {
     
     let vehicles = [];
     
-    // Call NaniAuto scraper (will be set up as service binding)
+    // Call NaniAuto scraper using service binding
     try {
-      console.log('Calling NaniAuto scraper...');
+      console.log('Calling NaniAuto scraper via service binding...');
       
-      // For now, use HTTP fetch (later can be converted to service binding)
-      const scraperUrl = 'https://naniauto-scraper.nick-damato0011527.workers.dev';
-      const scraperResponse = await fetch(`${scraperUrl}/api/scrape`, {
+      // Use service binding instead of HTTP fetch
+      const scraperRequest = new Request('https://naniauto-scraper/api/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
       
+      const scraperResponse = await env.NANIAUTO_SCRAPER.fetch(scraperRequest);
+      
+      console.log(`Scraper response status: ${scraperResponse.status}`);
+      
       if (scraperResponse.ok) {
         const scraperData = await scraperResponse.json();
+        console.log(`Scraper data:`, JSON.stringify(scraperData).substring(0, 200));
         if (scraperData.success && scraperData.vehicles && scraperData.vehicles.length > 0) {
           console.log(`Got ${scraperData.vehicles.length} vehicles from NaniAuto scraper`);
           
@@ -546,10 +550,21 @@ export default {
             description: v.description || `${v.year} ${v.make} ${v.model}`,
             images: v.images || []
           }));
+        } else {
+          console.log('NaniAuto scraper returned no vehicles or empty response');
+          console.log('Scraper success:', scraperData.success);
+          console.log('Vehicles array:', scraperData.vehicles ? scraperData.vehicles.length : 'undefined');
+          vehicles = [];
         }
+      } else {
+        console.log(`NaniAuto scraper request failed with status: ${scraperResponse.status}`);
+        const errorText = await scraperResponse.text();
+        console.log('Error response:', errorText.substring(0, 200));
+        vehicles = [];
       }
     } catch (error) {
       console.log('Could not fetch from NaniAuto scraper:', error.message);
+      console.log('Error stack:', error.stack);
       vehicles = [];
     }
     

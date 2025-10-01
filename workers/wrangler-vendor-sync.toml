@@ -13,6 +13,11 @@ database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
 binding = "LAMBERT_SCRAPER"
 service = "lambert-scraper"
 
+# Service binding to naniauto-scraper worker
+[[services]]
+binding = "NANIAUTO_SCRAPER"
+service = "naniauto-scraper"
+
 [vars]
 ENVIRONMENT = "production"
 CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
