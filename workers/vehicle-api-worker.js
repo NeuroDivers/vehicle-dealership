@@ -716,6 +716,39 @@ export default {
         });
       }
 
+      // GET /api/leads - Get all leads
+      if (url.pathname === '/api/leads' && request.method === 'GET') {
+        const { results } = await env.DB.prepare(`
+          SELECT * FROM leads
+          ORDER BY created_at DESC
+          LIMIT 500
+        `).all();
+        
+        return new Response(JSON.stringify(results), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // GET /api/leads/[id] - Get single lead
+      if (url.pathname.match(/^\/api\/leads\/[\w-]+$/) && request.method === 'GET') {
+        const leadId = url.pathname.split('/')[3];
+        
+        const lead = await env.DB.prepare(`
+          SELECT * FROM leads WHERE id = ?
+        `).bind(leadId).first();
+        
+        if (!lead) {
+          return new Response(JSON.stringify({ error: 'Lead not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        return new Response(JSON.stringify(lead), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       // POST /api/leads - Create a new lead
       if (url.pathname === '/api/leads' && request.method === 'POST') {
         const leadData = await request.json();
