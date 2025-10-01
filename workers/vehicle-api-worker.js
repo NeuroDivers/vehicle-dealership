@@ -11,7 +11,7 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0'
@@ -27,12 +27,16 @@ export default {
       if (url.pathname === '/api/auth/login' && request.method === 'POST') {
         const { email, password } = await request.json();
         
+        console.log('Login attempt:', { email, passwordLength: password?.length });
+        
         // Query staff table
         const staff = await env.DB.prepare(`
           SELECT id, email, name, role, is_active 
           FROM staff 
           WHERE email = ? AND password_hash = ? AND is_active = 1
         `).bind(email, password).first();
+        
+        console.log('Staff found:', staff ? 'Yes' : 'No');
         
         if (staff) {
           // Update last login
@@ -59,6 +63,58 @@ export default {
           return new Response(JSON.stringify({
             success: false,
             error: 'Invalid email or password'
+          }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // GET /api/auth/verify - Verify auth token
+      if (url.pathname === '/api/auth/verify' && request.method === 'GET') {
+        const authHeader = request.headers.get('Authorization');
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'No token provided'
+          }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        try {
+          const token = authHeader.substring(7);
+          // Decode token (format: staffId:timestamp)
+          const decoded = atob(token);
+          const [staffId] = decoded.split(':');
+          
+          // Verify user still exists and is active
+          const staff = await env.DB.prepare(`
+            SELECT id, email, name, role FROM staff WHERE id = ? AND is_active = 1
+          `).bind(staffId).first();
+          
+          if (staff) {
+            return new Response(JSON.stringify({
+              success: true,
+              user: staff
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          } else {
+            return new Response(JSON.stringify({
+              success: false,
+              error: 'Invalid token'
+            }), {
+              status: 401,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+        } catch (e) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Invalid token format'
           }), {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
