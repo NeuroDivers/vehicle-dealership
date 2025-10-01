@@ -43,6 +43,7 @@ interface SiteInfo {
     accent: string;
     headerText: string;
   };
+  showVIN?: boolean;
 }
 
 const defaultSiteInfo: SiteInfo = {
@@ -520,6 +521,28 @@ export default function SiteInfoManager() {
               'Este vehículo se ofrece a la venta sujeto...'
             }
           />
+        </div>
+      </div>
+
+      {/* Display Settings */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4">Display Settings</h3>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={siteInfo.showVIN || false}
+              onChange={(e) => setSiteInfo(prev => ({
+                ...prev,
+                showVIN: e.target.checked
+              }))}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-900">Show VIN on Vehicle Details</span>
+              <p className="text-xs text-gray-500">Display the Vehicle Identification Number (VIN) on public vehicle detail pages</p>
+            </div>
+          </label>
         </div>
       </div>
 

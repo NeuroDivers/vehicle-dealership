@@ -7,7 +7,8 @@ import Image from 'next/image';
 import { 
   ChevronLeft, ChevronRight, Car, MapPin, Phone, Mail, 
   Calendar, Fuel, Gauge, ArrowLeft, Palette, Shield,
-  CheckCircle, Info, Star, Heart, Share2, Printer, DollarSign
+  CheckCircle, Info, Star, Heart, Share2, Printer, DollarSign,
+  Settings, Hash
 } from 'lucide-react';
 import Link from 'next/link';
 import { trackVehicleView } from '@/lib/analytics-config';
@@ -297,6 +298,39 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                   </div>
                 </div>
               </div>
+              
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Fuel className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600">Fuel Type</p>
+                    <p className="font-semibold text-lg">{vehicle.fuelType || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Settings className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600">Transmission</p>
+                    <p className="font-semibold text-lg">{vehicle.transmission || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* VIN - Only show if enabled in site settings */}
+              {settings.showVIN && vehicle.vin && (
+                <div className="bg-white rounded-lg p-4">
+                  <div className="flex items-center space-x-3">
+                    <Hash className="h-5 w-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">VIN</p>
+                      <p className="font-semibold text-lg font-mono">{vehicle.vin}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -203,16 +203,28 @@ export default {
         vehicle.bodyType = this.normalizeBodyType(bodyMatch[1].trim());
       }
       
-      // Extract fuel type (Engine)
-      const fuelMatch = html.match(/Engine<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
+      // Extract fuel type (Engine) - improved pattern
+      let fuelMatch = html.match(/<h4[^>]*>\s*Engine\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
+      if (!fuelMatch) {
+        // Try French version
+        fuelMatch = html.match(/<h4[^>]*>\s*Moteur\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
+      }
       if (fuelMatch) {
-        vehicle.fuelType = this.normalizeFuelType(fuelMatch[1].trim());
+        const rawFuel = fuelMatch[1].trim();
+        vehicle.fuelType = this.normalizeFuelType(rawFuel);
+        console.log(`✅ Fuel Type found: ${rawFuel} -> ${vehicle.fuelType}`);
+      } else {
+        console.log('⚠️  Fuel Type not found in HTML');
       }
       
-      // Extract transmission
-      const transMatch = html.match(/Transmission<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
+      // Extract transmission - improved pattern
+      let transMatch = html.match(/<h4[^>]*>\s*Transmission\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
       if (transMatch) {
-        vehicle.transmission = this.normalizeTransmission(transMatch[1].trim());
+        const rawTrans = transMatch[1].trim();
+        vehicle.transmission = this.normalizeTransmission(rawTrans);
+        console.log(`✅ Transmission found: ${rawTrans} -> ${vehicle.transmission}`);
+      } else {
+        console.log('⚠️  Transmission not found in HTML');
       }
       
       // Extract color

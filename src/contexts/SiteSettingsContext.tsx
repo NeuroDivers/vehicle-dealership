@@ -42,6 +42,7 @@ interface SiteSettings {
     fr: string;
     es: string;
   };
+  showVIN?: boolean; // Toggle to show/hide VIN on vehicle detail pages
 }
 
 const defaultSettings: SiteSettings = {
