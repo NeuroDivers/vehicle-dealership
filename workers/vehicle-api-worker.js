@@ -328,6 +328,17 @@ export default {
           WHERE vendor_id = 'naniauto' OR vendor_name LIKE '%NaniAuto%'
         `).first();
 
+        // Get SLT Autos stats
+        const sltautosStats = await env.DB.prepare(`
+          SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN isSold = 0 OR isSold IS NULL THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN isSold = 1 THEN 1 ELSE 0 END) as sold,
+            SUM(CASE WHEN vendor_status = 'unlisted' THEN 1 ELSE 0 END) as unlisted
+          FROM vehicles 
+          WHERE vendor_id = 'sltautos' OR vendor_name LIKE '%SLT Autos%'
+        `).first();
+
         // Get Internal stats
         const internalStats = await env.DB.prepare(`
           SELECT 
@@ -351,6 +362,12 @@ export default {
             active_vehicles: naniautoStats.active || 0,
             sold_vehicles: naniautoStats.sold || 0,
             unlisted_vehicles: naniautoStats.unlisted || 0
+          },
+          sltautos: {
+            total_vehicles: sltautosStats.total || 0,
+            active_vehicles: sltautosStats.active || 0,
+            sold_vehicles: sltautosStats.sold || 0,
+            unlisted_vehicles: sltautosStats.unlisted || 0
           },
           internal: {
             total_vehicles: internalStats.total || 0,

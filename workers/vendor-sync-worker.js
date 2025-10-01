@@ -27,7 +27,17 @@ export default {
         if (vendorId === 'lambert') {
           return await this.syncLambert(env, corsHeaders);
         } else if (vendorId === 'naniauto') {
-          return await this.syncNaniAuto(env, corsHeaders);
+          return await this.syncGenericDealer(env, corsHeaders, {
+            dealerUrl: 'https://naniauto.com',
+            dealerId: 'naniauto',
+            dealerName: 'NaniAuto'
+          });
+        } else if (vendorId === 'sltautos') {
+          return await this.syncGenericDealer(env, corsHeaders, {
+            dealerUrl: 'https://sltautos.com',
+            dealerId: 'sltautos',
+            dealerName: 'SLT Autos'
+          });
         } else {
           return new Response(JSON.stringify({
             success: false,
@@ -510,22 +520,23 @@ export default {
     return vehicles;
   },
 
-  async syncNaniAuto(env, corsHeaders) {
-    console.log('Starting NaniAuto sync...');
+  async syncGenericDealer(env, corsHeaders, dealerConfig) {
+    const { dealerUrl, dealerId, dealerName } = dealerConfig;
+    console.log(`Starting ${dealerName} sync...`);
     
     let vehicles = [];
     
-    // Call NaniAuto scraper using service binding
+    // Call generic dealer scraper using service binding
     try {
-      console.log('Calling NaniAuto scraper via service binding...');
+      console.log(`Calling generic dealer scraper for ${dealerName}...`);
       
-      // Use service binding instead of HTTP fetch
-      const scraperRequest = new Request('https://naniauto-scraper/api/scrape', {
+      const scraperRequest = new Request('https://generic-dealer-scraper/api/scrape', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dealerUrl, dealerId, dealerName })
       });
       
-      const scraperResponse = await env.NANIAUTO_SCRAPER.fetch(scraperRequest);
+      const scraperResponse = await env.GENERIC_DEALER_SCRAPER.fetch(scraperRequest);
       
       console.log(`Scraper response status: ${scraperResponse.status}`);
       
@@ -533,14 +544,14 @@ export default {
         const scraperData = await scraperResponse.json();
         console.log(`Scraper data:`, JSON.stringify(scraperData).substring(0, 200));
         if (scraperData.success && scraperData.vehicles && scraperData.vehicles.length > 0) {
-          console.log(`Got ${scraperData.vehicles.length} vehicles from NaniAuto scraper`);
+          console.log(`Got ${scraperData.vehicles.length} vehicles from ${dealerName}`);
           
           vehicles = scraperData.vehicles.map(v => ({
             make: v.make || '',
             model: v.model || '',
             year: v.year || 0,
             price: v.price || 0,
-            vin: v.vin || `NANI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            vin: v.vin || `${dealerId.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             stockNumber: v.stockNumber || v.stock || '',
             bodyType: v.bodyType || '',
             fuelType: v.fuelType || '',
@@ -551,19 +562,17 @@ export default {
             images: v.images || []
           }));
         } else {
-          console.log('NaniAuto scraper returned no vehicles or empty response');
-          console.log('Scraper success:', scraperData.success);
-          console.log('Vehicles array:', scraperData.vehicles ? scraperData.vehicles.length : 'undefined');
+          console.log(`${dealerName} scraper returned no vehicles`);
           vehicles = [];
         }
       } else {
-        console.log(`NaniAuto scraper request failed with status: ${scraperResponse.status}`);
+        console.log(`${dealerName} scraper request failed with status: ${scraperResponse.status}`);
         const errorText = await scraperResponse.text();
         console.log('Error response:', errorText.substring(0, 200));
         vehicles = [];
       }
     } catch (error) {
-      console.log('Could not fetch from NaniAuto scraper:', error.message);
+      console.log(`Could not fetch from ${dealerName} scraper:`, error.message);
       console.log('Error stack:', error.stack);
       vehicles = [];
     }
@@ -571,7 +580,7 @@ export default {
     // Save to database
     const existingVehicles = await env.DB.prepare(
       'SELECT vin, stockNumber FROM vehicles WHERE vendor_id = ?'
-    ).bind('naniauto').all();
+    ).bind(dealerId).all();
     
     const existingVINs = new Set(existingVehicles.results.map(v => v.vin));
     const existingStockNumbers = new Set(existingVehicles.results.map(v => v.stockNumber));
@@ -593,12 +602,13 @@ export default {
               last_seen_from_vendor = datetime('now'),
               vendor_status = 'active',
               updated_at = datetime('now')
-            WHERE (vin = ? OR stockNumber = ?) AND vendor_id = 'naniauto'
+            WHERE (vin = ? OR stockNumber = ?) AND vendor_id = ?
           `).bind(
             vehicle.price,
             vehicle.odometer,
             vehicle.vin,
-            vehicle.stockNumber
+            vehicle.stockNumber,
+            dealerId
           ).run();
           
           updatedCount++;
@@ -612,7 +622,7 @@ export default {
               last_seen_from_vendor, vendor_status, is_published
             ) VALUES (
               ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0,
-              'naniauto', 'NaniAuto', ?,
+              ?, ?, ?,
               datetime('now'), 'active', 1
             )
           `).bind(
@@ -629,6 +639,8 @@ export default {
             vehicle.stockNumber,
             vehicle.description,
             JSON.stringify(vehicle.images),
+            dealerId,
+            dealerName,
             vehicle.stockNumber
           ).run();
           
@@ -644,7 +656,7 @@ export default {
       vehicles_found: vehicles.length,
       new_vehicles: newCount,
       updated_vehicles: updatedCount,
-      vendor: 'naniauto',
+      vendor: dealerId,
       timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
