@@ -525,17 +525,43 @@ export default {
         });
       }
 
-      // DELETE /api/vehicles/[id] - Delete vehicle
+      // DELETE /api/vehicles/[id] - Delete vehicle and associated images
       if (url.pathname.match(/^\/api\/vehicles\/[\w-]+$/) && request.method === 'DELETE') {
         const vehicleId = url.pathname.split('/')[3];
         
-        await env.DB.prepare(`
-          DELETE FROM vehicles WHERE id = ?
-        `).bind(vehicleId).run();
-        
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        try {
+          // Get vehicle data first to find VIN/stockNumber for image deletion
+          const vehicle = await env.DB.prepare(`
+            SELECT vin, stockNumber, images FROM vehicles WHERE id = ?
+          `).bind(vehicleId).first();
+          
+          if (vehicle) {
+            // Delete associated Cloudflare Images
+            const imageIdentifier = vehicle.vin || vehicle.stockNumber || vehicleId;
+            await this.deleteVehicleImages(imageIdentifier, env);
+          }
+          
+          // Delete vehicle from database
+          await env.DB.prepare(`
+            DELETE FROM vehicles WHERE id = ?
+          `).bind(vehicleId).run();
+          
+          return new Response(JSON.stringify({ 
+            success: true,
+            imagesDeleted: vehicle ? true : false
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('Error deleting vehicle:', error);
+          return new Response(JSON.stringify({ 
+            success: false,
+            error: error.message
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
       }
 
       // GET /api/reviews - Get all reviews
@@ -986,5 +1012,56 @@ export default {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+  },
+
+  async deleteVehicleImages(vehicleIdentifier, env) {
+    const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN;
+    
+    if (!apiToken || !accountId) {
+      console.log('No Cloudflare Images credentials, skipping image deletion');
+      return;
+    }
+    
+    console.log(`Deleting images for vehicle: ${vehicleIdentifier}`);
+    
+    // Try to delete up to 20 images (more than we upload, to be safe)
+    const deletePromises = [];
+    for (let i = 1; i <= 20; i++) {
+      const imageId = `${vehicleIdentifier}-${i}`.replace(/[^a-zA-Z0-9-]/g, '-');
+      
+      const deletePromise = fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`
+          }
+        }
+      ).then(response => {
+        if (response.ok) {
+          console.log(`✓ Deleted image: ${imageId}`);
+          return { success: true, imageId };
+        } else if (response.status === 404) {
+          // Image doesn't exist, that's fine
+          return { success: true, imageId, notFound: true };
+        } else {
+          console.log(`✗ Failed to delete ${imageId}: ${response.status}`);
+          return { success: false, imageId };
+        }
+      }).catch(error => {
+        console.error(`Error deleting ${imageId}:`, error);
+        return { success: false, imageId, error: error.message };
+      });
+      
+      deletePromises.push(deletePromise);
+    }
+    
+    // Wait for all deletions to complete
+    const results = await Promise.all(deletePromises);
+    const deletedCount = results.filter(r => r.success && !r.notFound).length;
+    console.log(`Deleted ${deletedCount} images for vehicle ${vehicleIdentifier}`);
+    
+    return results;
   }
 };
