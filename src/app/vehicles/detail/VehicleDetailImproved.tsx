@@ -319,6 +319,32 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                 </div>
               </div>
               
+              {/* Engine Size */}
+              {vehicle.engineSize && (
+                <div className="bg-white rounded-lg p-4">
+                  <div className="flex items-center space-x-3">
+                    <Gauge className="h-5 w-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">Engine Size</p>
+                      <p className="font-semibold text-lg">{vehicle.engineSize}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Cylinders */}
+              {vehicle.cylinders && (
+                <div className="bg-white rounded-lg p-4">
+                  <div className="flex items-center space-x-3">
+                    <Settings className="h-5 w-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">Cylinders</p>
+                      <p className="font-semibold text-lg">{vehicle.cylinders}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* VIN - Only show if enabled in site settings */}
               {settings.showVIN && vehicle.vin && (
                 <div className="bg-white rounded-lg p-4">

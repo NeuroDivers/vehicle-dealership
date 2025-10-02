@@ -1,0 +1,7 @@
+name = "vin-decoder"
+main = "vin-decoder-worker.js"
+compatibility_date = "2024-01-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
