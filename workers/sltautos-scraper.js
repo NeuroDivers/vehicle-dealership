@@ -167,10 +167,13 @@ export default {
         url: url
       };
       
-      // Extract price from b-detail__head-price-num
-      const priceMatch = html.match(/b-detail__head-price-num[^>]*>([0-9,\s]+)/i);
+      // Extract price from b-detail__head-price-num (handles $ symbol)
+      const priceMatch = html.match(/b-detail__head-price-num[^>]*>\$?\s*([0-9,\s]+)/i);
       if (priceMatch) {
         vehicle.price = parseInt(priceMatch[1].replace(/[,\s]/g, ''));
+        console.log(`✅ Price found: $${vehicle.price}`);
+      } else {
+        console.log('⚠️  Price not found in HTML');
       }
       
       // Extract make (supports "Make" and "Marque")

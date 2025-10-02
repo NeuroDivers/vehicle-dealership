@@ -8,6 +8,16 @@ async function testSLTExtraction() {
   
   console.log('\n=== Testing Patterns ===\n');
   
+  // Test Price pattern (with $ symbol)
+  const pricePattern = /b-detail__head-price-num[^>]*>\$?\s*([0-9,\s]+)/i;
+  const priceMatch = html.match(pricePattern);
+  if (priceMatch) {
+    const price = parseInt(priceMatch[1].replace(/[,\s]/g, ''));
+    console.log('Price Match:', priceMatch[1], '→ Parsed:', price);
+  } else {
+    console.log('Price Match: NOT FOUND');
+  }
+  
   // Test Model pattern (with HTML entities)
   const modelPattern = /<div class="row">[\s\S]*?<h4[^>]*>(Model|Mod&egrave;le)<\/h4>[\s\S]*?<p[^>]*>([^<]+)<\/p>[\s\S]*?<\/div>/i;
   const modelMatch = html.match(modelPattern);
