@@ -707,7 +707,9 @@ export default {
               vendor_id, vendor_name, vendor_stock_number,
               last_seen_from_vendor, vendor_status, is_published
             ) VALUES (
-              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0,
+              ?, ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, 0,
               ?, ?, ?,
               datetime('now'), 'active', 1
             )
