@@ -364,43 +364,46 @@ export default {
       vehicle.odometer = 0;
     }
     
-    // Extract transmission - updated pattern for Lambert HTML
-    let transMatch = html.match(/<li[^>]*class="car_transmission"[^>]*>\s*<span>Transmission<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
+    // Extract transmission - Lambert HTML pattern
+    let transMatch = html.match(/<li[^>]*class="car_transmission"[^>]*>\s*<span>[^<]*<\/span>\s*<strong[^>]*class="text-right"[^>]*>([^<]+)<\/strong>/i);
     if (!transMatch) {
-      // Fallback to old pattern
-      transMatch = html.match(/(Transmission|Boîte)[:\s]+([^<\n]+)/i);
-      if (transMatch) {
-        const trans = transMatch[2].trim().toLowerCase();
-        vehicle.transmission = trans.includes('auto') ? 'Automatic' : 
-                              trans.includes('manuel') ? 'Manual' : transMatch[2].trim();
-      }
-    } else {
+      // Try without text-right class
+      transMatch = html.match(/<li[^>]*class="car_transmission"[^>]*>\s*<span>[^<]*<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
+    }
+    if (transMatch) {
       const trans = transMatch[1].trim();
       vehicle.transmission = this.normalizeTransmission(trans);
-      console.log(`✅ Lambert Transmission found: ${trans} -> ${vehicle.transmission}`);
+      console.log(`✅ Lambert Transmission: ${trans} -> ${vehicle.transmission}`);
+    } else {
+      console.log('⚠️  Lambert Transmission not found');
     }
     
-    // Extract drivetrain (French: Traction, Entraînement)
-    const driveMatch = html.match(/(Drivetrain|Traction|Entraînement)[:\s]+([^<\n]+)/i);
+    // Extract drivetrain - Lambert HTML pattern
+    let driveMatch = html.match(/<li[^>]*class="car_drivetrain"[^>]*>\s*<span>[^<]*<\/span>\s*<strong[^>]*class="text-right"[^>]*>([^<]+)<\/strong>/i);
+    if (!driveMatch) {
+      // Try without text-right class
+      driveMatch = html.match(/<li[^>]*class="car_drivetrain"[^>]*>\s*<span>[^<]*<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
+    }
     if (driveMatch) {
-      const drive = driveMatch[2].trim().toLowerCase();
-      vehicle.drivetrain = drive.includes('awd') || drive.includes('4x4') || drive.includes('intégrale') ? 'AWD' :
-                          drive.includes('fwd') || drive.includes('avant') ? 'FWD' :
-                          drive.includes('rwd') || drive.includes('arrière') ? 'RWD' : driveMatch[2].trim();
+      const drive = driveMatch[1].trim();
+      vehicle.drivetrain = this.normalizeDrivetrain(drive);
+      console.log(`✅ Lambert Drivetrain: ${drive} -> ${vehicle.drivetrain}`);
+    } else {
+      console.log('⚠️  Lambert Drivetrain not found');
     }
     
-    // Extract fuel type - updated pattern for Lambert HTML
-    let fuelMatch = html.match(/<li[^>]*class="car_fuel_type"[^>]*>\s*<span>CARBURANT<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
+    // Extract fuel type - Lambert HTML pattern
+    let fuelMatch = html.match(/<li[^>]*class="car_fuel_type"[^>]*>\s*<span>[^<]*<\/span>\s*<strong[^>]*class="text-right"[^>]*>([^<]+)<\/strong>/i);
     if (!fuelMatch) {
-      // Fallback to old pattern
-      fuelMatch = html.match(/<span>CARBURANT<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
+      // Try without text-right class
+      fuelMatch = html.match(/<li[^>]*class="car_fuel_type"[^>]*>\s*<span>[^<]*<\/span>\s*<strong[^>]*>([^<]+)<\/strong>/i);
     }
     if (fuelMatch) {
       const rawFuel = fuelMatch[1].trim();
       vehicle.fuelType = this.normalizeFuelType(rawFuel);
-      console.log(`✅ Lambert Fuel Type found: ${rawFuel} -> ${vehicle.fuelType}`);
+      console.log(`✅ Lambert Fuel Type: ${rawFuel} -> ${vehicle.fuelType}`);
     } else {
-      console.log('⚠️  Lambert Fuel Type not found in HTML');
+      console.log('⚠️  Lambert Fuel Type not found');
     }
     
     // Extract body style (Carrosserie)
@@ -508,6 +511,15 @@ export default {
     if (lower.includes('man') || lower.includes('manuel')) return 'Manual';
     if (lower.includes('cvt')) return 'CVT';
     return trans; // Return original if no match
+  },
+
+  normalizeDrivetrain(drive) {
+    const upper = drive.toUpperCase();
+    if (upper.includes('AWD') || upper.includes('4X4') || upper.includes('INTÉGRALE') || upper.includes('INTEGRALE')) return 'AWD';
+    if (upper.includes('FWD') || upper.includes('AVANT')) return 'FWD';
+    if (upper.includes('RWD') || upper.includes('ARRIÈRE') || upper.includes('ARRIERE')) return 'RWD';
+    if (upper.includes('4WD')) return '4WD';
+    return drive; // Return original if no match
   },
 
   normalizeBodyType(body) {
