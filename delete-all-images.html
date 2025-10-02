@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Delete Cloudflare Images</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e53e3e;
+            margin-bottom: 10px;
+        }
+        .warning {
+            background: #fff5f5;
+            border: 2px solid #fc8181;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #742a2a;
+        }
+        .info {
+            background: #ebf8ff;
+            border: 2px solid #63b3ed;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #2c5282;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+            font-weight: 600;
+        }
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c53030;
+        }
+        .btn-info {
+            background: #3182ce;
+            color: white;
+        }
+        .btn-info:hover {
+            background: #2c5282;
+        }
+        .btn-danger:disabled, .btn-info:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        #status.success {
+            background: #f0fff4;
+            border: 2px solid #68d391;
+            color: #22543d;
+            display: block;
+        }
+        #status.error {
+            background: #fff5f5;
+            border: 2px solid #fc8181;
+            color: #742a2a;
+            display: block;
+        }
+        #status.loading {
+            background: #fefcbf;
+            border: 2px solid #f6e05e;
+            color: #744210;
+            display: block;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: #3182ce;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        pre {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚠️ Bulk Delete Cloudflare Images</h1>
+        <p><strong>This tool will delete ALL images from your Cloudflare Images account.</strong></p>
+        
+        <div class="warning">
+            <strong>⚠️ WARNING:</strong> This action is IRREVERSIBLE! All images will be permanently deleted. Make sure you have backups if needed.
+        </div>
+
+        <div class="info">
+            <strong>ℹ️ What this does:</strong>
+            <ul>
+                <li>Lists all images in your Cloudflare Images account</li>
+                <li>Deletes them in batches of 50</li>
+                <li>Shows progress and results</li>
+            </ul>
+        </div>
+
+        <div>
+            <button class="btn-info" onclick="listImages()" id="listBtn">
+                📋 List All Images (Check Count First)
+            </button>
+            <button class="btn-danger" onclick="deleteAllImages()" id="deleteBtn">
+                🗑️ DELETE ALL IMAGES
+            </button>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://bulk-delete-images.nick-damato0011527.workers.dev';
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.className = type;
+            status.innerHTML = message;
+        }
+
+        async function listImages() {
+            const btn = document.getElementById('listBtn');
+            btn.disabled = true;
+            showStatus('<div class="spinner"></div> Listing all images...', 'loading');
+
+            try {
+                const response = await fetch(`${API_URL}/api/list-images`);
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(`
+                        <strong>✅ Found ${data.count} images</strong><br><br>
+                        First 10 images:<br>
+                        <pre>${JSON.stringify(data.images.slice(0, 10).map(img => ({
+                            id: img.id,
+                            filename: img.filename,
+                            uploaded: img.uploaded
+                        })), null, 2)}</pre>
+                    `, 'success');
+                } else {
+                    showStatus(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteAllImages() {
+            const confirmation = prompt(
+                'This will DELETE ALL IMAGES permanently!\\n\\n' +
+                'Type "DELETE ALL IMAGES" to confirm:'
+            );
+
+            if (confirmation !== 'DELETE ALL IMAGES') {
+                alert('Deletion cancelled.');
+                return;
+            }
+
+            const btn = document.getElementById('deleteBtn');
+            btn.disabled = true;
+            showStatus('<div class="spinner"></div> Deleting all images... This may take several minutes...', 'loading');
+
+            try {
+                const response = await fetch(`${API_URL}/api/delete-all-images`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ confirm: 'DELETE_ALL_IMAGES' })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(`
+                        <strong>✅ ${data.message}</strong><br><br>
+                        <strong>Total:</strong> ${data.total} images<br>
+                        <strong>Deleted:</strong> ${data.deleted} images<br>
+                        <strong>Failed:</strong> ${data.failed} images<br>
+                        ${data.errors && data.errors.length > 0 ? `<br><strong>Errors:</strong><br><pre>${data.errors.join('\\n')}</pre>` : ''}
+                    `, 'success');
+                } else {
+                    showStatus(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

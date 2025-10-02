@@ -1,0 +1,11 @@
+name = "bulk-delete-images"
+main = "bulk-delete-images.js"
+compatibility_date = "2024-01-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+[vars]
+ENVIRONMENT = "production"
+CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+# Add your Cloudflare Images API token as a secret:
+# npx wrangler secret put CF_IMAGES_TOKEN --config wrangler-bulk-delete-images.toml
