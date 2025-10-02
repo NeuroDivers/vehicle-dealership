@@ -120,7 +120,7 @@ export default {
             
             // Map vehicles from scraper
             vehicles = scraperData.vehicles.map(v => {
-              console.log(`Vehicle ${v.make} ${v.model}: fuelType=${v.fuelType}, transmission=${v.transmission}, drivetrain=${v.drivetrain}`);
+              console.log(`Vehicle ${v.make} ${v.model}: fuelType=${v.fuelType}, transmission=${v.transmission}, engineSize=${v.engineSize}, cylinders=${v.cylinders}`);
               return {
                 make: v.make || '',
                 model: v.model || '',
@@ -134,6 +134,8 @@ export default {
                 fuelType: v.fuelType || '',
                 transmission: v.transmission || '',
                 drivetrain: v.drivetrain || '',
+                engineSize: v.engineSize || '',
+                cylinders: v.cylinders || null,
                 description: v.description || `${v.year} ${v.make} ${v.model}`,
                 // The scraper already replaces v.images with Cloudflare URLs!
                 images: v.images || []
@@ -175,8 +177,8 @@ export default {
           const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
           
           if (isExisting) {
-            // Update existing vehicle - include fuelType, transmission, drivetrain
-            console.log(`Updating ${vehicle.make} ${vehicle.model}: fuel=${vehicle.fuelType}, trans=${vehicle.transmission}, drive=${vehicle.drivetrain}`);
+            // Update existing vehicle - include all fields
+            console.log(`Updating ${vehicle.make} ${vehicle.model}: fuel=${vehicle.fuelType}, trans=${vehicle.transmission}, engine=${vehicle.engineSize}`);
             await env.DB.prepare(`
               UPDATE vehicles 
               SET 
@@ -185,6 +187,8 @@ export default {
                 fuelType = COALESCE(NULLIF(?, ''), fuelType),
                 transmission = COALESCE(NULLIF(?, ''), transmission),
                 drivetrain = COALESCE(NULLIF(?, ''), drivetrain),
+                engineSize = COALESCE(NULLIF(?, ''), engineSize),
+                cylinders = COALESCE(?, cylinders),
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
                 updated_at = datetime('now')
@@ -195,6 +199,8 @@ export default {
               vehicle.fuelType,
               vehicle.transmission,
               vehicle.drivetrain,
+              vehicle.engineSize,
+              vehicle.cylinders,
               vehicle.vin,
               vehicle.stockNumber
             ).run();
@@ -205,13 +211,13 @@ export default {
             await env.DB.prepare(`
               INSERT INTO vehicles (
                 make, model, year, price, odometer, bodyType, color,
-                fuelType, transmission, drivetrain,
+                fuelType, transmission, drivetrain, engineSize, cylinders,
                 vin, stockNumber, description, images, isSold,
                 vendor_id, vendor_name, vendor_stock_number,
                 last_seen_from_vendor, vendor_status, is_published
               ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?,
+                ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, 0,
                 'lambert', 'Lambert Auto', ?,
                 datetime('now'), 'active', 1
@@ -227,6 +233,8 @@ export default {
               vehicle.fuelType || '',
               vehicle.transmission || '',
               vehicle.drivetrain || '',
+              vehicle.engineSize || '',
+              vehicle.cylinders || null,
               vehicle.vin,
               vehicle.stockNumber,
               vehicle.description || '',

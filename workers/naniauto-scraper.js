@@ -203,19 +203,34 @@ export default {
         vehicle.bodyType = this.normalizeBodyType(bodyMatch[1].trim());
       }
       
-      // Extract fuel type (Engine) - improved pattern
-      let fuelMatch = html.match(/<h4[^>]*>\s*Engine\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
-      if (!fuelMatch) {
+      // Extract engine size (Moteur/Engine field contains size like "2.4", not fuel type)
+      let engineMatch = html.match(/<h4[^>]*>\s*Engine\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
+      if (!engineMatch) {
         // Try French version
-        fuelMatch = html.match(/<h4[^>]*>\s*Moteur\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
+        engineMatch = html.match(/<h4[^>]*>\s*Moteur\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
       }
-      if (fuelMatch) {
-        const rawFuel = fuelMatch[1].trim();
-        vehicle.fuelType = this.normalizeFuelType(rawFuel);
-        console.log(`✅ Fuel Type found: ${rawFuel} -> ${vehicle.fuelType}`);
+      if (engineMatch) {
+        const rawEngine = engineMatch[1].trim();
+        vehicle.engineSize = rawEngine.includes('L') ? rawEngine : `${rawEngine}L`;
+        console.log(`✅ Engine Size found: ${rawEngine} -> ${vehicle.engineSize}`);
       } else {
-        console.log('⚠️  Fuel Type not found in HTML');
+        console.log('⚠️  Engine Size not found in HTML');
       }
+      
+      // Extract cylinders
+      let cylindersMatch = html.match(/<h4[^>]*>\s*Cylinders\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
+      if (!cylindersMatch) {
+        // Try French version
+        cylindersMatch = html.match(/<h4[^>]*>\s*Cylindres\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
+      }
+      if (cylindersMatch) {
+        vehicle.cylinders = parseInt(cylindersMatch[1].trim());
+        console.log(`✅ Cylinders found: ${vehicle.cylinders}`);
+      }
+      
+      // NaniAuto/SLT don't have fuel type field - default to Gasoline for now
+      vehicle.fuelType = 'Gasoline';
+      console.log('ℹ️  Fuel Type defaulted to Gasoline (not specified on site)');
       
       // Extract transmission - improved pattern
       let transMatch = html.match(/<h4[^>]*>\s*Transmission\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
