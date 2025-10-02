@@ -208,7 +208,7 @@ export default {
       }
       
       // Extract body type (supports "Body Type" and "Carrosserie")
-      const bodyMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Body Type|Carrosserie)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
+      const bodyMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Body Type|Carrosserie)<\/h4>[\s\S]*?<p[^>]*>([^<]+)<\/p>[\s\S]*?<\/div>/i);
       if (bodyMatch) {
         vehicle.bodyType = this.normalizeBodyType(bodyMatch[2].trim());
         console.log(`✅ Body Type found: ${bodyMatch[2].trim()} -> ${vehicle.bodyType}`);
@@ -217,7 +217,7 @@ export default {
       }
       
       // Extract engine size (Moteur/Engine field contains size like "2.4", not fuel type)
-      let engineMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Engine|Moteur)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
+      let engineMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Engine|Moteur)<\/h4>[\s\S]*?<p[^>]*>([^<]+)<\/p>[\s\S]*?<\/div>/i);
       if (engineMatch) {
         const rawEngine = engineMatch[2].trim();
         vehicle.engineSize = rawEngine.includes('L') ? rawEngine : `${rawEngine}L`;
@@ -227,7 +227,7 @@ export default {
       }
       
       // Extract cylinders
-      let cylindersMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Cylinders|Cylindres)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
+      let cylindersMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Cylinders|Cylindres)<\/h4>[\s\S]*?<p[^>]*>([^<]+)<\/p>[\s\S]*?<\/div>/i);
       if (cylindersMatch) {
         vehicle.cylinders = parseInt(cylindersMatch[2].trim());
         console.log(`✅ Cylinders found: ${vehicle.cylinders}`);
@@ -240,9 +240,9 @@ export default {
       console.log('ℹ️  Fuel Type defaulted to Gasoline (not specified on site)');
       
       // Extract transmission
-      let transMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>Transmission<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
+      let transMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Transmission)<\/h4>[\s\S]*?<p[^>]*>([^<]+)<\/p>[\s\S]*?<\/div>/i);
       if (transMatch) {
-        const rawTrans = transMatch[1].trim();
+        const rawTrans = transMatch[2].trim();
         vehicle.transmission = this.normalizeTransmission(rawTrans);
         console.log(`✅ Transmission found: ${rawTrans} -> ${vehicle.transmission}`);
       } else {
@@ -285,6 +285,7 @@ export default {
       
       console.log(`✓ Scraped: ${vehicle.year} ${vehicle.make} ${vehicle.model} - $${vehicle.price}`);
       
+      return vehicle;
     } catch (error) {
       console.error(`Error scraping vehicle details from ${url}:`, error);
       return null;
