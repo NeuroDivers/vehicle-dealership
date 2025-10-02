@@ -593,20 +593,47 @@ export default {
         if (scraperData.success && scraperData.vehicles && scraperData.vehicles.length > 0) {
           console.log(`Got ${scraperData.vehicles.length} vehicles from ${dealerName}`);
           
-          vehicles = scraperData.vehicles.map(v => ({
-            make: v.make || '',
-            model: v.model || '',
-            year: v.year || 0,
-            price: v.price || 0,
-            vin: v.vin || `${dealerId.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            stockNumber: v.stockNumber || v.stock || '',
-            bodyType: v.bodyType || '',
-            fuelType: v.fuelType || '',
-            transmission: v.transmission || '',
-            color: v.color || 'Unknown',
-            odometer: v.odometer || v.mileage || 0,
-            description: v.description || `${v.year} ${v.make} ${v.model}`,
-            images: v.images || []
+          // Map vehicles from scraper with VIN decoder enrichment
+          vehicles = await Promise.all(scraperData.vehicles.map(async v => {
+            console.log(`Vehicle ${v.make} ${v.model}: fuelType=${v.fuelType}, transmission=${v.transmission}, engineSize=${v.engineSize}, cylinders=${v.cylinders}`);
+            
+            let vehicleData = {
+              make: v.make || '',
+              model: v.model || '',
+              year: v.year || 0,
+              price: v.price || 0,
+              vin: v.vin || `${dealerId.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              stockNumber: v.stockNumber || v.stock || '',
+              bodyType: v.bodyType || '',
+              color: v.color || 'Unknown',
+              odometer: v.odometer || v.mileage || 0,
+              fuelType: v.fuelType || '',
+              transmission: v.transmission || '',
+              drivetrain: v.drivetrain || '',
+              engineSize: v.engineSize || '',
+              cylinders: v.cylinders || null,
+              description: v.description || `${v.year} ${v.make} ${v.model}`,
+              images: v.images || []
+            };
+            
+            // If VIN exists and we're missing critical data, try to decode VIN
+            if (v.vin && v.vin.length === 17) {
+              const missingData = !vehicleData.fuelType || !vehicleData.engineSize || !vehicleData.cylinders || !vehicleData.drivetrain;
+              if (missingData) {
+                console.log(`Attempting to decode VIN for ${v.make} ${v.model} to fill missing data...`);
+                try {
+                  const vinData = await this.decodeVINForMissingData(v.vin, vehicleData);
+                  if (vinData) {
+                    vehicleData = { ...vehicleData, ...vinData };
+                    console.log(`✅ VIN decoded, filled missing data`);
+                  }
+                } catch (error) {
+                  console.log(`⚠️  VIN decode failed: ${error.message}`);
+                }
+              }
+            }
+            
+            return vehicleData;
           }));
         } else {
           console.log(`${dealerName} scraper returned no vehicles`);
@@ -640,12 +667,18 @@ export default {
         const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
         
         if (isExisting) {
-          // Update existing vehicle
+          // Update existing vehicle - include all fields
+          console.log(`Updating ${vehicle.make} ${vehicle.model}: fuel=${vehicle.fuelType}, trans=${vehicle.transmission}, engine=${vehicle.engineSize}`);
           await env.DB.prepare(`
             UPDATE vehicles 
             SET 
               price = ?,
               odometer = ?,
+              fuelType = COALESCE(NULLIF(?, ''), fuelType),
+              transmission = COALESCE(NULLIF(?, ''), transmission),
+              drivetrain = COALESCE(NULLIF(?, ''), drivetrain),
+              engineSize = COALESCE(NULLIF(?, ''), engineSize),
+              cylinders = COALESCE(?, cylinders),
               last_seen_from_vendor = datetime('now'),
               vendor_status = 'active',
               updated_at = datetime('now')
@@ -653,6 +686,11 @@ export default {
           `).bind(
             vehicle.price,
             vehicle.odometer,
+            vehicle.fuelType,
+            vehicle.transmission,
+            vehicle.drivetrain,
+            vehicle.engineSize,
+            vehicle.cylinders,
             vehicle.vin,
             vehicle.stockNumber,
             dealerId
@@ -660,11 +698,12 @@ export default {
           
           updatedCount++;
         } else {
-          // Insert new vehicle
+          // Insert new vehicle - including all fields
           await env.DB.prepare(`
             INSERT INTO vehicles (
-              make, model, year, price, odometer, bodyType, fuelType,
-              transmission, color, vin, stockNumber, description, images, isSold,
+              make, model, year, price, odometer, bodyType, color,
+              fuelType, transmission, drivetrain, engineSize, cylinders,
+              vin, stockNumber, description, images, isSold,
               vendor_id, vendor_name, vendor_stock_number,
               last_seen_from_vendor, vendor_status, is_published
             ) VALUES (
@@ -677,15 +716,18 @@ export default {
             vehicle.model,
             vehicle.year,
             vehicle.price,
-            vehicle.odometer,
-            vehicle.bodyType,
-            vehicle.fuelType || 'Gasoline',
-            vehicle.transmission || 'Automatic',
-            vehicle.color,
+            vehicle.odometer || 0,
+            vehicle.bodyType || '',
+            vehicle.color || 'Unknown',
+            vehicle.fuelType || '',
+            vehicle.transmission || '',
+            vehicle.drivetrain || '',
+            vehicle.engineSize || '',
+            vehicle.cylinders || null,
             vehicle.vin,
             vehicle.stockNumber,
-            vehicle.description,
-            JSON.stringify(vehicle.images),
+            vehicle.description || '',
+            JSON.stringify(vehicle.images || []),
             dealerId,
             dealerName,
             vehicle.stockNumber
