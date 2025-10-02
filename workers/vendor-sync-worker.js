@@ -129,6 +129,9 @@ export default {
               bodyType: v.bodyType || '',
               color: v.color || 'Unknown',
               odometer: v.odometer || v.mileage || 0,
+              fuelType: v.fuelType || '',
+              transmission: v.transmission || '',
+              drivetrain: v.drivetrain || '',
               description: v.description || `${v.year} ${v.make} ${v.model}`,
               // The scraper already replaces v.images with Cloudflare URLs!
               images: v.images || []
@@ -169,32 +172,42 @@ export default {
           const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
           
           if (isExisting) {
-            // Update existing vehicle
+            // Update existing vehicle - include fuelType, transmission, drivetrain
             await env.DB.prepare(`
               UPDATE vehicles 
               SET 
                 price = ?,
+                odometer = ?,
+                fuelType = COALESCE(NULLIF(?, ''), fuelType),
+                transmission = COALESCE(NULLIF(?, ''), transmission),
+                drivetrain = COALESCE(NULLIF(?, ''), drivetrain),
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
                 updated_at = datetime('now')
               WHERE (vin = ? OR stockNumber = ?) AND vendor_id = 'lambert'
             `).bind(
               vehicle.price,
+              vehicle.odometer,
+              vehicle.fuelType,
+              vehicle.transmission,
+              vehicle.drivetrain,
               vehicle.vin,
               vehicle.stockNumber
             ).run();
             
             updatedCount++;
           } else {
-            // Insert new vehicle - including required color field
+            // Insert new vehicle - including all fields
             await env.DB.prepare(`
               INSERT INTO vehicles (
                 make, model, year, price, odometer, bodyType, color,
+                fuelType, transmission, drivetrain,
                 vin, stockNumber, description, images, isSold,
                 vendor_id, vendor_name, vendor_stock_number,
                 last_seen_from_vendor, vendor_status, is_published
               ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?,
                 ?, ?, ?, ?, 0,
                 'lambert', 'Lambert Auto', ?,
                 datetime('now'), 'active', 1
@@ -207,6 +220,9 @@ export default {
               vehicle.odometer || 0,
               vehicle.bodyType || '',
               vehicle.color || 'Unknown',
+              vehicle.fuelType || '',
+              vehicle.transmission || '',
+              vehicle.drivetrain || '',
               vehicle.vin,
               vehicle.stockNumber,
               vehicle.description || '',
