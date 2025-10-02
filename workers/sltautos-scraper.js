@@ -83,8 +83,8 @@ export default {
       while (hasMorePages && page <= maxPages) {
         console.log(`Fetching SLT Autos inventory page ${page}...`);
         const pageUrl = page === 1 
-          ? `${baseUrl}/fr/inventory/` 
-          : `${baseUrl}/fr/inventory/p/${page}/`;
+          ? `${baseUrl}/en/inventory/` 
+          : `${baseUrl}/en/inventory/p/${page}/`;
         
         const response = await fetch(pageUrl);
         
@@ -138,8 +138,8 @@ export default {
   extractVehicleUrls(html, baseUrl) {
     const urls = new Set();
     
-    // Match SLT Autos detail page URLs
-    const pattern = /href="(\/fr\/details\/p\/\d+\/[^"]+)"/g;
+    // Match SLT Autos detail page URLs (English version)
+    const pattern = /href="(\/en\/details\/p\/\d+\/[^"]+)"/g;
     let match;
     
     while ((match = pattern.exec(html)) !== null) {
@@ -197,8 +197,8 @@ export default {
         vehicle.year = parseInt(yearMatch[1]);
       }
       
-      // Extract kilometers/odometer (supports "Kilometres" and "Odomètre" with HTML entities)
-      const kmMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Kilometres|Odom&egrave;tre)<\/h4>[\s\S]*?<p[^>]*>([0-9,\s]+)[\s\S]*?<\/div>/i);
+      // Extract kilometers/odometer (supports English "Mileage" and French with HTML entities)
+      const kmMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Mileage|Kilometres|Odom&egrave;tre)<\/h4>[\s\S]*?<p[^>]*>([0-9,\s]+)[\s\S]*?<\/div>/i);
       if (kmMatch) {
         vehicle.odometer = parseInt(kmMatch[2].replace(/[,\sKM]/gi, ''));
         console.log(`✅ Odometer found: ${vehicle.odometer}`);
@@ -259,8 +259,8 @@ export default {
         vehicle.color = 'Unknown';
       }
       
-      // Extract VIN (supports "Vin" and "Numéro d'identification" with HTML entities)
-      const vinMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Vin|Num&eacute;ro d'identification)<\/h4>[\s\S]*?<p[^>]*>([A-Z0-9]{17})<\/p>[\s\S]*?<\/div>/i);
+      // Extract VIN (supports English "Vin Number" and French with HTML entities)
+      const vinMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Vin Number|Vin|VIN|Num&eacute;ro d'identification)<\/h4>[\s\S]*?<p[^>]*>([A-Z0-9]{17})<\/p>[\s\S]*?<\/div>/i);
       if (vinMatch) {
         vehicle.vin = vinMatch[2].trim();
         console.log(`✅ VIN found: ${vehicle.vin}`);
