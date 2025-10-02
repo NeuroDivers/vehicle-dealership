@@ -781,6 +781,26 @@ export default {
         });
       }
 
+      // GET /api/vendor-sync-logs - Get vendor sync history
+      if (url.pathname === '/api/vendor-sync-logs' && request.method === 'GET') {
+        try {
+          const { results } = await env.DB.prepare(`
+            SELECT * FROM vendor_sync_logs 
+            ORDER BY sync_date DESC 
+            LIMIT 50
+          `).all();
+          
+          return new Response(JSON.stringify(results || []), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.log('vendor_sync_logs table not available:', error.message);
+          return new Response(JSON.stringify([]), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
       // GET /api/leads - Get all leads
       if (url.pathname === '/api/leads' && request.method === 'GET') {
         const { results } = await env.DB.prepare(`

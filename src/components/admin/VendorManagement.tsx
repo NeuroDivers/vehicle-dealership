@@ -115,22 +115,22 @@ export default function VendorManagement() {
   };
 
   const loadSyncLogs = async () => {
-    // Mock data - replace with API call
-    setSyncLogs([
-      {
-        id: 1,
-        vendor_id: 'lambert',
-        vendor_name: 'Lambert Auto',
-        sync_date: new Date(Date.now() - 3600000).toISOString(),
-        vehicles_found: 46,
-        new_vehicles: 2,
-        updated_vehicles: 5,
-        removed_vehicles: 1,
-        unlisted_vehicles: 3,
-        status: 'success',
-        sync_duration_seconds: 45
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
+                    'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/vendor-sync-logs`);
+      
+      if (response.ok) {
+        const logs = await response.json();
+        setSyncLogs(logs);
+      } else {
+        console.error('Failed to load sync logs');
+        setSyncLogs([]);
       }
-    ]);
+    } catch (error) {
+      console.error('Error loading sync logs:', error);
+      setSyncLogs([]);
+    }
   };
 
   const syncVendor = async (vendorId: string) => {
