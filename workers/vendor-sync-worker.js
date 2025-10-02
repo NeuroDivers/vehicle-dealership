@@ -119,23 +119,26 @@ export default {
             }
             
             // Map vehicles from scraper
-            vehicles = scraperData.vehicles.map(v => ({
-              make: v.make || '',
-              model: v.model || '',
-              year: v.year || 0,
-              price: v.price || 0,
-              vin: v.vin || `LAM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              stockNumber: v.stockNumber || v.stock || '',
-              bodyType: v.bodyType || '',
-              color: v.color || 'Unknown',
-              odometer: v.odometer || v.mileage || 0,
-              fuelType: v.fuelType || '',
-              transmission: v.transmission || '',
-              drivetrain: v.drivetrain || '',
-              description: v.description || `${v.year} ${v.make} ${v.model}`,
-              // The scraper already replaces v.images with Cloudflare URLs!
-              images: v.images || []
-            }));
+            vehicles = scraperData.vehicles.map(v => {
+              console.log(`Vehicle ${v.make} ${v.model}: fuelType=${v.fuelType}, transmission=${v.transmission}, drivetrain=${v.drivetrain}`);
+              return {
+                make: v.make || '',
+                model: v.model || '',
+                year: v.year || 0,
+                price: v.price || 0,
+                vin: v.vin || `LAM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                stockNumber: v.stockNumber || v.stock || '',
+                bodyType: v.bodyType || '',
+                color: v.color || 'Unknown',
+                odometer: v.odometer || v.mileage || 0,
+                fuelType: v.fuelType || '',
+                transmission: v.transmission || '',
+                drivetrain: v.drivetrain || '',
+                description: v.description || `${v.year} ${v.make} ${v.model}`,
+                // The scraper already replaces v.images with Cloudflare URLs!
+                images: v.images || []
+              };
+            });
           } else {
             console.log('Lambert scraper returned no vehicles or empty response');
             console.log('Scraper success:', scraperData.success);
@@ -173,6 +176,7 @@ export default {
           
           if (isExisting) {
             // Update existing vehicle - include fuelType, transmission, drivetrain
+            console.log(`Updating ${vehicle.make} ${vehicle.model}: fuel=${vehicle.fuelType}, trans=${vehicle.transmission}, drive=${vehicle.drivetrain}`);
             await env.DB.prepare(`
               UPDATE vehicles 
               SET 
