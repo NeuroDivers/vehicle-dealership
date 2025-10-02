@@ -55,6 +55,9 @@ export default function EditVehicle() {
       img.src = URL.createObjectURL(file);
     });
   };
+  const [vin, setVin] = useState('');
+  const [decodingVin, setDecodingVin] = useState(false);
+  const [vinError, setVinError] = useState('');
   const [formData, setFormData] = useState({
     make: '',
     model: '',
@@ -69,6 +72,8 @@ export default function EditVehicle() {
     fuelType: 'Gasoline',
     transmission: 'Automatic',
     drivetrain: 'FWD',
+    engineSize: '',
+    cylinders: null as number | null,
     vin: '',
     vendor_id: 'internal',
     vendor_name: 'Internal Inventory',
@@ -174,6 +179,60 @@ export default function EditVehicle() {
       alert('Failed to update vehicle');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const decodeVin = async () => {
+    if (!vin || vin.length !== 17) {
+      setVinError('VIN must be exactly 17 characters');
+      return;
+    }
+
+    setDecodingVin(true);
+    setVinError('');
+
+    try {
+      const response = await fetch(
+        'https://vin-decoder.nick-damato0011527.workers.dev/api/decode-vin',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vin })
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to decode VIN');
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to decode VIN');
+      }
+
+      const data = result.data;
+
+      setFormData(prev => ({
+        ...prev,
+        make: data.make || prev.make,
+        model: data.model || prev.model,
+        year: data.year || prev.year,
+        bodyType: data.bodyType || prev.bodyType,
+        fuelType: data.fuelType || prev.fuelType,
+        transmission: data.transmission || prev.transmission,
+        drivetrain: data.drivetrain || prev.drivetrain,
+        engineSize: data.engineSize || prev.engineSize,
+        cylinders: data.engineCylinders || prev.cylinders,
+        vin: vin,
+      }));
+
+      alert(`✅ VIN decoded: ${data.year} ${data.make} ${data.model}`);
+    } catch (error) {
+      console.error('VIN decode error:', error);
+      setVinError('Failed to decode VIN. Please enter vehicle details manually.');
+    } finally {
+      setDecodingVin(false);
     }
   };
 
@@ -549,6 +608,116 @@ export default function EditVehicle() {
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g., Silver"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                VIN
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={vin || formData.vin}
+                  onChange={(e) => setVin(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="17-character VIN"
+                  maxLength={17}
+                />
+                <button
+                  type="button"
+                  onClick={decodeVin}
+                  disabled={decodingVin}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 flex items-center space-x-2"
+                >
+                  {decodingVin ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Decoding...</span>
+                    </>
+                  ) : (
+                    <span>Decode VIN</span>
+                  )}
+                </button>
+              </div>
+              {vinError && <p className="text-red-500 text-sm mt-1">{vinError}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fuel Type
+              </label>
+              <select
+                name="fuelType"
+                value={formData.fuelType}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Gasoline">Gasoline</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Electric">Electric</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Transmission
+              </label>
+              <select
+                name="transmission"
+                value={formData.transmission}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Automatic">Automatic</option>
+                <option value="Manual">Manual</option>
+                <option value="CVT">CVT</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Drivetrain
+              </label>
+              <select
+                name="drivetrain"
+                value={formData.drivetrain}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="FWD">FWD (Front-Wheel Drive)</option>
+                <option value="RWD">RWD (Rear-Wheel Drive)</option>
+                <option value="AWD">AWD (All-Wheel Drive)</option>
+                <option value="4WD">4WD (Four-Wheel Drive)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Engine Size (Optional)
+              </label>
+              <input
+                type="text"
+                name="engineSize"
+                value={formData.engineSize}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., 2.4L, 3.6L"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cylinders (Optional)
+              </label>
+              <input
+                type="number"
+                name="cylinders"
+                value={formData.cylinders || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., 4, 6, 8"
               />
             </div>
 
