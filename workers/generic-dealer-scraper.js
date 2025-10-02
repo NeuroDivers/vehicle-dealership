@@ -181,15 +181,21 @@ export default {
       }
       
       // Extract make (supports both English "Make" and French "Marque")
-      const makeMatch = html.match(/(Make|Marque)<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
+      const makeMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Make|Marque)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
       if (makeMatch) {
         vehicle.make = makeMatch[2].trim();
+        console.log(`✅ Make found: ${vehicle.make}`);
+      } else {
+        console.log('⚠️  Make not found in HTML');
       }
       
       // Extract model (supports both English "Model" and French "Modèle")
-      const modelMatch = html.match(/(Model|Modèle)<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
+      const modelMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Model|Modèle)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
       if (modelMatch) {
         vehicle.model = modelMatch[2].trim();
+        console.log(`✅ Model found: ${vehicle.model}`);
+      } else {
+        console.log('⚠️  Model not found in HTML');
       }
       
       // Extract year from URL
@@ -199,24 +205,28 @@ export default {
       }
       
       // Extract kilometers (supports "Kilometres" and "Odomètre")
-      const kmMatch = html.match(/(Kilometres|Odomètre)<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([0-9,\s]+)/i);
+      const kmMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Kilometres|Odomètre)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([0-9,\s]+)/i);
       if (kmMatch) {
         vehicle.odometer = parseInt(kmMatch[2].replace(/[,\sKM]/gi, ''));
+        console.log(`✅ Odometer found: ${vehicle.odometer}`);
+      } else {
+        console.log('⚠️  Odometer not found in HTML');
+        vehicle.odometer = 0;
       }
       
       // Extract body type (supports "Body Type" and "Carrosserie")
-      const bodyMatch = html.match(/(Body Type|Carrosserie)<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
+      const bodyMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Body Type|Carrosserie)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
       if (bodyMatch) {
         vehicle.bodyType = this.normalizeBodyType(bodyMatch[2].trim());
+        console.log(`✅ Body Type found: ${bodyMatch[2].trim()} -> ${vehicle.bodyType}`);
+      } else {
+        console.log('⚠️  Body Type not found in HTML');
       }
       
       // Extract engine size (Engine/Moteur field contains size like "2.4", not fuel type)
-      let engineMatch = html.match(/<h4[^>]*>\s*Engine\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
-      if (!engineMatch) {
-        engineMatch = html.match(/<h4[^>]*>\s*Moteur\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
-      }
+      let engineMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Engine|Moteur)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
       if (engineMatch) {
-        const rawEngine = engineMatch[1].trim();
+        const rawEngine = engineMatch[2].trim();
         vehicle.engineSize = rawEngine.includes('L') ? rawEngine : `${rawEngine}L`;
         console.log(`✅ Engine Size found: ${rawEngine} -> ${vehicle.engineSize}`);
       } else {
@@ -224,21 +234,20 @@ export default {
       }
       
       // Extract cylinders
-      let cylindersMatch = html.match(/<h4[^>]*>\s*Cylinders\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
-      if (!cylindersMatch) {
-        cylindersMatch = html.match(/<h4[^>]*>\s*Cylindres\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
-      }
+      let cylindersMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Cylinders|Cylindres)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
       if (cylindersMatch) {
-        vehicle.cylinders = parseInt(cylindersMatch[1].trim());
+        vehicle.cylinders = parseInt(cylindersMatch[2].trim());
         console.log(`✅ Cylinders found: ${vehicle.cylinders}`);
+      } else {
+        console.log('⚠️  Cylinders not found in HTML');
       }
       
       // SLT Autos doesn't have fuel type field - default to Gasoline
       vehicle.fuelType = 'Gasoline';
       console.log('ℹ️  Fuel Type defaulted to Gasoline (not specified on site)');
       
-      // Extract transmission - improved pattern
-      let transMatch = html.match(/<h4[^>]*>\s*Transmission\s*<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>\s*([^<]+?)\s*<\/p>/i);
+      // Extract transmission
+      let transMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>Transmission<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
       if (transMatch) {
         const rawTrans = transMatch[1].trim();
         vehicle.transmission = this.normalizeTransmission(rawTrans);
@@ -248,15 +257,20 @@ export default {
       }
       
       // Extract color (supports "Exterior Color" and "Couleur extérieure")
-      const colorMatch = html.match(/(Exterior Color|Couleur extérieure)<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([^<]+)/i);
+      const colorMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Exterior Color|Couleur extérieure)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
       if (colorMatch) {
         vehicle.color = this.normalizeColor(colorMatch[2].trim());
+        console.log(`✅ Color found: ${colorMatch[2].trim()} -> ${vehicle.color}`);
+      } else {
+        console.log('⚠️  Color not found in HTML');
+        vehicle.color = 'Unknown';
       }
       
       // Extract VIN (supports "Vin" and "Numéro d'identification")
-      const vinMatch = html.match(/(Vin|Numéro d'identification)<\/h4>[\s\S]*?b-detail__main-aside-desc-value[^>]*>([A-Z0-9]{17})/i);
+      const vinMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Vin|Numéro d'identification)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([A-Z0-9]{17})<\/p>/i);
       if (vinMatch) {
         vehicle.vin = vinMatch[2].trim();
+        console.log(`✅ VIN found: ${vehicle.vin}`);
       }
       
       // Extract images
