@@ -28,6 +28,8 @@ export default function AddVehicle() {
     fuelType: 'Gasoline',
     transmission: 'Automatic',
     drivetrain: 'FWD',
+    engineSize: '',
+    cylinders: null as number | null,
     vendor_id: 'internal',
     vendor_name: 'Internal Inventory',
     vendor_stock_number: '',
@@ -80,57 +82,46 @@ export default function AddVehicle() {
     setVinError('');
 
     try {
-      // Using NHTSA VIN Decoder API (free, no API key required)
+      // Use our VIN decoder worker
       const response = await fetch(
-        `https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/${vin}?format=json`
+        'https://vin-decoder.nick-damato0011527.workers.dev/api/decode-vin',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vin })
+        }
       );
       
       if (!response.ok) {
         throw new Error('Failed to decode VIN');
       }
 
-      const data = await response.json();
-      const results = data.Results;
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to decode VIN');
+      }
 
-      // Extract relevant information from the decoded VIN
-      const getValue = (variableId: number) => {
-        const item = results.find((r: any) => r.VariableId === variableId);
-        return item?.Value || '';
-      };
-
-      const getValueByName = (name: string) => {
-        const item = results.find((r: any) => r.Variable === name);
-        return item?.Value || '';
-      };
+      const data = result.data;
 
       // Update form with decoded data
-      const make = getValueByName('Make');
-      const model = getValueByName('Model');
-      const year = parseInt(getValueByName('Model Year')) || new Date().getFullYear();
-      const bodyType = getValueByName('Body Class') || 'Sedan';
-      const engineInfo = getValueByName('Engine Number of Cylinders');
-      const fuelType = getValueByName('Fuel Type - Primary');
-      const drivetrain = getValueByName('Drive Type');
-
-      // Build description from available data
-      let description = '';
-      if (engineInfo) description += `${engineInfo} cylinder engine. `;
-      if (fuelType) description += `${fuelType}. `;
-      if (drivetrain) description += `${drivetrain}. `;
-
       setFormData(prev => ({
         ...prev,
-        make: make || prev.make,
-        model: model || prev.model,
-        year: year || prev.year,
-        bodyType: mapBodyType(bodyType) || prev.bodyType,
-        description: description || prev.description,
+        make: data.make || prev.make,
+        model: data.model || prev.model,
+        year: data.year || prev.year,
+        bodyType: data.bodyType || prev.bodyType,
+        fuelType: data.fuelType || prev.fuelType,
+        transmission: data.transmission || prev.transmission,
+        drivetrain: data.drivetrain || prev.drivetrain,
+        engineSize: data.engineSize || prev.engineSize,
+        cylinders: data.engineCylinders || prev.cylinders,
         vin: vin,
       }));
 
       // Success message
-      if (make && model) {
-        console.log(`VIN decoded successfully: ${year} ${make} ${model}`);
+      if (data.make && data.model) {
+        alert(`✅ VIN decoded: ${data.year} ${data.make} ${data.model}`);
       } else {
         setVinError('VIN decoded but some information may be missing');
       }
@@ -458,6 +449,34 @@ export default function AddVehicle() {
                 <option value="AWD">AWD (All-Wheel Drive)</option>
                 <option value="4WD">4WD (Four-Wheel Drive)</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Engine Size (Optional)
+              </label>
+              <input
+                type="text"
+                name="engineSize"
+                value={formData.engineSize}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., 2.4L, 3.6L"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cylinders (Optional)
+              </label>
+              <input
+                type="number"
+                name="cylinders"
+                value={formData.cylinders || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., 4, 6, 8"
+              />
             </div>
 
             <div>

@@ -119,9 +119,10 @@ export default {
             }
             
             // Map vehicles from scraper
-            vehicles = scraperData.vehicles.map(v => {
+            vehicles = await Promise.all(scraperData.vehicles.map(async v => {
               console.log(`Vehicle ${v.make} ${v.model}: fuelType=${v.fuelType}, transmission=${v.transmission}, engineSize=${v.engineSize}, cylinders=${v.cylinders}`);
-              return {
+              
+              let vehicleData = {
                 make: v.make || '',
                 model: v.model || '',
                 year: v.year || 0,
@@ -137,10 +138,28 @@ export default {
                 engineSize: v.engineSize || '',
                 cylinders: v.cylinders || null,
                 description: v.description || `${v.year} ${v.make} ${v.model}`,
-                // The scraper already replaces v.images with Cloudflare URLs!
                 images: v.images || []
               };
-            });
+              
+              // If VIN exists and we're missing critical data, try to decode VIN
+              if (v.vin && v.vin.length === 17) {
+                const missingData = !vehicleData.fuelType || !vehicleData.engineSize || !vehicleData.cylinders;
+                if (missingData) {
+                  console.log(`Attempting to decode VIN for ${v.make} ${v.model} to fill missing data...`);
+                  try {
+                    const vinData = await this.decodeVINForMissingData(v.vin, vehicleData);
+                    if (vinData) {
+                      vehicleData = { ...vehicleData, ...vinData };
+                      console.log(`✅ VIN decoded, filled missing data`);
+                    }
+                  } catch (error) {
+                    console.log(`⚠️  VIN decode failed: ${error.message}`);
+                  }
+                }
+              }
+              
+              return vehicleData;
+            }));
           } else {
             console.log('Lambert scraper returned no vehicles or empty response');
             console.log('Scraper success:', scraperData.success);
@@ -689,5 +708,101 @@ export default {
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
+  },
+
+  async decodeVINForMissingData(vin, currentData) {
+    try {
+      // Call NHTSA VIN decoder API directly
+      const response = await fetch(
+        `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVin/${vin}?format=json`
+      );
+      
+      if (!response.ok) {
+        return null;
+      }
+      
+      const data = await response.json();
+      const results = data.Results;
+      
+      const getValue = (variableId) => {
+        const item = results.find(r => r.VariableId === variableId);
+        return item?.Value || null;
+      };
+      
+      const updates = {};
+      
+      // Only fill missing fields
+      if (!currentData.fuelType) {
+        const fuelType = getValue(24); // Fuel Type - Primary
+        if (fuelType && fuelType !== 'Not Applicable') {
+          updates.fuelType = this.normalizeFuelType(fuelType);
+        }
+      }
+      
+      if (!currentData.engineSize) {
+        const displacement = getValue(11); // Displacement (L)
+        if (displacement && displacement !== 'Not Applicable') {
+          const size = parseFloat(displacement);
+          if (!isNaN(size)) {
+            updates.engineSize = `${size}L`;
+          }
+        }
+      }
+      
+      if (!currentData.cylinders) {
+        const cylinders = getValue(9); // Engine Number of Cylinders
+        if (cylinders && cylinders !== 'Not Applicable') {
+          const num = parseInt(cylinders);
+          if (!isNaN(num)) {
+            updates.cylinders = num;
+          }
+        }
+      }
+      
+      if (!currentData.transmission) {
+        const trans = getValue(37); // Transmission Style
+        if (trans && trans !== 'Not Applicable') {
+          updates.transmission = this.normalizeTransmission(trans);
+        }
+      }
+      
+      if (!currentData.drivetrain) {
+        const drive = getValue(15); // Drive Type
+        if (drive && drive !== 'Not Applicable') {
+          updates.drivetrain = this.normalizeDrivetrain(drive);
+        }
+      }
+      
+      return Object.keys(updates).length > 0 ? updates : null;
+    } catch (error) {
+      console.error('VIN decode error:', error);
+      return null;
+    }
+  },
+
+  normalizeFuelType(fuel) {
+    const lower = fuel.toLowerCase();
+    if (lower.includes('gasoline') || lower.includes('gas')) return 'Gasoline';
+    if (lower.includes('diesel')) return 'Diesel';
+    if (lower.includes('electric')) return 'Electric';
+    if (lower.includes('hybrid')) return 'Hybrid';
+    return fuel;
+  },
+
+  normalizeTransmission(trans) {
+    const lower = trans.toLowerCase();
+    if (lower.includes('auto')) return 'Automatic';
+    if (lower.includes('manual')) return 'Manual';
+    if (lower.includes('cvt')) return 'CVT';
+    return trans;
+  },
+
+  normalizeDrivetrain(drive) {
+    const upper = drive.toUpperCase();
+    if (upper.includes('AWD') || upper.includes('ALL')) return 'AWD';
+    if (upper.includes('FWD') || upper.includes('FRONT')) return 'FWD';
+    if (upper.includes('RWD') || upper.includes('REAR')) return 'RWD';
+    if (upper.includes('4WD') || upper.includes('4X4')) return '4WD';
+    return drive;
   }
 };
