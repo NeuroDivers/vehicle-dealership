@@ -13,7 +13,12 @@ database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
 binding = "LAMBERT_SCRAPER"
 service = "lambert-scraper"
 
-# Service binding to generic dealer scraper (handles NaniAuto, SLT Autos, etc.)
+# Service binding to NaniAuto scraper
+[[services]]
+binding = "NANIAUTO_SCRAPER"
+service = "naniauto-scraper"
+
+# Service binding to generic dealer scraper (handles SLT Autos, etc.)
 [[services]]
 binding = "GENERIC_DEALER_SCRAPER"
 service = "generic-dealer-scraper"

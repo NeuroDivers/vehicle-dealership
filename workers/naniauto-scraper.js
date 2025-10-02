@@ -179,8 +179,8 @@ export default {
         vehicle.make = makeMatch[1].trim();
       }
       
-      // Extract model (supports both English "Model" and French "Modèle")
-      const modelMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Model|Modèle)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
+      // Extract model - Match the exact row structure
+      const modelMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Model|Modèle)<\/h4>[\s\S]*?<p[^>]*>([^<]+)<\/p>[\s\S]*?<\/div>/i);
       if (modelMatch) {
         vehicle.model = modelMatch[2].trim();
         console.log(`✅ Model found: ${vehicle.model}`);
@@ -195,7 +195,7 @@ export default {
       }
       
       // Extract kilometers/odometer (supports "Kilometres" and "Odomètre")
-      const kmMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Kilometres|Odomètre)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([0-9,\s]+)/i);
+      const kmMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Kilometres|Odomètre)<\/h4>[\s\S]*?<p[^>]*>([0-9,\s]+)[\s\S]*?<\/div>/i);
       if (kmMatch) {
         vehicle.odometer = parseInt(kmMatch[2].replace(/[,\sKM]/gi, ''));
         console.log(`✅ Odometer found: ${vehicle.odometer}`);
@@ -247,7 +247,7 @@ export default {
       }
       
       // Extract color (supports "Exterior Color" and "Couleur extérieure")
-      const colorMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Exterior Color|Couleur extérieure)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([^<]+)<\/p>/i);
+      const colorMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Exterior Color|Couleur extérieure)<\/h4>[\s\S]*?<p[^>]*>([^<]+)<\/p>[\s\S]*?<\/div>/i);
       if (colorMatch) {
         vehicle.color = this.normalizeColor(colorMatch[2].trim());
         console.log(`✅ Color found: ${colorMatch[2].trim()} -> ${vehicle.color}`);
@@ -257,7 +257,7 @@ export default {
       }
       
       // Extract VIN (supports "Vin" and "Numéro d'identification")
-      const vinMatch = html.match(/<h4[^>]*b-detail__main-aside-desc-title[^>]*>(Vin|Numéro d'identification)<\/h4>[\s\S]*?<p[^>]*b-detail__main-aside-desc-value[^>]*>([A-Z0-9]{17})<\/p>/i);
+      const vinMatch = html.match(/<div class="row">[\s\S]*?<h4[^>]*>(Vin|Numéro d'identification)<\/h4>[\s\S]*?<p[^>]*>([A-Z0-9]{17})<\/p>[\s\S]*?<\/div>/i);
       if (vinMatch) {
         vehicle.vin = vinMatch[2].trim();
         console.log(`✅ VIN found: ${vehicle.vin}`);
