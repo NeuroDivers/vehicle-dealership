@@ -29,11 +29,7 @@ export default {
         } else if (vendorId === 'naniauto') {
           return await this.syncNaniAuto(env, corsHeaders);
         } else if (vendorId === 'sltautos') {
-          return await this.syncGenericDealer(env, corsHeaders, {
-            dealerUrl: 'https://sltautos.com',
-            dealerId: 'sltautos',
-            dealerName: 'SLT Autos'
-          });
+          return await this.syncSLTAutos(env, corsHeaders);
         } else {
           return new Response(JSON.stringify({
             success: false,
@@ -740,6 +736,193 @@ export default {
       
     } catch (error) {
       console.error('NaniAuto sync error:', error);
+      return new Response(JSON.stringify({
+        success: false,
+        error: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  },
+
+  async syncSLTAutos(env, corsHeaders) {
+    const startTime = Date.now();
+    let vehicles = [];
+    
+    try {
+      console.log('Starting SLT Autos sync...');
+      
+      // Call SLT Autos scraper using service binding
+      try {
+        console.log('Calling SLT Autos scraper via service binding...');
+        
+        const scraperRequest = new Request('https://sltautos-scraper/api/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const scraperResponse = await env.SLTAUTOS_SCRAPER.fetch(scraperRequest);
+        console.log(`Scraper response status: ${scraperResponse.status}`);
+        
+        if (scraperResponse.ok) {
+          const scraperData = await scraperResponse.json();
+          console.log(`Got ${scraperData.vehicles?.length || 0} vehicles from SLT Autos scraper`);
+          
+          if (scraperData.success && scraperData.vehicles && scraperData.vehicles.length > 0) {
+            // Map vehicles from scraper with VIN decoder enrichment
+            vehicles = await Promise.all(scraperData.vehicles.map(async v => {
+              let vehicleData = {
+                make: v.make || '',
+                model: v.model || '',
+                year: v.year || 0,
+                price: v.price || 0,
+                vin: v.vin || `SLT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                stockNumber: v.stockNumber || v.stock || '',
+                bodyType: v.bodyType || '',
+                color: v.color || 'Unknown',
+                odometer: v.odometer || v.mileage || 0,
+                fuelType: v.fuelType || '',
+                transmission: v.transmission || '',
+                drivetrain: v.drivetrain || '',
+                engineSize: v.engineSize || '',
+                cylinders: v.cylinders || null,
+                description: v.description || `${v.year} ${v.make} ${v.model}`,
+                images: v.images || []
+              };
+              
+              // If VIN exists and we're missing critical data, try to decode VIN
+              if (v.vin && v.vin.length === 17) {
+                const missingData = !vehicleData.fuelType || !vehicleData.engineSize || !vehicleData.cylinders || !vehicleData.drivetrain;
+                if (missingData) {
+                  console.log(`Attempting to decode VIN for ${v.make} ${v.model} to fill missing data...`);
+                  try {
+                    const vinData = await this.decodeVINForMissingData(v.vin, vehicleData);
+                    if (vinData) {
+                      vehicleData = { ...vehicleData, ...vinData };
+                      console.log(`✅ VIN decoded, filled missing data`);
+                    }
+                  } catch (error) {
+                    console.log(`⚠️  VIN decode failed: ${error.message}`);
+                  }
+                }
+              }
+              
+              return vehicleData;
+            }));
+          }
+        }
+      } catch (error) {
+        console.log(`Could not fetch from SLT Autos scraper:`, error.message);
+        vehicles = [];
+      }
+      
+      // Save to database
+      const existingVehicles = await env.DB.prepare(
+        'SELECT vin, stockNumber FROM vehicles WHERE vendor_id = ?'
+      ).bind('sltautos').all();
+      
+      const existingVINs = new Set(existingVehicles.results.map(v => v.vin));
+      const existingStockNumbers = new Set(existingVehicles.results.map(v => v.stockNumber));
+      
+      let newCount = 0;
+      let updatedCount = 0;
+      
+      for (const vehicle of vehicles) {
+        try {
+          const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
+          
+          if (isExisting) {
+            // Update existing vehicle
+            console.log(`Updating ${vehicle.make} ${vehicle.model}: fuel=${vehicle.fuelType}, trans=${vehicle.transmission}, engine=${vehicle.engineSize}`);
+            await env.DB.prepare(`
+              UPDATE vehicles 
+              SET 
+                price = ?,
+                odometer = ?,
+                fuelType = COALESCE(NULLIF(?, ''), fuelType),
+                transmission = COALESCE(NULLIF(?, ''), transmission),
+                drivetrain = COALESCE(NULLIF(?, ''), drivetrain),
+                engineSize = COALESCE(NULLIF(?, ''), engineSize),
+                cylinders = COALESCE(?, cylinders),
+                last_seen_from_vendor = datetime('now'),
+                vendor_status = 'active',
+                updated_at = datetime('now')
+              WHERE (vin = ? OR stockNumber = ?) AND vendor_id = ?
+            `).bind(
+              vehicle.price,
+              vehicle.odometer,
+              vehicle.fuelType,
+              vehicle.transmission,
+              vehicle.drivetrain,
+              vehicle.engineSize,
+              vehicle.cylinders,
+              vehicle.vin,
+              vehicle.stockNumber,
+              'sltautos'
+            ).run();
+            
+            updatedCount++;
+          } else {
+            // Insert new vehicle
+            await env.DB.prepare(`
+              INSERT INTO vehicles (
+                make, model, year, price, odometer, bodyType, color,
+                fuelType, transmission, drivetrain, engineSize, cylinders,
+                vin, stockNumber, description, images, isSold,
+                vendor_id, vendor_name, vendor_stock_number,
+                last_seen_from_vendor, vendor_status, is_published
+              ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, 0,
+                ?, ?, ?,
+                datetime('now'), 'active', 1
+              )
+            `).bind(
+              vehicle.make,
+              vehicle.model,
+              vehicle.year,
+              vehicle.price,
+              vehicle.odometer || 0,
+              vehicle.bodyType || '',
+              vehicle.color || 'Unknown',
+              vehicle.fuelType || '',
+              vehicle.transmission || '',
+              vehicle.drivetrain || '',
+              vehicle.engineSize || '',
+              vehicle.cylinders || null,
+              vehicle.vin,
+              vehicle.stockNumber,
+              vehicle.description || '',
+              JSON.stringify(vehicle.images || []),
+              'sltautos',
+              'SLT Autos',
+              vehicle.stockNumber
+            ).run();
+            
+            newCount++;
+          }
+        } catch (error) {
+          console.error(`Error saving vehicle ${vehicle.vin}:`, error.message);
+        }
+      }
+      
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      
+      return new Response(JSON.stringify({
+        success: true,
+        vendor: 'sltautos',
+        newVehicles: newCount,
+        updatedVehicles: updatedCount,
+        totalVehicles: vehicles.length,
+        duration: `${duration}s`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+      
+    } catch (error) {
+      console.error('SLT Autos sync error:', error);
       return new Response(JSON.stringify({
         success: false,
         error: error.message

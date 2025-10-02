@@ -18,7 +18,12 @@ service = "lambert-scraper"
 binding = "NANIAUTO_SCRAPER"
 service = "naniauto-scraper"
 
-# Service binding to generic dealer scraper (handles SLT Autos, etc.)
+# Service binding to SLT Autos scraper
+[[services]]
+binding = "SLTAUTOS_SCRAPER"
+service = "sltautos-scraper"
+
+# Service binding to generic dealer scraper (fallback)
 [[services]]
 binding = "GENERIC_DEALER_SCRAPER"
 service = "generic-dealer-scraper"
