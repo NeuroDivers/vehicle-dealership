@@ -669,6 +669,10 @@ export default function EnhancedVehicleManager() {
                       firstImageUrl = img.id;
                     }
                   }
+                  // Use thumbnail variant for table view (150px)
+                  if (firstImageUrl && firstImageUrl.includes('imagedelivery.net')) {
+                    firstImageUrl = firstImageUrl.replace(/\/(public|thumbnail|w=300)$/, '/thumbnail');
+                  }
                   
                   return (
                     <tr key={vehicle.id} className={`hover:bg-gray-50 ${vehicle.isSold === 1 ? 'opacity-60' : ''}`}>
@@ -788,6 +792,10 @@ export default function EnhancedVehicleManager() {
               } else if (img && img.id) {
                 firstImageUrl = img.id;
               }
+            }
+            // Use w=300 variant for grid view (300px)
+            if (firstImageUrl && firstImageUrl.includes('imagedelivery.net')) {
+              firstImageUrl = firstImageUrl.replace(/\/(public|thumbnail|w=300)$/, '/w=300');
             }
             
             return (

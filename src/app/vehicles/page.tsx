@@ -414,9 +414,9 @@ export default function VehiclesPage() {
         imageUrl = img.url;
       }
       
-      // Use thumbnail variant for Cloudflare Images (300x300 optimized)
+      // Use w=300 variant for Cloudflare Images (300px width, better for cards)
       if (imageUrl && imageUrl.includes('imagedelivery.net')) {
-        imageUrl = imageUrl.replace('/public', '/thumbnail');
+        imageUrl = imageUrl.replace(/\/(public|thumbnail|w=300)$/, '/w=300');
       }
       
       return imageUrl;
