@@ -294,6 +294,17 @@ export async function handleStaff(request, env, method) {
           });
         }
         
+        // Protect super admin account from deletion
+        const PROTECTED_USER_ID = 'dev-1759282417863-eahhg7zr9';
+        if (deleteId === PROTECTED_USER_ID) {
+          return new Response(JSON.stringify({ 
+            error: 'This account is protected and cannot be deleted' 
+          }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
         await env.DB.prepare('DELETE FROM staff WHERE id = ?').bind(deleteId).run();
         
         // Log activity
