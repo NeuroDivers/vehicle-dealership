@@ -205,6 +205,23 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
       });
 
       if (response.ok) {
+        // Send email notification to staff (minimal info only)
+        try {
+          await fetch('https://email-notification-worker.nick-damato0011527.workers.dev/notify/financing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerName: formData.name,
+              vehicleName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+              vehicleId: vehicle.id,
+              applicationId: `app-${Date.now()}` // You can get actual ID from response if available
+            })
+          });
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+          // Don't fail the form submission if email fails
+        }
+        
         setSubmitStatus('success');
         setTimeout(() => {
           onClose();

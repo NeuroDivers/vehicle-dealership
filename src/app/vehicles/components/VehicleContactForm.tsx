@@ -72,6 +72,22 @@ export default function VehicleContactForm({ vehicle, isOpen, onClose }: Vehicle
       const result = await submitLead(leadData);
 
       if (result.success) {
+        // Send email notification to staff
+        try {
+          await fetch('https://email-notification-worker.nick-damato0011527.workers.dev/notify/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: formData.name,
+              email: formData.email,
+              subject: `${formData.inquiryType} inquiry about ${vehicle.year} ${vehicle.make} ${vehicle.model}`
+            })
+          });
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+          // Don't fail the form submission if email fails
+        }
+        
         setSubmitted(true);
         // Reset form after 3 seconds
         setTimeout(() => {

@@ -5,7 +5,7 @@ account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 
 [vars]
 ENVIRONMENT = "production"
-ADMIN_DASHBOARD_URL = "https://yourdomain.com"
+ADMIN_DASHBOARD_URL = "https://autopret123.ca"
 
 # To set secrets, run:
 # npx wrangler secret put ZOHO_EMAIL_USER --config workers/wrangler-email-notification.toml
