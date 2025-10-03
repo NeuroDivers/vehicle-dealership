@@ -152,14 +152,14 @@ export default async function handler(req, res) {
       port: 465,
       secure: true,
       auth: {
-        user: 'info@sltautos.com',
+        user: 'admin@neurodivers.ca',
         pass: process.env.ZOHO_EMAIL_PASSWORD
       }
     });
     
     await transporter.sendMail({
-      from: 'info@sltautos.com',
-      to: 'sales@sltautos.com',
+      from: 'admin@neurodivers.ca',
+      to: 'nick@neurodivers.ca',
       subject: `New Contact Form Submission from ${name}`,
       html: `
         <h2>New Contact Form Submission</h2>
@@ -180,7 +180,7 @@ export default async function handler(req, res) {
 
 Add to `.env.local`:
 ```
-ZOHO_EMAIL_USER=info@sltautos.com
+ZOHO_EMAIL_USER=admin@neurodivers.ca
 ZOHO_EMAIL_PASSWORD=your_password_here
 ZOHO_SMTP_HOST=smtp.zoho.com
 ZOHO_SMTP_PORT=465
@@ -233,12 +233,12 @@ Create professional email signatures:
 <div style="font-family: Arial, sans-serif;">
   <p><strong>Your Name</strong><br>
   Sales Manager<br>
-  SLT Autos</p>
+  Auto Prets 123</p>
   
   <p>
   📞 514-962-7070<br>
-  📧 sales@sltautos.com<br>
-  🌐 www.sltautos.com<br>
+  📧 info@autoprets123.ca<br>
+  🌐 www.autoprets123.ca<br>
   📍 10559 AV. DRAPEAU, MONTREAL, QC, H1H 3J4
   </p>
   
@@ -265,7 +265,7 @@ export default {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        fromAddress: 'info@sltautos.com',
+        fromAddress: 'admin@autoprets123.ca',
         toAddress: to,
         subject: subject,
         content: body,

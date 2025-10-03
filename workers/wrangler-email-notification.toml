@@ -1,0 +1,18 @@
+name = "email-notification-worker"
+main = "email-notification-worker.js"
+compatibility_date = "2023-12-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+[vars]
+ENVIRONMENT = "production"
+ADMIN_DASHBOARD_URL = "https://yourdomain.com"
+
+# To set secrets, run:
+# npx wrangler secret put ZOHO_EMAIL_USER --config workers/wrangler-email-notification.toml
+# npx wrangler secret put ZOHO_EMAIL_PASSWORD --config workers/wrangler-email-notification.toml
+# npx wrangler secret put STAFF_NOTIFICATION_EMAIL --config workers/wrangler-email-notification.toml
+
+# Example values:
+# ZOHO_EMAIL_USER=admin@neurodivers.ca
+# ZOHO_EMAIL_PASSWORD=your_zoho_password
+# STAFF_NOTIFICATION_EMAIL=nick@neurodivers.ca

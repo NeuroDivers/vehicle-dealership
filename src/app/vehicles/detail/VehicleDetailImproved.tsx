@@ -198,11 +198,12 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                   }`}
                 >
                   <Image
-                    src={img}
+                    src={img.replace(/\/(public|w=300|thumbnail)$/, '/thumbnail')}
                     alt={`Thumbnail ${index + 1}`}
                     fill
                     className="object-cover"
                     sizes="100px"
+                    loading="lazy"
                   />
                   {index === currentImageIndex && (
                     <div className="absolute inset-0 bg-blue-500/20" />
