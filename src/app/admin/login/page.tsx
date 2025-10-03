@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -144,19 +144,6 @@ export default function LoginPage() {
           >
             Forgot your password?
           </Link>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600 text-center">
-            Demo Credentials:
-          </p>
-          <p className="text-sm text-gray-800 text-center">
-            Email: admin@dealership.com
-          </p>
-          <p className="text-sm text-gray-800 text-center">
-            Password: admin123
-          </p>
         </div>
       </div>
     </div>
