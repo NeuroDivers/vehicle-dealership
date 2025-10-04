@@ -2,10 +2,19 @@
 const nextConfig = {
   output: 'export',
   images: {
-    unoptimized: true
+    unoptimized: true,
+    domains: ['sltautos.com', 'imagedelivery.net']
   },
   eslint: {
     ignoreDuringBuilds: true
+  },
+  // Optimize CSS loading
+  experimental: {
+    optimizeCss: true
+  },
+  // Compiler options for modern browsers
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production'
   }
 };
 

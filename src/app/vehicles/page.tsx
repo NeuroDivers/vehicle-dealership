@@ -537,7 +537,7 @@ export default function VehiclesPage() {
                     <p className="text-2xl font-bold text-green-600 mb-3">
                       ${vehicle.price.toLocaleString()}
                     </p>
-                    <span className="text-blue-600 text-sm font-medium hover:text-blue-800">
+                    <span className="text-blue-700 text-sm font-semibold hover:text-blue-900">
                       View Details →
                     </span>
                   </div>

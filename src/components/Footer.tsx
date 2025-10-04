@@ -71,7 +71,7 @@ export default function Footer() {
                currentLang === 'es' ? 'Horario de atención' : 
                'Business Hours'}
             </h3>
-            <div className="space-y-1 text-sm text-gray-300">
+            <div className="space-y-1 text-sm text-gray-200">
               {Object.entries(settings.businessHours).map(([day, hours]) => (
                 <div key={day} className="flex justify-between">
                   <span className="capitalize">{day}:</span>
@@ -133,7 +133,7 @@ export default function Footer() {
                   className={`px-3 py-1 rounded text-sm transition ${
                     currentLang === lang 
                       ? 'text-white' 
-                      : 'bg-gray-800 text-gray-400 hover:text-white'
+                      : 'bg-gray-800 text-gray-200 hover:text-white'
                   }`}
                   style={currentLang === lang ? { backgroundColor: themeColors.primary } : {}}
                 >
