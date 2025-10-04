@@ -41,6 +41,15 @@ export default function StaffManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  
+  // Protected dev user ID
+  const PROTECTED_USER_ID = 'dev-1759282417863-eahhg7zr9';
+  
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setCurrentUserId(user.id || '');
+  }, []);
   
   // Form data
   const [formData, setFormData] = useState({
@@ -477,31 +486,43 @@ export default function StaffManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedStaff(member);
-                          setFormData({
-                            name: member.name,
-                            email: member.email,
-                            phone: member.phone || '',
-                            role: member.role,
-                            password: '',
-                            confirmPassword: ''
-                          });
-                          setShowEditModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="Edit staff"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteStaff(member.id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Delete staff"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {/* Edit button - only allow if not protected user OR if current user is the protected user */}
+                      {(member.id !== PROTECTED_USER_ID || currentUserId === PROTECTED_USER_ID) && (
+                        <button
+                          onClick={() => {
+                            setSelectedStaff(member);
+                            setFormData({
+                              name: member.name,
+                              email: member.email,
+                              phone: member.phone || '',
+                              role: member.role,
+                              password: '',
+                              confirmPassword: ''
+                            });
+                            setShowEditModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit staff"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                      )}
+                      
+                      {/* Delete button - hide for protected user */}
+                      {member.id !== PROTECTED_USER_ID ? (
+                        <button
+                          onClick={() => handleDeleteStaff(member.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete staff"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                          <Shield className="h-3 w-3" />
+                          <span>Protected</span>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

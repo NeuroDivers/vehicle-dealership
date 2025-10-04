@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { useEffect, useState } from 'react';
-import { Phone, Zap, Globe } from 'lucide-react';
+import { Phone, Zap, Globe, LayoutDashboard } from 'lucide-react';
 
 export default function Navigation() {
   const { settings, getThemeColors } = useSiteSettings();
   const [mounted, setMounted] = useState(false);
   const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('en');
   const [showLangDropdown, setShowLangDropdown] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const themeColors = getThemeColors();
 
   useEffect(() => {
@@ -18,6 +19,10 @@ export default function Navigation() {
     if (storedLang) {
       setCurrentLang(storedLang);
     }
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('auth_token');
+    setIsLoggedIn(!!token);
   }, []);
 
   const changeLang = (lang: 'en' | 'fr' | 'es') => {
@@ -117,6 +122,17 @@ export default function Navigation() {
                 </div>
               )}
             </div>
+            
+            {/* Dashboard Link (Only for logged-in users) */}
+            {isLoggedIn && (
+              <Link
+                href="/admin"
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold transition hover:from-green-700 hover:to-emerald-700 shadow-md hover:shadow-lg"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                <span>Dashboard</span>
+              </Link>
+            )}
             
             {/* CTA Button */}
             <a
