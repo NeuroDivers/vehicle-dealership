@@ -577,7 +577,7 @@ export default {
         
         await env.DB.prepare(`
           UPDATE vehicles 
-          SET ${updateFields.join(', ')}, updated_at = datetime('now')
+          SET ${updateFields.join(', ')}, updatedAt = datetime('now')
           WHERE id = ?
         `).bind(...values).run();
         

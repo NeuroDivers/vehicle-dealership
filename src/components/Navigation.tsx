@@ -40,7 +40,7 @@ export default function Navigation() {
     window.addEventListener('focus', handleFocus);
     
     // Check periodically in case of navigation from admin
-    const interval = setInterval(checkLoginStatus, 1000);
+    const interval = setInterval(checkLoginStatus, 500);
     
     return () => {
       window.removeEventListener('storage', checkLoginStatus);
