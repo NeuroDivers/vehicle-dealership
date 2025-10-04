@@ -14,7 +14,7 @@ const translations = {
   en: {
     title: "We Can Find Your Dream Vehicle!",
     subtitle: "No results found in our current inventory, but don't worry!",
-    message: "Through our vast network of partnerships and direct access to auctions, we can locate the exact vehicle you're looking for.",
+    description: "Through our vast network of partnerships and direct access to auctions, we can locate the exact vehicle you're looking for.",
     benefits: [
       "Access to thousands of vehicles through our dealer network",
       "Direct auction access for competitive pricing",
@@ -32,8 +32,8 @@ const translations = {
     vehiclePlaceholder: "e.g., 2020 Honda Civic, Silver, under 50k km",
     budget: "Budget (Optional)",
     budgetPlaceholder: "e.g., $15,000 - $20,000",
-    message: "Additional Details",
-    messagePlaceholder: "Any specific features or requirements...",
+    additionalDetails: "Additional Details",
+    additionalDetailsPlaceholder: "Any specific features or requirements...",
     submit: "Submit Request",
     submitting: "Sending...",
     cancel: "Cancel",
@@ -44,7 +44,7 @@ const translations = {
   fr: {
     title: "Nous Pouvons Trouver Votre Véhicule de Rêve!",
     subtitle: "Aucun résultat dans notre inventaire actuel, mais ne vous inquiétez pas!",
-    message: "Grâce à notre vaste réseau de partenaires et notre accès direct aux enchères, nous pouvons localiser le véhicule exact que vous recherchez.",
+    description: "Grâce à notre vaste réseau de partenaires et notre accès direct aux enchères, nous pouvons localiser le véhicule exact que vous recherchez.",
     benefits: [
       "Accès à des milliers de véhicules via notre réseau de concessionnaires",
       "Accès direct aux enchères pour des prix compétitifs",
@@ -62,8 +62,8 @@ const translations = {
     vehiclePlaceholder: "ex: Honda Civic 2020, Argent, moins de 50k km",
     budget: "Budget (Optionnel)",
     budgetPlaceholder: "ex: 15 000$ - 20 000$",
-    message: "Détails Supplémentaires",
-    messagePlaceholder: "Caractéristiques ou exigences spécifiques...",
+    additionalDetails: "Détails Supplémentaires",
+    additionalDetailsPlaceholder: "Caractéristiques ou exigences spécifiques...",
     submit: "Soumettre la Demande",
     submitting: "Envoi en cours...",
     cancel: "Annuler",
@@ -74,7 +74,7 @@ const translations = {
   es: {
     title: "¡Podemos Encontrar Su Vehículo Soñado!",
     subtitle: "No se encontraron resultados en nuestro inventario actual, ¡pero no se preocupe!",
-    message: "A través de nuestra amplia red de asociaciones y acceso directo a subastas, podemos localizar el vehículo exacto que está buscando.",
+    description: "A través de nuestra amplia red de asociaciones y acceso directo a subastas, podemos localizar el vehículo exacto que está buscando.",
     benefits: [
       "Acceso a miles de vehículos a través de nuestra red de concesionarios",
       "Acceso directo a subastas para precios competitivos",
@@ -92,8 +92,8 @@ const translations = {
     vehiclePlaceholder: "ej: Honda Civic 2020, Plateado, menos de 50k km",
     budget: "Presupuesto (Opcional)",
     budgetPlaceholder: "ej: $15,000 - $20,000",
-    message: "Detalles Adicionales",
-    messagePlaceholder: "Características o requisitos específicos...",
+    additionalDetails: "Detalles Adicionales",
+    additionalDetailsPlaceholder: "Características o requisitos específicos...",
     submit: "Enviar Solicitud",
     submitting: "Enviando...",
     cancel: "Cancelar",
@@ -220,8 +220,8 @@ export default function VehicleRequestModal({ isOpen, onClose, searchQuery, lang
                 </div>
               )}
 
-              {/* Message */}
-              <p className="text-gray-700 mb-4">{t.message}</p>
+              {/* Description */}
+              <p className="text-gray-700 mb-4">{t.description}</p>
 
               {/* Benefits */}
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -313,17 +313,17 @@ export default function VehicleRequestModal({ isOpen, onClose, searchQuery, lang
                   />
                 </div>
 
-                {/* Message */}
+                {/* Additional Details */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.message}
+                    {t.additionalDetails}
                   </label>
                   <textarea
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     rows={3}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder={t.messagePlaceholder}
+                    placeholder={t.additionalDetailsPlaceholder}
                   />
                 </div>
 
