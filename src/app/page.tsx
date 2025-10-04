@@ -182,23 +182,21 @@ export default function Home() {
   const handleSearch = async () => {
     const query = searchQuery.trim();
     
-    // Track search query
     if (query) {
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/analytics/track-search`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: query,
-            source: 'homepage',
-            url: window.location.href,
-            user_agent: navigator.userAgent
-          })
-        });
-      } catch (error) {
+      // Track search query (don't wait for it)
+      fetch(`${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/analytics/track-search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: query,
+          source: 'homepage',
+          url: window.location.href,
+          user_agent: navigator.userAgent,
+          result_count: 0
+        })
+      }).catch(error => {
         console.error('Failed to track search:', error);
-        // Don't block the search if tracking fails
-      }
+      });
       
       router.push(`/vehicles?search=${encodeURIComponent(query)}`);
     } else {

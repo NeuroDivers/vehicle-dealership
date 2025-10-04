@@ -59,7 +59,29 @@ export default function Navigation() {
   };
 
   if (!mounted) {
-    return null; // Prevent hydration mismatch
+    return (
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center space-x-3">
+              {settings.logo && (
+                <img 
+                  src={settings.logo} 
+                  alt={settings.siteName} 
+                  className="h-10 w-auto object-contain"
+                />
+              )}
+              <span 
+                className="text-xl font-bold"
+                style={{ color: themeColors.primary }}
+              >
+                {settings.siteName}
+              </span>
+            </Link>
+          </div>
+        </div>
+      </nav>
+    );
   }
 
   return (

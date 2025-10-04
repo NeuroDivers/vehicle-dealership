@@ -24,6 +24,7 @@ interface Vehicle {
   stockNumber?: string;
   description?: string;
   isSold?: number;
+  sold_date?: string;
   images?: string;
   vendor_id?: string;
   vendor_name?: string;
@@ -75,8 +76,24 @@ export default function VehiclesPage() {
     fetch(getVehicleEndpoint())
       .then(res => res.json())
       .then(data => {
-        // Only show available vehicles (not sold)
-        const availableVehicles = data.filter((v: Vehicle) => v.isSold !== 1);
+        // Show vehicles that are:
+        // 1. Not sold, OR
+        // 2. Sold within the last 14 days
+        const now = new Date();
+        const fourteenDaysAgo = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
+        
+        const availableVehicles = data.filter((v: Vehicle) => {
+          if (v.isSold !== 1) return true; // Not sold
+          
+          // If sold, check if within 14 days
+          if (v.sold_date) {
+            const soldDate = new Date(v.sold_date);
+            return soldDate >= fourteenDaysAgo;
+          }
+          
+          return false; // Sold but no date, don't show
+        });
+        
         setVehicles(availableVehicles);
         setLoading(false);
       })
@@ -102,8 +119,8 @@ export default function VehiclesPage() {
       // Body type filter
       if (filters.bodyType && vehicle.bodyType !== filters.bodyType) return false;
 
-      // Fuel type filter
-      if (filters.fuelType && vehicle.fuelType !== filters.fuelType) return false;
+      // Fuel type filter (case-insensitive)
+      if (filters.fuelType && vehicle.fuelType?.toLowerCase() !== filters.fuelType.toLowerCase()) return false;
 
       // Price filters
       if (filters.minPrice && vehicle.price < parseInt(filters.minPrice)) return false;
@@ -474,16 +491,17 @@ export default function VehiclesPage() {
                         +{images.length - 1} photos
                       </div>
                     )}
-                    {/* Vendor Badge - Hidden from public view */}
-                    {/* Status Badges */}
-                    {vehicle.vendor_status === 'unlisted' && (
-                      <div className="absolute top-2 right-2 bg-yellow-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded z-10">
-                        Unlisted
+                    {/* SOLD Banner */}
+                    {vehicle.isSold === 1 && (
+                      <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-2 font-bold text-lg z-20 shadow-lg">
+                        SOLD
                       </div>
                     )}
-                    {vehicle.isSold === 1 && (
-                      <div className="absolute top-2 right-2 bg-red-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded z-10">
-                        Sold
+                    {/* Vendor Badge - Hidden from public view */}
+                    {/* Status Badges */}
+                    {vehicle.vendor_status === 'unlisted' && !vehicle.isSold && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded z-10">
+                        Unlisted
                       </div>
                     )}
                   </div>
