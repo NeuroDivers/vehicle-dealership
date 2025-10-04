@@ -286,17 +286,44 @@ export default {
   },
 
   async sendEmail(from, to, subject, htmlBody, env) {
-    // Using Zoho SMTP via fetch (simulated - you'll need actual SMTP library)
-    // For production, use a service like SendGrid, Mailgun, or Zoho API
-    
-    console.log('Sending email:', { from, to, subject });
-    
-    // TODO: Implement actual email sending
-    // Option 1: Use Mailchannels (free for Cloudflare Workers)
-    // Option 2: Use SendGrid API
-    // Option 3: Use Zoho Mail API
-    
-    // For now, just log it
-    return true;
+    // Using MailChannels API (free for Cloudflare Workers)
+    try {
+      const response = await fetch('https://api.mailchannels.net/tx/v1/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          personalizations: [
+            {
+              to: [{ email: to }]
+            }
+          ],
+          from: {
+            email: from,
+            name: 'Auto Prets 123'
+          },
+          subject: subject,
+          content: [
+            {
+              type: 'text/html',
+              value: htmlBody
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('MailChannels error:', errorText);
+        throw new Error(`MailChannels API error: ${response.status}`);
+      }
+
+      console.log('Email sent successfully via MailChannels');
+      return true;
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      throw error;
+    }
   }
 };
