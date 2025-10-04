@@ -74,6 +74,16 @@ export default {
         }
       }
 
+      // POST /api/auth/logout - Logout (client-side only, just return success)
+      if (url.pathname === '/api/auth/logout' && request.method === 'POST') {
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'Logged out successfully'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       // GET /api/auth/verify - Verify auth token
       if (url.pathname === '/api/auth/verify' && request.method === 'GET') {
         const authHeader = request.headers.get('Authorization');
