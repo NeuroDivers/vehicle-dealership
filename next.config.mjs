@@ -8,10 +8,6 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true
   },
-  // Optimize CSS loading
-  experimental: {
-    optimizeCss: true
-  },
   // Compiler options for modern browsers
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production'
