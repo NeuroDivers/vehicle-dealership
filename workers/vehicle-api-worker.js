@@ -359,6 +359,65 @@ export default {
         });
       }
 
+      // GET /api/analytics/popular-searches - Get popular search queries
+      if (url.pathname === '/api/analytics/popular-searches' && request.method === 'GET') {
+        try {
+          const days = parseInt(url.searchParams.get('days') || '30');
+          
+          const { results } = await env.DB.prepare(`
+            SELECT query, COUNT(*) as count
+            FROM search_queries
+            WHERE created_at >= datetime('now', '-${days} days')
+            AND query != ''
+            GROUP BY LOWER(query)
+            ORDER BY count DESC
+            LIMIT 20
+          `).all();
+          
+          return new Response(JSON.stringify({ searches: results }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('Error fetching popular searches:', error);
+          return new Response(JSON.stringify({ searches: [] }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // POST /api/analytics/track-search - Track search query
+      if (url.pathname === '/api/analytics/track-search' && request.method === 'POST') {
+        try {
+          const searchData = await request.json();
+          
+          // Generate unique ID
+          const searchId = `search_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Insert into search_queries table
+          await env.DB.prepare(`
+            INSERT INTO search_queries (
+              id, query, result_count, url, user_agent, created_at
+            ) VALUES (?, ?, ?, ?, ?, datetime('now'))
+          `).bind(
+            searchId,
+            searchData.query || '',
+            searchData.result_count || 0,
+            searchData.url || '',
+            searchData.user_agent || ''
+          ).run();
+          
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('Error tracking search:', error);
+          // Return success anyway - analytics tracking shouldn't break the site
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
       // POST /api/analytics/vehicle-views - Track vehicle view
       if (url.pathname === '/api/analytics/vehicle-views' && request.method === 'POST') {
         try {
