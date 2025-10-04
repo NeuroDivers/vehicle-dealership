@@ -35,9 +35,18 @@ export default function Navigation() {
     const handleLoginEvent = () => checkLoginStatus();
     window.addEventListener('userLoggedIn', handleLoginEvent);
     
+    // Check login status on focus (when user returns to tab or navigates)
+    const handleFocus = () => checkLoginStatus();
+    window.addEventListener('focus', handleFocus);
+    
+    // Check periodically in case of navigation from admin
+    const interval = setInterval(checkLoginStatus, 1000);
+    
     return () => {
       window.removeEventListener('storage', checkLoginStatus);
       window.removeEventListener('userLoggedIn', handleLoginEvent);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
     };
   }, []);
 

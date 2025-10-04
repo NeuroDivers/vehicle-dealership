@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -72,7 +72,6 @@ export default function AdminLayout({
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold">Admin Panel</h1>
               <div className="hidden md:flex space-x-4">
                 <Link
                   href="/admin"
@@ -147,13 +146,6 @@ export default function AdminLayout({
                   <span className="text-gray-400">({user.role})</span>
                 </div>
               )}
-              <Link
-                href="/"
-                className="hidden md:flex items-center space-x-2 hover:bg-gray-700 px-3 py-2 rounded"
-              >
-                <Home className="h-4 w-4" />
-                <span>View Site</span>
-              </Link>
               <button
                 onClick={handleLogout}
                 className="hidden md:flex items-center space-x-2 hover:bg-gray-700 px-3 py-2 rounded"
@@ -234,13 +226,6 @@ export default function AdminLayout({
                 onClick={() => setShowMobileMenu(false)}
               >
                 Reports
-              </Link>
-              <Link
-                href="/"
-                className="block px-3 py-2 rounded hover:bg-gray-700"
-                onClick={() => setShowMobileMenu(false)}
-              >
-                View Site
               </Link>
               <button
                 onClick={handleLogout}
