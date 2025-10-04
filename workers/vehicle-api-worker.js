@@ -255,11 +255,12 @@ export default {
           WHERE viewed_at >= datetime('now', '-${daysAgo} days')
         `).first());
         
-        // Get search stats
+        // Get search stats from search_queries table
         const searchStats = await safeQuery(env.DB.prepare(`
-          SELECT COUNT(*) as totalSearches, COUNT(DISTINCT query) as uniqueQueries, AVG(result_count) as avgResults
-          FROM search_analytics
-          WHERE searched_at >= datetime('now', '-${daysAgo} days')
+          SELECT COUNT(*) as totalSearches, COUNT(DISTINCT LOWER(query)) as uniqueQueries, AVG(result_count) as avgResults
+          FROM search_queries
+          WHERE created_at >= datetime('now', '-${daysAgo} days')
+          AND query != ''
         `).first());
         
         // Get lead stats
@@ -286,12 +287,13 @@ export default {
           LIMIT 10
         `).all());
         
-        // Get popular searches
+        // Get popular searches from search_queries table
         const popularSearchesResult = await safeQuery(env.DB.prepare(`
           SELECT query, COUNT(*) as count, AVG(result_count) as avgResults
-          FROM search_analytics
-          WHERE searched_at >= datetime('now', '-${daysAgo} days')
-          GROUP BY query
+          FROM search_queries
+          WHERE created_at >= datetime('now', '-${daysAgo} days')
+          AND query != ''
+          GROUP BY LOWER(query)
           ORDER BY count DESC
           LIMIT 10
         `).all());
