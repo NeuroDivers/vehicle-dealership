@@ -1,0 +1,6 @@
+# Target modern browsers only (reduces polyfills by ~11KB)
+> 0.5%
+last 2 versions
+not dead
+not IE 11
+not op_mini all
