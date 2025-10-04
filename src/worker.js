@@ -398,8 +398,8 @@ export default {
           // Insert into search_queries table
           await env.DB.prepare(`
             INSERT INTO search_queries (
-              id, query, result_count, url, user_agent, created_at
-            ) VALUES (?, ?, ?, ?, ?, datetime('now'))
+              id, query, result_count, timestamp, url, user_agent, created_at
+            ) VALUES (?, ?, ?, datetime('now'), ?, ?, datetime('now'))
           `).bind(
             searchId,
             searchData.query || '',
@@ -413,8 +413,13 @@ export default {
           });
         } catch (error) {
           console.error('Error tracking search:', error);
-          // Return success anyway - analytics tracking shouldn't break the site
-          return new Response(JSON.stringify({ success: true }), {
+          // Return error details for debugging
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: error.message,
+            details: error.toString()
+          }), {
+            status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
