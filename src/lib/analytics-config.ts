@@ -21,7 +21,7 @@ export function getAnalyticsApiUrl(endpoint: string): string {
  */
 export const ANALYTICS_ENDPOINTS = {
   VEHICLE_VIEWS: '/api/analytics/vehicle-views',
-  SEARCH_QUERIES: '/api/analytics/search-queries',
+  SEARCH_QUERIES: '/api/analytics/track-search',
   LEADS: '/api/leads',
 };
 
