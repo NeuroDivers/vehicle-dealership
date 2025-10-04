@@ -15,7 +15,8 @@ import {
   User,
   MessageSquare,
   BarChart3,
-  FileText
+  FileText,
+  Image
 } from 'lucide-react';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -135,6 +136,15 @@ export default function AdminLayout({
                   <FileText className="h-4 w-4" />
                   <span>Reports</span>
                 </Link>
+                <Link
+                  href="/admin/cloudflare-images"
+                  className={`px-3 py-2 rounded flex items-center space-x-1 ${
+                    pathname === '/admin/cloudflare-images' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <Image className="h-4 w-4" />
+                  <span>CF Images</span>
+                </Link>
               </div>
             </div>
             
@@ -226,6 +236,13 @@ export default function AdminLayout({
                 onClick={() => setShowMobileMenu(false)}
               >
                 Reports
+              </Link>
+              <Link
+                href="/admin/cloudflare-images"
+                className="block px-3 py-2 rounded hover:bg-gray-700"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                CF Images
               </Link>
               <button
                 onClick={handleLogout}
