@@ -66,7 +66,7 @@ export default function Footer() {
 
           {/* Business Hours */}
           <div>
-            <h3 className="text-lg font-semibold mb-4" style={{ color: themeColors.accent }}>
+            <h3 className="text-xl font-bold">
               {currentLang === 'fr' ? 'Heures d\'ouverture' : 
                currentLang === 'es' ? 'Horario de atención' : 
                'Business Hours'}
@@ -83,7 +83,7 @@ export default function Footer() {
 
           {/* Social Media & Language */}
           <div>
-            <h3 className="text-lg font-semibold mb-4" style={{ color: themeColors.accent }}>
+            <h3 className="text-xl font-bold">
               {currentLang === 'fr' ? 'Suivez-nous' : 
                currentLang === 'es' ? 'Síguenos' : 
                'Follow Us'}
