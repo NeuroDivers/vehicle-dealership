@@ -388,8 +388,8 @@ export default {
           'Authorization': `Bearer ${env.RESEND_API_KEY}`
         },
         body: JSON.stringify({
-          from: 'Auto Prets 123 <onboarding@resend.dev>',
-          reply_to: from,
+          from: 'Auto Prets 123 <noreply@autoprets123.ca>',
+          reply_to: 'admin@neurodivers.ca',
           to: [to],
           subject: subject,
           html: htmlBody
