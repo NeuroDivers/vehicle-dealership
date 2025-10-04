@@ -7,6 +7,7 @@ account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 ENVIRONMENT = "production"
 CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
 CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
+CF_IMAGES_TOKEN = "hxqfnYpHcT8FrQYyiRiOiOmkPtGkTuhdf6aCfYVT"
 
-# Secrets (already configured in existing worker):
-# - CLOUDFLARE_IMAGES_TOKEN
+# Note: CF_IMAGES_TOKEN is the Cloudflare Images API token
+# This enables automatic image upload to Cloudflare Images
