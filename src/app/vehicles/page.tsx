@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Filter, X, Car } from 'lucide-react';
 import { trackSearchQuery } from '@/lib/analytics-config';
+import VehicleRequestModal from '@/components/VehicleRequestModal';
 
 interface Vehicle {
   id: string;
@@ -45,6 +46,8 @@ export default function VehiclesPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [language, setLanguage] = useState<'en' | 'fr' | 'es'>('en');
 
   // Check URL params for fuel type filter and search term
   useEffect(() => {
@@ -59,6 +62,12 @@ export default function VehiclesPage() {
     
     if (searchParam) {
       setSearchTerm(searchParam);
+    }
+
+    // Get language from localStorage
+    const storedLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
+    if (storedLang) {
+      setLanguage(storedLang);
     }
   }, []);
 
@@ -390,13 +399,23 @@ export default function VehiclesPage() {
         {/* Vehicle Grid */}
         {filteredVehicles.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-600 mb-4">No vehicles found matching your criteria</p>
-            <button
-              onClick={clearFilters}
-              className="text-blue-600 hover:text-blue-800"
-            >
-              Clear filters and try again
-            </button>
+            <Car className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No vehicles found matching your criteria</h3>
+            <p className="text-gray-600 mb-6">But we can help you find it!</p>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => setShowRequestModal(true)}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition"
+              >
+                Request This Vehicle
+              </button>
+              <button
+                onClick={clearFilters}
+                className="px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition"
+              >
+                Clear Filters
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -509,6 +528,14 @@ export default function VehiclesPage() {
           </div>
         )}
       </div>
+
+      {/* Vehicle Request Modal */}
+      <VehicleRequestModal
+        isOpen={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
+        searchQuery={searchTerm}
+        language={language}
+      />
     </main>
   );
 }
