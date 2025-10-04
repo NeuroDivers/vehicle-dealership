@@ -205,16 +205,18 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
       });
 
       if (response.ok) {
-        // Send email notification to staff (minimal info only)
+        // Send email notification to staff (minimal info only) + customer confirmation
         try {
           await fetch('https://email-notification-worker.nick-damato0011527.workers.dev/notify/financing', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               customerName: formData.name,
+              customerEmail: formData.email,
               vehicleName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
               vehicleId: vehicle.id,
-              applicationId: `app-${Date.now()}` // You can get actual ID from response if available
+              applicationId: `app-${Date.now()}`,
+              language: language || 'en' // Pass the current language
             })
           });
         } catch (emailError) {

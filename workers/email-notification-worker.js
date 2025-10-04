@@ -45,7 +45,7 @@ export default {
 
   async notifyFinancingApplication(request, env, corsHeaders) {
     try {
-      const { customerName, vehicleName, vehicleId, applicationId } = await request.json();
+      const { customerName, vehicleName, vehicleId, applicationId, customerEmail, language = 'en' } = await request.json();
 
       const emailBody = this.buildFinancingNotificationEmail(
         customerName,
@@ -55,6 +55,7 @@ export default {
         env.ADMIN_DASHBOARD_URL || 'https://yourdomain.com'
       );
 
+      // Send notification to staff
       await this.sendEmail(
         env.ZOHO_EMAIL_USER,
         env.STAFF_NOTIFICATION_EMAIL || env.ZOHO_EMAIL_USER,
@@ -62,6 +63,29 @@ export default {
         emailBody,
         env
       );
+
+      // Send confirmation to customer
+      if (customerEmail) {
+        const customerEmailBody = this.buildCustomerConfirmationEmail(
+          customerName,
+          vehicleName,
+          language
+        );
+        
+        const translations = {
+          en: `Thank you for your financing application`,
+          fr: `Merci pour votre demande de financement`,
+          es: `Gracias por su solicitud de financiamiento`
+        };
+        
+        await this.sendEmail(
+          env.ZOHO_EMAIL_USER,
+          customerEmail,
+          translations[language] || translations.en,
+          customerEmailBody,
+          env
+        );
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -236,6 +260,75 @@ export default {
     }
   },
 
+  buildCustomerConfirmationEmail(customerName, vehicleName, language) {
+    const translations = {
+      en: {
+        title: 'Application Received',
+        greeting: `Dear ${customerName},`,
+        message: `Thank you for your financing application for the ${vehicleName}.`,
+        received: 'We have received your application and our team will review it shortly.',
+        contact: 'A member of our team will contact you within 24-48 hours to discuss your financing options.',
+        questions: 'If you have any questions in the meantime, please don\'t hesitate to contact us.',
+        thanks: 'Thank you for choosing Auto Prets 123!',
+        team: 'The Auto Prets 123 Team'
+      },
+      fr: {
+        title: 'Demande reçue',
+        greeting: `Cher/Chère ${customerName},`,
+        message: `Merci pour votre demande de financement pour le ${vehicleName}.`,
+        received: 'Nous avons bien reçu votre demande et notre équipe l\'examinera sous peu.',
+        contact: 'Un membre de notre équipe vous contactera dans les 24 à 48 heures pour discuter de vos options de financement.',
+        questions: 'Si vous avez des questions entre-temps, n\'hésitez pas à nous contacter.',
+        thanks: 'Merci d\'avoir choisi Auto Prets 123!',
+        team: 'L\'équipe Auto Prets 123'
+      },
+      es: {
+        title: 'Solicitud recibida',
+        greeting: `Estimado/a ${customerName},`,
+        message: `Gracias por su solicitud de financiamiento para el ${vehicleName}.`,
+        received: 'Hemos recibido su solicitud y nuestro equipo la revisará pronto.',
+        contact: 'Un miembro de nuestro equipo se pondrá en contacto con usted dentro de 24-48 horas para discutir sus opciones de financiamiento.',
+        questions: 'Si tiene alguna pregunta mientras tanto, no dude en contactarnos.',
+        thanks: '¡Gracias por elegir Auto Prets 123!',
+        team: 'El equipo de Auto Prets 123'
+      }
+    };
+
+    const t = translations[language] || translations.en;
+
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">${t.title}</h2>
+        
+        <p>${t.greeting}</p>
+        
+        <p>${t.message}</p>
+        
+        <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0;"><strong>✅ ${t.received}</strong></p>
+        </div>
+        
+        <p>${t.contact}</p>
+        
+        <p>${t.questions}</p>
+        
+        <p style="margin-top: 30px;">${t.thanks}</p>
+        
+        <p style="color: #6b7280;">
+          ${t.team}<br>
+          📞 514-962-7070<br>
+          📧 info@autoprets123.ca<br>
+          🌐 www.autoprets123.ca
+        </p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+        <p style="color: #6b7280; font-size: 12px;">
+          This is an automated confirmation email.
+        </p>
+      </div>
+    `;
+  },
+
   buildFinancingNotificationEmail(customerName, vehicleName, vehicleId, applicationId, dashboardUrl) {
     const now = new Date();
     const formattedDate = now.toLocaleDateString('en-US', {
@@ -263,14 +356,14 @@ export default {
         </p>
         
         <p>
-          <a href="${dashboardUrl}/admin/financing-applications/${applicationId}" 
+          <a href="${dashboardUrl}/admin/leads" 
              style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-            View Full Application Details
+            View All Applications in Dashboard
           </a>
         </p>
         
         <p style="margin-top: 20px;">
-          <a href="${dashboardUrl}/admin/vehicles/${vehicleId}" 
+          <a href="${dashboardUrl}/vehicles/detail?id=${vehicleId}" 
              style="color: #2563eb; text-decoration: none;">
             View Vehicle Details →
           </a>
@@ -286,40 +379,31 @@ export default {
   },
 
   async sendEmail(from, to, subject, htmlBody, env) {
-    // Using MailChannels API (free for Cloudflare Workers)
+    // Using Resend API (free tier: 3,000 emails/month)
     try {
-      const response = await fetch('https://api.mailchannels.net/tx/v1/send', {
+      const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`
         },
         body: JSON.stringify({
-          personalizations: [
-            {
-              to: [{ email: to }]
-            }
-          ],
-          from: {
-            email: from,
-            name: 'Auto Prets 123'
-          },
+          from: 'Auto Prets 123 <onboarding@resend.dev>',
+          reply_to: from,
+          to: [to],
           subject: subject,
-          content: [
-            {
-              type: 'text/html',
-              value: htmlBody
-            }
-          ]
+          html: htmlBody
         })
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('MailChannels error:', errorText);
-        throw new Error(`MailChannels API error: ${response.status}`);
+        const errorData = await response.json();
+        console.error('Resend error:', errorData);
+        throw new Error(`Resend API error: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
-      console.log('Email sent successfully via MailChannels');
+      const result = await response.json();
+      console.log('Email sent successfully via Resend:', result.id);
       return true;
     } catch (error) {
       console.error('Failed to send email:', error);
