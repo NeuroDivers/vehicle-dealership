@@ -606,15 +606,20 @@ export default {
         const vehicleId = url.pathname.split('/')[3];
         
         try {
-          // Get vehicle data first to find VIN/stockNumber for image deletion
+          // Get vehicle data first to get actual image URLs
           const vehicle = await env.DB.prepare(`
-            SELECT vin, stockNumber, images FROM vehicles WHERE id = ?
+            SELECT images FROM vehicles WHERE id = ?
           `).bind(vehicleId).first();
           
-          if (vehicle) {
-            // Delete associated Cloudflare Images
-            const imageIdentifier = vehicle.vin || vehicle.stockNumber || vehicleId;
-            await this.deleteVehicleImages(imageIdentifier, env);
+          let deletedCount = 0;
+          if (vehicle && vehicle.images) {
+            // Parse images array and delete from Cloudflare
+            try {
+              const images = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
+              deletedCount = await this.deleteVehicleImagesByUrls(images, env);
+            } catch (e) {
+              console.error('Error parsing images for deletion:', e);
+            }
           }
           
           // Delete vehicle from database
@@ -624,12 +629,32 @@ export default {
           
           return new Response(JSON.stringify({ 
             success: true,
-            imagesDeleted: vehicle ? true : false
+            imagesDeleted: deletedCount,
+            message: `Vehicle deleted. ${deletedCount} images removed from Cloudflare.`
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         } catch (error) {
           console.error('Error deleting vehicle:', error);
+          return new Response(JSON.stringify({ 
+            success: false,
+            error: error.message
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // DELETE /api/admin/images/delete-all - Delete ALL Cloudflare Images
+      if (url.pathname === '/api/admin/images/delete-all' && request.method === 'DELETE') {
+        try {
+          const result = await this.deleteAllCloudflareImages(env);
+          return new Response(JSON.stringify(result), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('Error deleting all images:', error);
           return new Response(JSON.stringify({ 
             success: false,
             error: error.message
@@ -1110,6 +1135,65 @@ export default {
     }
   },
 
+  async deleteVehicleImagesByUrls(imageUrls, env) {
+    const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN;
+    
+    if (!apiToken || !accountId) {
+      console.log('No Cloudflare Images credentials, skipping image deletion');
+      return 0;
+    }
+    
+    if (!imageUrls || imageUrls.length === 0) {
+      return 0;
+    }
+    
+    console.log(`Deleting ${imageUrls.length} images from Cloudflare...`);
+    
+    // Extract image IDs from Cloudflare Images URLs
+    const deletePromises = imageUrls.map(imageUrl => {
+      // Extract image ID from URL: https://imagedelivery.net/ACCOUNT_HASH/IMAGE_ID/variant
+      const match = imageUrl.match(/imagedelivery\.net\/[^\/]+\/([^\/]+)/);
+      if (!match) {
+        console.log(`Skipping non-Cloudflare image: ${imageUrl}`);
+        return Promise.resolve({ success: false, notCloudflare: true });
+      }
+      
+      const imageId = match[1];
+      
+      return fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`
+          }
+        }
+      ).then(response => {
+        if (response.ok) {
+          console.log(`✓ Deleted image: ${imageId}`);
+          return { success: true, imageId };
+        } else if (response.status === 404) {
+          console.log(`Image already deleted: ${imageId}`);
+          return { success: true, imageId, notFound: true };
+        } else {
+          console.log(`✗ Failed to delete ${imageId}: ${response.status}`);
+          return { success: false, imageId };
+        }
+      }).catch(error => {
+        console.error(`Error deleting ${imageId}:`, error);
+        return { success: false, imageId, error: error.message };
+      });
+    });
+    
+    // Wait for all deletions to complete
+    const results = await Promise.all(deletePromises);
+    const deletedCount = results.filter(r => r.success && !r.notFound && !r.notCloudflare).length;
+    console.log(`✓ Deleted ${deletedCount} images from Cloudflare Images`);
+    
+    return deletedCount;
+  },
+
   async deleteVehicleImages(vehicleIdentifier, env) {
     const accountId = env.CLOUDFLARE_ACCOUNT_ID;
     const apiToken = env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN;
@@ -1159,5 +1243,95 @@ export default {
     console.log(`Deleted ${deletedCount} images for vehicle ${vehicleIdentifier}`);
     
     return results;
+  },
+
+  async deleteAllCloudflareImages(env) {
+    const accountId = env.CLOUDFLARE_ACCOUNT_ID || env.CF_ACCOUNT_ID;
+    const apiToken = env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN;
+    
+    if (!apiToken || !accountId) {
+      return {
+        success: false,
+        error: 'Missing Cloudflare Images credentials'
+      };
+    }
+    
+    console.log('🗑️  Fetching all Cloudflare Images...');
+    
+    try {
+      // List all images
+      const listResponse = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2?per_page=1000`,
+        {
+          headers: {
+            'Authorization': `Bearer ${apiToken}`
+          }
+        }
+      );
+      
+      if (!listResponse.ok) {
+        return {
+          success: false,
+          error: `Failed to list images: ${listResponse.status}`
+        };
+      }
+      
+      const listData = await listResponse.json();
+      const images = listData.result?.images || [];
+      
+      console.log(`Found ${images.length} images to delete`);
+      
+      if (images.length === 0) {
+        return {
+          success: true,
+          deletedCount: 0,
+          message: 'No images found to delete'
+        };
+      }
+      
+      // Delete all images
+      const deletePromises = images.map(image => {
+        return fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${image.id}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${apiToken}`
+            }
+          }
+        ).then(response => {
+          if (response.ok) {
+            console.log(`✓ Deleted: ${image.id}`);
+            return { success: true, id: image.id };
+          } else {
+            console.log(`✗ Failed to delete ${image.id}: ${response.status}`);
+            return { success: false, id: image.id };
+          }
+        }).catch(error => {
+          console.error(`Error deleting ${image.id}:`, error);
+          return { success: false, id: image.id, error: error.message };
+        });
+      });
+      
+      const results = await Promise.all(deletePromises);
+      const deletedCount = results.filter(r => r.success).length;
+      const failedCount = results.filter(r => !r.success).length;
+      
+      console.log(`✓ Deleted ${deletedCount} images, ${failedCount} failed`);
+      
+      return {
+        success: true,
+        deletedCount,
+        failedCount,
+        totalFound: images.length,
+        message: `Deleted ${deletedCount} out of ${images.length} images`
+      };
+    } catch (error) {
+      console.error('Error in deleteAllCloudflareImages:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 };
