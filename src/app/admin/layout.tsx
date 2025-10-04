@@ -136,15 +136,18 @@ export default function AdminLayout({
                   <FileText className="h-4 w-4" />
                   <span>Reports</span>
                 </Link>
-                <Link
-                  href="/admin/cloudflare-images"
-                  className={`px-3 py-2 rounded flex items-center space-x-1 ${
-                    pathname === '/admin/cloudflare-images' ? 'bg-gray-700' : 'hover:bg-gray-700'
-                  }`}
-                >
-                  <Image className="h-4 w-4" />
-                  <span>CF Images</span>
-                </Link>
+                {/* Dev-only section */}
+                {user?.role === 'dev' && (
+                  <Link
+                    href="/admin/cloudflare-images"
+                    className={`px-3 py-2 rounded flex items-center space-x-1 ${
+                      pathname === '/admin/cloudflare-images' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                    }`}
+                  >
+                    <Image className="h-4 w-4" />
+                    <span>Dev</span>
+                  </Link>
+                )}
               </div>
             </div>
             
@@ -237,13 +240,16 @@ export default function AdminLayout({
               >
                 Reports
               </Link>
-              <Link
-                href="/admin/cloudflare-images"
-                className="block px-3 py-2 rounded hover:bg-gray-700"
-                onClick={() => setShowMobileMenu(false)}
-              >
-                CF Images
-              </Link>
+              {/* Dev-only section */}
+              {user?.role === 'dev' && (
+                <Link
+                  href="/admin/cloudflare-images"
+                  className="block px-3 py-2 rounded hover:bg-gray-700"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Dev
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="block w-full text-left px-3 py-2 rounded hover:bg-gray-700"

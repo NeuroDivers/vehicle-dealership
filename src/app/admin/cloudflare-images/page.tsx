@@ -38,13 +38,15 @@ export default function CloudflareImagesManagement() {
   return (
     <div className="p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Cloudflare Images Management</h1>
+        <h1 className="text-3xl font-bold mb-2">Dev Tools</h1>
+        <p className="text-gray-600 mb-6">Developer-only tools and utilities</p>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-2xl font-semibold mb-4 pb-2 border-b">Cloudflare Images Management</h2>
           <div className="flex items-start space-x-4 mb-6">
             <AlertTriangle className="h-8 w-8 text-yellow-500 flex-shrink-0 mt-1" />
             <div>
-              <h2 className="text-xl font-semibold mb-2">Danger Zone</h2>
+              <h3 className="text-xl font-semibold mb-2">Danger Zone</h3>
               <p className="text-gray-600 mb-4">
                 This action will permanently delete ALL images from Cloudflare Images. 
                 This cannot be undone!
