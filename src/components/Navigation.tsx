@@ -21,8 +21,24 @@ export default function Navigation() {
     }
     
     // Check if user is logged in
-    const token = localStorage.getItem('auth_token');
-    setIsLoggedIn(!!token);
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem('auth_token');
+      setIsLoggedIn(!!token);
+    };
+    
+    checkLoginStatus();
+    
+    // Listen for storage changes (login/logout events)
+    window.addEventListener('storage', checkLoginStatus);
+    
+    // Custom event for login
+    const handleLoginEvent = () => checkLoginStatus();
+    window.addEventListener('userLoggedIn', handleLoginEvent);
+    
+    return () => {
+      window.removeEventListener('storage', checkLoginStatus);
+      window.removeEventListener('userLoggedIn', handleLoginEvent);
+    };
   }, []);
 
   const changeLang = (lang: 'en' | 'fr' | 'es') => {

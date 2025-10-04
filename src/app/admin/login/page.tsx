@@ -35,6 +35,9 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('userEmail', email); // Store email for dev check
         
+        // Trigger login event for Navigation component
+        window.dispatchEvent(new Event('userLoggedIn'));
+        
         // Redirect to admin dashboard
         router.push('/admin');
       } else {
