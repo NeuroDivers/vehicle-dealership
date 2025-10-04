@@ -184,7 +184,7 @@ export default function VehiclesPage() {
     
     // Set new timeout to track search after user stops typing
     const timeout = setTimeout(() => {
-      if (value.trim()) {
+      if (value.trim() && value.trim().length >= 3) {
         const results = vehicles.filter(vehicle => {
           const searchLower = value.toLowerCase();
           return vehicle.make.toLowerCase().includes(searchLower) ||
@@ -194,8 +194,9 @@ export default function VehiclesPage() {
         });
         trackSearchAnalytics(value, results.length);
       }
-    }, 1000); // Track after 1 second of no typing
+    }, 2000); // Track after 2 seconds of no typing
     
+    setSearchTimeout(timeout);
   };
 
   const clearFilters = () => {
