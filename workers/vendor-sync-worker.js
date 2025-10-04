@@ -200,6 +200,7 @@ export default {
                 drivetrain = COALESCE(NULLIF(?, ''), drivetrain),
                 engineSize = COALESCE(NULLIF(?, ''), engineSize),
                 cylinders = COALESCE(?, cylinders),
+                images = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
                 updated_at = datetime('now')
@@ -212,6 +213,7 @@ export default {
               vehicle.drivetrain,
               vehicle.engineSize,
               vehicle.cylinders,
+              JSON.stringify(vehicle.images),
               vehicle.vin,
               vehicle.stockNumber
             ).run();
@@ -658,6 +660,7 @@ export default {
                 drivetrain = COALESCE(NULLIF(?, ''), drivetrain),
                 engineSize = COALESCE(NULLIF(?, ''), engineSize),
                 cylinders = COALESCE(?, cylinders),
+                images = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
                 updated_at = datetime('now')
@@ -670,6 +673,7 @@ export default {
               vehicle.drivetrain,
               vehicle.engineSize,
               vehicle.cylinders,
+              JSON.stringify(vehicle.images),
               vehicle.vin,
               vehicle.stockNumber,
               'naniauto'
@@ -845,6 +849,7 @@ export default {
                 drivetrain = COALESCE(NULLIF(?, ''), drivetrain),
                 engineSize = COALESCE(NULLIF(?, ''), engineSize),
                 cylinders = COALESCE(?, cylinders),
+                images = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
                 updated_at = datetime('now')
@@ -857,6 +862,7 @@ export default {
               vehicle.drivetrain,
               vehicle.engineSize,
               vehicle.cylinders,
+              JSON.stringify(vehicle.images),
               vehicle.vin,
               vehicle.stockNumber,
               'sltautos'

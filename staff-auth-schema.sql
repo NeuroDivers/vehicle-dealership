@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS staff (
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'staff' CHECK(role IN ('admin', 'manager', 'sales', 'staff')),
+  role TEXT NOT NULL DEFAULT 'staff' CHECK(role IN ('admin', 'manager', 'sales', 'staff', 'dev')),
   phone TEXT,
   is_active INTEGER DEFAULT 1,
   last_login DATETIME,
