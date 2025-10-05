@@ -140,28 +140,25 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
               />
               {images.length > 1 && (
                 <>
-                  <button
-                    onClick={() => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)}
-                    className={`absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full transition ${
-                      isMobile 
-                        ? 'bg-white/30 hover:bg-white/50' 
-                        : 'bg-white/80 hover:bg-white'
-                    }`}
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft className="h-6 w-6" />
-                  </button>
-                  <button
-                    onClick={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
-                    className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full transition ${
-                      isMobile 
-                        ? 'bg-white/30 hover:bg-white/50' 
-                        : 'bg-white/80 hover:bg-white'
-                    }`}
-                    aria-label="Next image"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </button>
+                  {/* Hide arrows on mobile - swipe gestures only */}
+                  {!isMobile && (
+                    <>
+                      <button
+                        onClick={() => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full hover:bg-white transition"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="h-6 w-6" />
+                      </button>
+                      <button
+                        onClick={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full hover:bg-white transition"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="h-6 w-6" />
+                      </button>
+                    </>
+                  )}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                     {images.map((_, index) => (
                       <button

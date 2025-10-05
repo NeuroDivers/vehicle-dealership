@@ -21,7 +21,8 @@ import {
   Download,
   Upload,
   Grid,
-  LayoutGrid
+  LayoutGrid,
+  RefreshCw
 } from 'lucide-react';
 
 interface Vehicle {
@@ -49,6 +50,7 @@ export default function EnhancedVehicleManager() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
   
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -220,6 +222,39 @@ export default function EnhancedVehicleManager() {
     } catch (error) {
       console.error('Error updating vehicle:', error);
       alert('Failed to update vehicle');
+    }
+  };
+
+  const handleSyncFromVendor = async (vehicle: Vehicle) => {
+    if (!vehicle.vendor_id || vehicle.vendor_id === 'internal') {
+      alert('This vehicle has no vendor source and cannot be synced.');
+      return;
+    }
+
+    if (!confirm(`Sync ${vehicle.year} ${vehicle.make} ${vehicle.model} from ${vehicle.vendor_name}?\n\nNote: Individual sync is limited. For best results, use the full vendor sync in Vendor Management.`)) {
+      return;
+    }
+
+    setSyncingId(vehicle.id);
+    try {
+      const res = await fetch(getVehicleEndpoint(`/admin/vehicles/${vehicle.id}/sync-from-vendor`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(data.message || 'Sync completed successfully!');
+        fetchVehicles(); // Refresh to show any updates
+      } else {
+        alert(data.error || 'Failed to sync vehicle from vendor');
+      }
+    } catch (error) {
+      console.error('Error syncing vehicle:', error);
+      alert('Failed to sync vehicle from vendor');
+    } finally {
+      setSyncingId(null);
     }
   };
 
@@ -464,8 +499,9 @@ export default function EnhancedVehicleManager() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+      <div className="bg-white rounded-lg shadow p-4 mb-6 space-y-4">
+        {/* First Row: Search and Dropdowns */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Search */}
           <div className="md:col-span-2">
             <div className="relative">
@@ -478,47 +514,6 @@ export default function EnhancedVehicleManager() {
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-          </div>
-          
-          {/* Listing Status Filter */}
-          <div className="flex items-center space-x-3">
-            <span className="text-sm font-medium text-gray-700">Status:</span>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={showDraft}
-                onChange={(e) => setShowDraft(e.target.checked)}
-                className="mr-1.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-600">Draft</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={showPublished}
-                onChange={(e) => setShowPublished(e.target.checked)}
-                className="mr-1.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-              />
-              <span className="text-sm text-gray-600">Published</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={showUnlisted}
-                onChange={(e) => setShowUnlisted(e.target.checked)}
-                className="mr-1.5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-              />
-              <span className="text-sm text-gray-600">Unlisted</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={showSold}
-                onChange={(e) => setShowSold(e.target.checked)}
-                className="mr-1.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500"
-              />
-              <span className="text-sm text-gray-600">Sold</span>
-            </label>
           </div>
           
           {/* Body Type */}
@@ -560,11 +555,52 @@ export default function EnhancedVehicleManager() {
           {/* Clear Filters */}
           <button
             onClick={clearFilters}
-            className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 flex items-center justify-center space-x-1"
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center justify-center space-x-1"
           >
             <X className="h-4 w-4" />
             <span>Clear</span>
           </button>
+        </div>
+        
+        {/* Second Row: Status Filters */}
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="text-sm font-medium text-gray-700">Status:</span>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={showDraft}
+                onChange={(e) => setShowDraft(e.target.checked)}
+                className="mr-1.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-600">Draft</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={showPublished}
+                onChange={(e) => setShowPublished(e.target.checked)}
+                className="mr-1.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+              />
+              <span className="text-sm text-gray-600">Published</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={showUnlisted}
+                onChange={(e) => setShowUnlisted(e.target.checked)}
+                className="mr-1.5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+              />
+              <span className="text-sm text-gray-600">Unlisted</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={showSold}
+                onChange={(e) => setShowSold(e.target.checked)}
+                className="mr-1.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500"
+              />
+              <span className="text-sm text-gray-600">Sold</span>
+            </label>
         </div>
         
         {/* Price Range */}
@@ -814,6 +850,16 @@ export default function EnhancedVehicleManager() {
                           >
                             <Edit className="h-4 w-4" />
                           </Link>
+                          {vehicle.vendor_id && vehicle.vendor_id !== 'internal' && (
+                            <button
+                              onClick={() => handleSyncFromVendor(vehicle)}
+                              disabled={syncingId === vehicle.id}
+                              className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                              title="Sync from vendor"
+                            >
+                              <RefreshCw className={`h-4 w-4 ${syncingId === vehicle.id ? 'animate-spin' : ''}`} />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDelete(vehicle.id)}
                             disabled={deletingId === vehicle.id}
