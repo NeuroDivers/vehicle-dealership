@@ -22,14 +22,14 @@ export default {
     // Handle vendor sync endpoint
     if (url.pathname === '/api/sync-vendor' && request.method === 'POST') {
       try {
-        const { vendorId } = await request.json();
+        const { vendorId, specificVIN, singleVehicleSync } = await request.json();
         
         if (vendorId === 'lambert') {
-          return await this.syncLambert(env, corsHeaders);
+          return await this.syncLambert(env, corsHeaders, specificVIN, singleVehicleSync);
         } else if (vendorId === 'naniauto') {
-          return await this.syncNaniAuto(env, corsHeaders);
+          return await this.syncNaniAuto(env, corsHeaders, specificVIN, singleVehicleSync);
         } else if (vendorId === 'sltautos') {
-          return await this.syncSLTAutos(env, corsHeaders);
+          return await this.syncSLTAutos(env, corsHeaders, specificVIN, singleVehicleSync);
         } else {
           return new Response(JSON.stringify({
             success: false,
@@ -81,7 +81,7 @@ export default {
     return new Response('Not found', { status: 404 });
   },
 
-  async syncLambert(env, corsHeaders) {
+  async syncLambert(env, corsHeaders, specificVIN = null, singleVehicleSync = false) {
     const startTime = Date.now();
     let vehicles = [];
     
@@ -185,6 +185,11 @@ export default {
       // Process each vehicle
       for (const vehicle of vehicles) {
         try {
+          // If single vehicle sync, skip vehicles that don't match the VIN
+          if (singleVehicleSync && specificVIN && vehicle.vin !== specificVIN && vehicle.stockNumber !== specificVIN) {
+            continue;
+          }
+          
           const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
           
           if (isExisting) {
@@ -569,7 +574,7 @@ export default {
     return vehicles;
   },
 
-  async syncNaniAuto(env, corsHeaders) {
+  async syncNaniAuto(env, corsHeaders, specificVIN = null, singleVehicleSync = false) {
     const startTime = Date.now();
     let vehicles = [];
     
@@ -653,6 +658,11 @@ export default {
       
       for (const vehicle of vehicles) {
         try {
+          // If single vehicle sync, skip vehicles that don't match the VIN
+          if (singleVehicleSync && specificVIN && vehicle.vin !== specificVIN && vehicle.stockNumber !== specificVIN) {
+            continue;
+          }
+          
           const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
           
           if (isExisting) {
@@ -805,7 +815,7 @@ export default {
     }
   },
 
-  async syncSLTAutos(env, corsHeaders) {
+  async syncSLTAutos(env, corsHeaders, specificVIN = null, singleVehicleSync = false) {
     const startTime = Date.now();
     let vehicles = [];
     
@@ -889,6 +899,11 @@ export default {
       
       for (const vehicle of vehicles) {
         try {
+          // If single vehicle sync, skip vehicles that don't match the VIN
+          if (singleVehicleSync && specificVIN && vehicle.vin !== specificVIN && vehicle.stockNumber !== specificVIN) {
+            continue;
+          }
+          
           const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
           
           if (isExisting) {

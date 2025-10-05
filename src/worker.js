@@ -737,18 +737,40 @@ export default {
             });
           }
           
-          // For now, trigger a full vendor sync
-          // In the future, this could be optimized to fetch just one vehicle
-          // by calling the vendor-sync-worker with specific VIN/stock number
-          return new Response(JSON.stringify({
-            success: true,
-            message: `Individual vehicle sync is not yet fully implemented. Please use "Sync Now" for ${vehicle.vendor_name} to refresh this vehicle.`,
-            vendor_id: vehicle.vendor_id,
-            vendor_name: vehicle.vendor_name,
-            note: 'Full vendor sync recommended for now'
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          // Call vendor-sync-worker to sync this specific vehicle
+          const syncWorkerUrl = 'https://vendor-sync-worker.nick-damato0011527.workers.dev';
+          const syncResponse = await fetch(`${syncWorkerUrl}/api/sync-vendor`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              vendorId: vehicle.vendor_id,
+              vendorName: vehicle.vendor_name,
+              specificVIN: vehicle.vin || vehicle.vendor_stock_number,
+              singleVehicleSync: true
+            })
           });
+          
+          const syncData = await syncResponse.json();
+          
+          if (syncResponse.ok && syncData.success) {
+            return new Response(JSON.stringify({
+              success: true,
+              message: `Successfully synced ${vehicle.vendor_name} vehicle`,
+              updated: syncData.updatedCount > 0,
+              details: syncData
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          } else {
+            return new Response(JSON.stringify({
+              success: false,
+              error: syncData.error || 'Failed to sync vehicle',
+              fallback: `Try using "Sync Now" for ${vehicle.vendor_name} instead`
+            }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
           
         } catch (error) {
           console.error('Error syncing individual vehicle:', error);

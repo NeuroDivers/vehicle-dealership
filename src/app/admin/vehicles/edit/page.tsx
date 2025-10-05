@@ -68,6 +68,7 @@ export default function EditVehicle() {
     color: '',
     description: '',
     isSold: 0,
+    listing_status: 'published',
     stockNumber: '',
     fuelType: 'Gasoline',
     transmission: 'Automatic',
@@ -723,16 +724,18 @@ export default function EditVehicle() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
+                Listing Status
               </label>
               <select
-                name="isSold"
-                value={formData.isSold}
+                name="listing_status"
+                value={formData.listing_status}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value={0}>Available</option>
-                <option value={1}>Sold</option>
+                <option value="draft">Draft (Work in Progress)</option>
+                <option value="published">Published (Available for Sale)</option>
+                <option value="unlisted">Unlisted (Temporarily Hidden)</option>
+                <option value="sold">Sold</option>
               </select>
             </div>
           </div>

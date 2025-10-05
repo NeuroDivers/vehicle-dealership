@@ -34,10 +34,10 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   
-  // Detect mobile device
+  // Detect mobile device based on screen width
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+      setIsMobile(window.innerWidth < 768); // Mobile if width < 768px (tablet breakpoint)
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
