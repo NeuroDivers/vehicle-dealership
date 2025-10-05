@@ -595,69 +595,104 @@ export default {
 
       // PUT /api/vehicles/[id] - Update vehicle
       if (url.pathname.match(/^\/api\/vehicles\/[\w-]+$/) && request.method === 'PUT') {
-        const vehicleId = url.pathname.split('/')[3];
-        const updates = await request.json();
-        
-        // Get current vehicle to check if sold status is changing
-        const currentVehicle = await env.DB.prepare('SELECT isSold, listing_status FROM vehicles WHERE id = ?')
-          .bind(vehicleId)
-          .first();
-        
-        // Build dynamic update query
-        const updateFields = [];
-        const values = [];
-        
-        for (const [key, value] of Object.entries(updates)) {
-          if (key !== 'id') {
-            updateFields.push(`${key} = ?`);
-            values.push(key === 'images' ? JSON.stringify(value) : value);
+        try {
+          const vehicleId = url.pathname.split('/')[3];
+          const updates = await request.json();
+          
+          // Get current vehicle
+          const currentVehicle = await env.DB.prepare('SELECT isSold, listing_status FROM vehicles WHERE id = ?')
+            .bind(vehicleId)
+            .first();
+          
+          if (!currentVehicle) {
+            return new Response(JSON.stringify({ error: 'Vehicle not found' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
           }
-        }
-        
-        // Handle sold_at timestamp and sync isSold/listing_status
-        if ('isSold' in updates) {
-          if (updates.isSold === 1 && currentVehicle?.isSold !== 1) {
-            // Vehicle is being marked as sold - set sold_at and listing_status
-            updateFields.push('sold_at = datetime(\'now\')');
-            updateFields.push('listing_status = \'sold\'');
-          } else if (updates.isSold === 0 && currentVehicle?.isSold === 1) {
-            // Vehicle is being marked as available - clear sold_at and update listing_status
-            updateFields.push('sold_at = NULL');
-            updateFields.push('listing_status = \'published\'');
+          
+          // Build update fields map to prevent duplicates
+          const updateFieldsMap = new Map();
+          const values = [];
+          
+          // Add all updates from request (except id)
+          for (const [key, value] of Object.entries(updates)) {
+            if (key !== 'id' && key !== 'isSold' && key !== 'listing_status') {
+              updateFieldsMap.set(key, value);
+            }
           }
-        }
-        
-        // Handle listing_status changes and sync with isSold
-        if ('listing_status' in updates) {
-          if (updates.listing_status === 'sold' && currentVehicle?.isSold !== 1) {
-            // Listing marked as sold - sync isSold and set sold_at
-            updateFields.push('isSold = 1');
-            updateFields.push('sold_at = datetime(\'now\')');
-          } else if (updates.listing_status !== 'sold' && currentVehicle?.isSold === 1) {
-            // Listing no longer sold - sync isSold and clear sold_at
-            updateFields.push('isSold = 0');
-            updateFields.push('sold_at = NULL');
+          
+          // Handle isSold and listing_status sync logic
+          let finalIsSold = 'isSold' in updates ? updates.isSold : currentVehicle.isSold;
+          let finalListingStatus = 'listing_status' in updates ? updates.listing_status : currentVehicle.listing_status;
+          let soldAtValue = null;
+          
+          // Sync isSold with listing_status
+          if ('listing_status' in updates) {
+            if (updates.listing_status === 'sold') {
+              finalIsSold = 1;
+              soldAtValue = 'datetime(\'now\')';
+            } else if (currentVehicle.listing_status === 'sold' && updates.listing_status !== 'sold') {
+              finalIsSold = 0;
+              soldAtValue = 'NULL';
+            }
           }
-        }
-        
-        if (updateFields.length === 0) {
-          return new Response(JSON.stringify({ error: 'No fields to update' }), {
-            status: 400,
+          
+          if ('isSold' in updates) {
+            if (updates.isSold === 1) {
+              finalListingStatus = 'sold';
+              soldAtValue = 'datetime(\'now\')';
+            } else if (currentVehicle.isSold === 1 && updates.isSold === 0) {
+              finalListingStatus = 'published';
+              soldAtValue = 'NULL';
+            }
+          }
+          
+          // Add synced fields
+          updateFieldsMap.set('isSold', finalIsSold);
+          updateFieldsMap.set('listing_status', finalListingStatus);
+          if (soldAtValue) {
+            updateFieldsMap.set('sold_at', soldAtValue);
+          }
+          
+          // Build SQL
+          const updateFields = [];
+          for (const [key, value] of updateFieldsMap.entries()) {
+            if (key === 'sold_at') {
+              updateFields.push(`${key} = ${value}`); // Already has datetime() or NULL
+            } else {
+              updateFields.push(`${key} = ?`);
+              values.push(key === 'images' ? JSON.stringify(value) : value);
+            }
+          }
+          
+          if (updateFields.length === 0) {
+            return new Response(JSON.stringify({ success: true, message: 'No changes needed' }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          
+          values.push(vehicleId);
+          
+          const sql = `UPDATE vehicles SET ${updateFields.join(', ')}, updatedAt = datetime('now') WHERE id = ?`;
+          console.log('Update SQL:', sql);
+          console.log('Values:', values);
+          
+          await env.DB.prepare(sql).bind(...values).run();
+          
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('Error updating vehicle:', error);
+          return new Response(JSON.stringify({ 
+            success: false,
+            error: error.message 
+          }), {
+            status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        
-        values.push(vehicleId);
-        
-        await env.DB.prepare(`
-          UPDATE vehicles 
-          SET ${updateFields.join(', ')}, updatedAt = datetime('now')
-          WHERE id = ?
-        `).bind(...values).run();
-        
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
       }
 
       // DELETE /api/vehicles/[id] - Delete vehicle and associated images
