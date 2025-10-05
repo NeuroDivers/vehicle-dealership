@@ -166,7 +166,7 @@ export default function EditVehicle() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          images: JSON.stringify(finalImages),
+          images: finalImages, // Don't double-stringify - the entire body is already being stringified
         }),
       });
 
