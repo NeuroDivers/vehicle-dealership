@@ -263,21 +263,29 @@ export default {
         }
       }
       
-      // Mark vehicles not in current sync as unlisted
+      // Mark vehicles not in current sync as unlisted (with grace period)
       if (vehicles.length > 0) {
         const currentVINs = vehicles.map(v => v.vin);
         const placeholders = currentVINs.map(() => '?').join(',');
         
+        // Grace period: 3 days (configurable per vendor in future)
+        const gracePeriodDays = 3;
+        
+        // Mark as unlisted only if grace period has passed since last seen
         await env.DB.prepare(`
           UPDATE vehicles 
           SET 
             vendor_status = 'unlisted',
-            last_seen_from_vendor = datetime('now')
+            updated_at = datetime('now')
           WHERE 
             vendor_id = 'lambert' 
             AND vendor_status = 'active'
             AND isSold = 0
             AND vin NOT IN (${placeholders})
+            AND (
+              last_seen_from_vendor IS NULL 
+              OR datetime(last_seen_from_vendor, '+${gracePeriodDays} days') <= datetime('now')
+            )
         `).bind(...currentVINs).run();
       }
       
@@ -725,7 +733,54 @@ export default {
         }
       }
       
+      // Mark vehicles not in current sync as unlisted (with grace period)
+      if (vehicles.length > 0) {
+        const currentVINs = vehicles.map(v => v.vin);
+        const placeholders = currentVINs.map(() => '?').join(',');
+        
+        // Grace period: 3 days (configurable per vendor in future)
+        const gracePeriodDays = 3;
+        
+        // Mark as unlisted only if grace period has passed since last seen
+        await env.DB.prepare(`
+          UPDATE vehicles 
+          SET 
+            vendor_status = 'unlisted',
+            updated_at = datetime('now')
+          WHERE 
+            vendor_id = 'naniauto' 
+            AND vendor_status = 'active'
+            AND isSold = 0
+            AND vin NOT IN (${placeholders})
+            AND (
+              last_seen_from_vendor IS NULL 
+              OR datetime(last_seen_from_vendor, '+${gracePeriodDays} days') <= datetime('now')
+            )
+        `).bind(...currentVINs).run();
+      }
+      
       const duration = Math.round((Date.now() - startTime) / 1000);
+      
+      // Log sync to database
+      try {
+        await env.DB.prepare(`
+          INSERT INTO vendor_sync_logs (
+            vendor_id, vendor_name, sync_date,
+            vehicles_found, new_vehicles, updated_vehicles,
+            status, sync_duration_seconds
+          ) VALUES (?, ?, datetime('now'), ?, ?, ?, ?, ?)
+        `).bind(
+          'naniauto',
+          'NaniAuto',
+          vehicles.length,
+          newCount,
+          updatedCount,
+          'success',
+          duration
+        ).run();
+      } catch (logError) {
+        console.error('Failed to log NaniAuto sync:', logError);
+      }
       
       return new Response(JSON.stringify({
         success: true,
@@ -914,7 +969,54 @@ export default {
         }
       }
       
+      // Mark vehicles not in current sync as unlisted (with grace period)
+      if (vehicles.length > 0) {
+        const currentVINs = vehicles.map(v => v.vin);
+        const placeholders = currentVINs.map(() => '?').join(',');
+        
+        // Grace period: 3 days (configurable per vendor in future)
+        const gracePeriodDays = 3;
+        
+        // Mark as unlisted only if grace period has passed since last seen
+        await env.DB.prepare(`
+          UPDATE vehicles 
+          SET 
+            vendor_status = 'unlisted',
+            updated_at = datetime('now')
+          WHERE 
+            vendor_id = 'sltautos' 
+            AND vendor_status = 'active'
+            AND isSold = 0
+            AND vin NOT IN (${placeholders})
+            AND (
+              last_seen_from_vendor IS NULL 
+              OR datetime(last_seen_from_vendor, '+${gracePeriodDays} days') <= datetime('now')
+            )
+        `).bind(...currentVINs).run();
+      }
+      
       const duration = Math.round((Date.now() - startTime) / 1000);
+      
+      // Log sync to database
+      try {
+        await env.DB.prepare(`
+          INSERT INTO vendor_sync_logs (
+            vendor_id, vendor_name, sync_date,
+            vehicles_found, new_vehicles, updated_vehicles,
+            status, sync_duration_seconds
+          ) VALUES (?, ?, datetime('now'), ?, ?, ?, ?, ?)
+        `).bind(
+          'sltautos',
+          'SLT Autos',
+          vehicles.length,
+          newCount,
+          updatedCount,
+          'success',
+          duration
+        ).run();
+      } catch (logError) {
+        console.error('Failed to log SLT Autos sync:', logError);
+      }
       
       return new Response(JSON.stringify({
         success: true,
