@@ -26,9 +26,15 @@ export default {
     // Process pending images for vehicles
     if (url.pathname === '/api/process-images' && request.method === 'POST') {
       try {
-        const { vehicleIds, batchSize = 5 } = await request.json();
+        const { vehicleIds, batchSize = 5, jobId, vendorName } = await request.json();
         
         console.log(`📸 Starting image processing for ${vehicleIds?.length || 'all'} vehicles`);
+        
+        // Create or update job record
+        let currentJobId = jobId;
+        if (!currentJobId) {
+          currentJobId = `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
         
         // Get vehicles with vendor URLs that need processing
         const vehicles = await this.getVehiclesNeedingImageUpload(env, vehicleIds, batchSize);
@@ -37,24 +43,46 @@ export default {
           return new Response(JSON.stringify({
             success: true,
             message: 'No vehicles need image processing',
-            processed: 0
+            processed: 0,
+            jobId: currentJobId
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
         
-        console.log(`🔄 Processing ${vehicles.length} vehicles`);
+        // Update job status to processing
+        await env.DB.prepare(`
+          INSERT INTO image_processing_jobs (id, vendor_name, status, total_vehicles, started_at)
+          VALUES (?, ?, 'processing', ?, datetime('now'))
+          ON CONFLICT(id) DO UPDATE SET
+            status = 'processing',
+            total_vehicles = ?,
+            started_at = datetime('now'),
+            updated_at = datetime('now')
+        `).bind(currentJobId, vendorName || 'unknown', vehicles.length, vehicles.length).run();
+        
+        console.log(`🔄 Processing ${vehicles.length} vehicles (Job: ${currentJobId})`);
         
         const results = {
           processed: 0,
           succeeded: 0,
           failed: 0,
-          details: []
+          details: [],
+          jobId: currentJobId
         };
         
         // Process each vehicle
         for (const vehicle of vehicles) {
-          const result = await this.processVehicleImages(vehicle, env);
+          // Update job progress
+          await env.DB.prepare(`
+            UPDATE image_processing_jobs
+            SET vehicles_processed = ?,
+                current_vehicle = ?,
+                updated_at = datetime('now')
+            WHERE id = ?
+          `).bind(results.processed + 1, `${vehicle.make} ${vehicle.model}`, currentJobId).run();
+          
+          const result = await this.processVehicleImages(vehicle, env, currentJobId);
           results.processed++;
           
           if (result.success) {
@@ -62,6 +90,15 @@ export default {
           } else {
             results.failed++;
           }
+          
+          // Update image counts
+          await env.DB.prepare(`
+            UPDATE image_processing_jobs
+            SET images_uploaded = images_uploaded + ?,
+                images_failed = images_failed + ?,
+                updated_at = datetime('now')
+            WHERE id = ?
+          `).bind(result.imagesProcessed || 0, result.imagesFailed || 0, currentJobId).run();
           
           results.details.push({
             vehicleId: vehicle.id,
@@ -73,6 +110,15 @@ export default {
         }
         
         console.log(`✅ Completed: ${results.succeeded} succeeded, ${results.failed} failed`);
+        
+        // Mark job as completed
+        await env.DB.prepare(`
+          UPDATE image_processing_jobs
+          SET status = 'completed',
+              completed_at = datetime('now'),
+              updated_at = datetime('now')
+          WHERE id = ?
+        `).bind(currentJobId).run();
         
         return new Response(JSON.stringify({
           success: true,
@@ -99,6 +145,95 @@ export default {
       try {
         const stats = await this.getImageProcessingStats(env);
         return new Response(JSON.stringify(stats), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: error.message
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
+    // Get progress of specific job
+    if (url.pathname.match(/^\/api\/jobs\/[\w-]+$/) && request.method === 'GET') {
+      try {
+        const jobId = url.pathname.split('/')[3];
+        const job = await env.DB.prepare(`
+          SELECT * FROM image_processing_jobs WHERE id = ?
+        `).bind(jobId).first();
+        
+        if (!job) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Job not found'
+          }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Calculate progress percentage
+        const progress = job.total_vehicles > 0 
+          ? Math.round((job.vehicles_processed / job.total_vehicles) * 100)
+          : 0;
+        
+        return new Response(JSON.stringify({
+          success: true,
+          job: {
+            ...job,
+            progress
+          }
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: error.message
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
+    // Get recent jobs
+    if (url.pathname === '/api/jobs' && request.method === 'GET') {
+      try {
+        const { results } = await env.DB.prepare(`
+          SELECT 
+            id,
+            vendor_name,
+            status,
+            total_vehicles,
+            vehicles_processed,
+            images_uploaded,
+            images_failed,
+            current_vehicle,
+            started_at,
+            completed_at,
+            created_at
+          FROM image_processing_jobs
+          ORDER BY created_at DESC
+          LIMIT 50
+        `).all();
+        
+        // Add progress percentage to each job
+        const jobsWithProgress = results.map(job => ({
+          ...job,
+          progress: job.total_vehicles > 0 
+            ? Math.round((job.vehicles_processed / job.total_vehicles) * 100)
+            : 0
+        }));
+        
+        return new Response(JSON.stringify({
+          success: true,
+          jobs: jobsWithProgress
+        }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       } catch (error) {

@@ -39,16 +39,19 @@ export default {
         }
         
         // Trigger async image processing (fire-and-forget)
+        let imageJobId = null;
         if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR_URL) {
-          console.log(`🚀 Triggering async image processing for ${vehicleIdsNeedingImages.length} vehicles...`);
+          imageJobId = `nani-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          console.log(`🚀 Triggering async image processing for ${vehicleIdsNeedingImages.length} vehicles (Job: ${imageJobId})...`);
           
-          // Don't await - let it run in background
           fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              vehicleIds: vehicleIdsNeedingImages.slice(0, 10), // Limit to 10 per batch
-              batchSize: 10
+              vehicleIds: vehicleIdsNeedingImages.slice(0, 10),
+              batchSize: 10,
+              jobId: imageJobId,
+              vendorName: 'Nani Auto'
             })
           }).catch(err => {
             console.warn('⚠️  Image processor trigger failed (images will remain as vendor URLs):', err.message);
@@ -63,6 +66,7 @@ export default {
           success: true,
           vehicles: vehicles,
           count: vehicles.length,
+          imageProcessingJobId: imageJobId,
           imagesUploaded: env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN ? true : false,
           duration: duration,
           timestamp: new Date().toISOString()

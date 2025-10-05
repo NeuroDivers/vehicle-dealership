@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Image as ImageIcon, RefreshCw, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import ImageProcessingProgress from './ImageProcessingProgress';
 
 const IMAGE_PROCESSOR_URL = 'https://image-processor.nick-damato0011527.workers.dev';
 
@@ -10,9 +11,19 @@ export default function ImageProcessorPanel() {
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [recentJobs, setRecentJobs] = useState<any[]>([]);
 
   useEffect(() => {
     fetchStats();
+    fetchRecentJobs();
+    
+    // Poll for updates every 5 seconds
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchRecentJobs();
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchStats = async () => {
@@ -25,6 +36,18 @@ export default function ImageProcessorPanel() {
       console.error('Failed to fetch stats:', error);
     }
     setLoading(false);
+  };
+  
+  const fetchRecentJobs = async () => {
+    try {
+      const response = await fetch(`${IMAGE_PROCESSOR_URL}/api/jobs`);
+      const data = await response.json();
+      if (data.success) {
+        setRecentJobs(data.jobs.slice(0, 10)); // Show last 10 jobs
+      }
+    } catch (error) {
+      console.error('Failed to fetch jobs:', error);
+    }
   };
 
   const processImages = async (batchSize = 10) => {
@@ -208,6 +231,22 @@ export default function ImageProcessorPanel() {
         </div>
       )}
 
+      {/* Recent Jobs */}
+      {recentJobs.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-3">Recent Image Processing Jobs</h3>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {recentJobs.map((job) => (
+              <ImageProcessingProgress
+                key={job.id}
+                jobId={job.id}
+                onComplete={fetchRecentJobs}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Info Box */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <h4 className="font-semibold text-blue-900 mb-2">How it works:</h4>
@@ -217,6 +256,7 @@ export default function ImageProcessorPanel() {
           <li>✓ Keeps vendor URLs as fallback if upload fails</li>
           <li>✓ Updates database only when successful</li>
           <li>✓ No timeouts - processes independently</li>
+          <li>✓ Real-time progress tracking</li>
         </ul>
       </div>
     </div>
