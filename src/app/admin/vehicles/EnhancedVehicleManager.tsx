@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { getVehicleEndpoint } from '@/lib/api-config';
+import StatusChangeModal from './StatusChangeModal';
 import { 
   Plus, 
   Edit, 
@@ -51,6 +52,8 @@ export default function EnhancedVehicleManager() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [selectedVehicleForStatus, setSelectedVehicleForStatus] = useState<Vehicle | null>(null);
   
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -207,22 +210,24 @@ export default function EnhancedVehicleManager() {
   };
 
   const handleToggleSold = async (vehicle: Vehicle) => {
-    try {
-      const res = await fetch(getVehicleEndpoint(`/${vehicle.id}`), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...vehicle, isSold: vehicle.isSold === 1 ? 0 : 1 }),
-      });
-      
-      if (res.ok) {
-        fetchVehicles();
-      } else {
-        alert('Failed to update vehicle');
-      }
-    } catch (error) {
-      console.error('Error updating vehicle:', error);
-      alert('Failed to update vehicle');
+    // Open status modal instead of toggling directly
+    setSelectedVehicleForStatus(vehicle);
+    setStatusModalOpen(true);
+  };
+  
+  const handleStatusSave = async (vehicleId: string, newStatus: string) => {
+    const res = await fetch(getVehicleEndpoint(`/${vehicleId}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listing_status: newStatus }),
+    });
+    
+    if (!res.ok) {
+      throw new Error('Failed to update status');
     }
+    
+    // Refresh vehicles list
+    await fetchVehicles();
   };
 
   const handleSyncFromVendor = async (vehicle: Vehicle) => {
@@ -1014,6 +1019,17 @@ export default function EnhancedVehicleManager() {
           })}
         </div>
       )}
+      
+      {/* Status Change Modal */}
+      <StatusChangeModal
+        vehicle={selectedVehicleForStatus}
+        isOpen={statusModalOpen}
+        onClose={() => {
+          setStatusModalOpen(false);
+          setSelectedVehicleForStatus(null);
+        }}
+        onSave={handleStatusSave}
+      />
     </div>
   );
 }

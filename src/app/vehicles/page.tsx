@@ -441,7 +441,9 @@ export default function VehiclesPage() {
   let images: string[] = [];
   if (vehicle.images) {
     const imageData = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
-    images = imageData.map((img: any) => {
+    // Safety check: ensure imageData is an array
+    if (Array.isArray(imageData)) {
+      images = imageData.map((img: any) => {
       let imageUrl = '';
       if (typeof img === 'string') {
         imageUrl = img;
@@ -458,6 +460,7 @@ export default function VehiclesPage() {
       
       return imageUrl;
     }).filter((url: any) => url);
+    }
   }
   return (
                 <Link 
