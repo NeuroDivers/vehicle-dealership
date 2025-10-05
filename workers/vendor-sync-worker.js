@@ -203,7 +203,7 @@ export default {
                 images = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
-                updated_at = datetime('now')
+                updatedAt = datetime('now')
               WHERE (vin = ? OR stockNumber = ?) AND vendor_id = 'lambert'
             `).bind(
               vehicle.price,
@@ -276,7 +276,7 @@ export default {
           UPDATE vehicles 
           SET 
             vendor_status = 'unlisted',
-            updated_at = datetime('now')
+            updatedAt = datetime('now')
           WHERE 
             vendor_id = 'lambert' 
             AND vendor_status = 'active'
@@ -671,7 +671,7 @@ export default {
                 images = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
-                updated_at = datetime('now')
+                updatedAt = datetime('now')
               WHERE (vin = ? OR stockNumber = ?) AND vendor_id = ?
             `).bind(
               vehicle.price,
@@ -746,7 +746,7 @@ export default {
           UPDATE vehicles 
           SET 
             vendor_status = 'unlisted',
-            updated_at = datetime('now')
+            updatedAt = datetime('now')
           WHERE 
             vendor_id = 'naniauto' 
             AND vendor_status = 'active'
@@ -907,7 +907,7 @@ export default {
                 images = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
-                updated_at = datetime('now')
+                updatedAt = datetime('now')
               WHERE (vin = ? OR stockNumber = ?) AND vendor_id = ?
             `).bind(
               vehicle.price,
@@ -982,7 +982,7 @@ export default {
           UPDATE vehicles 
           SET 
             vendor_status = 'unlisted',
-            updated_at = datetime('now')
+            updatedAt = datetime('now')
           WHERE 
             vendor_id = 'sltautos' 
             AND vendor_status = 'active'
@@ -1155,7 +1155,7 @@ export default {
               cylinders = COALESCE(?, cylinders),
               last_seen_from_vendor = datetime('now'),
               vendor_status = 'active',
-              updated_at = datetime('now')
+              updatedAt = datetime('now')
             WHERE (vin = ? OR stockNumber = ?) AND vendor_id = ?
           `).bind(
             vehicle.price,
