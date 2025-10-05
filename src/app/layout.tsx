@@ -35,7 +35,6 @@ export default function RootLayout({
         {/* Preconnect to external domains for faster loading */}
         <link rel="preconnect" href="https://imagedelivery.net" />
         <link rel="preconnect" href="https://vehicle-dealership-analytics.nick-damato0011527.workers.dev" />
-        <link rel="dns-prefetch" href="https://sltautos.com" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}

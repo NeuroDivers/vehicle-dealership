@@ -150,11 +150,17 @@ export default function VendorManagement() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
+          // Handle both snake_case (Lambert) and camelCase (NaniAuto/SLT) property names
+          const vehiclesFound = result.vehicles_found || result.totalVehicles || 0;
+          const newVehicles = result.new_vehicles || result.newVehicles || 0;
+          const updatedVehicles = result.updated_vehicles || result.updatedVehicles || 0;
+          const duration = result.sync_duration || (result.duration ? result.duration.replace('s', '') : '0');
+          
           alert(`✅ Sync completed successfully!
-• ${result.vehicles_found} vehicles found
-• ${result.new_vehicles} new vehicles added
-• ${result.updated_vehicles} vehicles updated
-• Sync took ${result.sync_duration || 0} seconds`);
+• ${vehiclesFound} vehicles found
+• ${newVehicles} new vehicles added
+• ${updatedVehicles} vehicles updated
+• Sync took ${duration} seconds`);
           loadVendors();
           loadSyncLogs();
         } else {

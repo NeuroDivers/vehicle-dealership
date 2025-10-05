@@ -7,6 +7,8 @@ interface SiteSettings {
   logo: string;
   contactEmail: string;
   contactPhone: string;
+  contactPhoneSecondary?: string;
+  primaryPhoneForHeader?: 'primary' | 'secondary'; // Which phone to show in header CTA
   address: string;
   city: string;
   province: string;
@@ -50,6 +52,8 @@ const defaultSettings: SiteSettings = {
   logo: '',
   contactEmail: 'info@autopret123.com',
   contactPhone: '514-444-2769',
+  contactPhoneSecondary: '',
+  primaryPhoneForHeader: 'primary',
   address: '',
   city: '',
   province: '',

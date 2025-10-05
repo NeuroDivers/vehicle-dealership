@@ -109,28 +109,21 @@ export default function Navigation() {
           <div className="flex items-center space-x-6">
             <Link href="/" className="text-gray-700 hover:opacity-80 transition"
                  style={{ color: themeColors.headerText }}>
-              Home
             </Link>
             <Link href="/vehicles" className="text-gray-700 hover:opacity-80 transition"
                  style={{ color: themeColors.headerText }}>
               Vehicles
             </Link>
-            <Link href="/vehicles?fuelType=electric" 
-                 className="flex items-center space-x-1 text-gray-700 hover:opacity-80 transition"
-                 style={{ color: themeColors.accent }}>
+            <Link href="/vehicles?electric=true" className="flex items-center space-x-1 text-gray-700 hover:opacity-80 transition"
+                 style={{ color: themeColors.headerText }}>
               <Zap className="h-4 w-4" />
               <span>Electric</span>
-            </Link>
-            <Link href="/about" className="text-gray-700 hover:opacity-80 transition"
-                 style={{ color: themeColors.headerText }}>
-              About
             </Link>
             <Link href="/contact" className="text-gray-700 hover:opacity-80 transition"
                  style={{ color: themeColors.headerText }}>
               Contact
             </Link>
             
-            {/* Language Selector */}
             <div className="relative">
               <button
                 onClick={() => setShowLangDropdown(!showLangDropdown)}
@@ -185,12 +178,12 @@ export default function Navigation() {
             
             {/* CTA Button */}
             <a
-              href={`tel:${settings.contactPhone}`}
+              href={`tel:${settings.primaryPhoneForHeader === 'secondary' && settings.contactPhoneSecondary ? settings.contactPhoneSecondary : settings.contactPhone}`}
               className="flex items-center space-x-2 px-4 py-2 rounded-lg text-white font-semibold transition hover:opacity-90"
               style={{ backgroundColor: themeColors.accent }}
             >
               <Phone className="h-4 w-4" />
-              <span>{settings.contactPhone}</span>
+              <span>{settings.primaryPhoneForHeader === 'secondary' && settings.contactPhoneSecondary ? settings.contactPhoneSecondary : settings.contactPhone}</span>
             </a>
           </div>
         </div>

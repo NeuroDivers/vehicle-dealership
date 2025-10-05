@@ -8,6 +8,8 @@ interface SiteInfo {
   logo: string;
   contactEmail: string;
   contactPhone: string;
+  contactPhoneSecondary?: string;
+  primaryPhoneForHeader?: 'primary' | 'secondary';
   address: string;
   city: string;
   province: string;
@@ -51,6 +53,8 @@ const defaultSiteInfo: SiteInfo = {
   logo: '',
   contactEmail: 'info@dealership.com',
   contactPhone: '555-0123',
+  contactPhoneSecondary: '',
+  primaryPhoneForHeader: 'primary',
   address: '123 Main Street',
   city: 'City',
   province: 'Province',
@@ -331,7 +335,7 @@ export default function SiteInfoManager() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
+              Primary Phone
             </label>
             <input
               type="tel"
@@ -341,6 +345,54 @@ export default function SiteInfoManager() {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Secondary Phone (Optional)
+            </label>
+            <input
+              type="tel"
+              value={siteInfo.contactPhoneSecondary || ''}
+              onChange={(e) => setSiteInfo(prev => ({ ...prev, contactPhoneSecondary: e.target.value }))}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Additional phone number"
+            />
+          </div>
+        </div>
+
+        {siteInfo.contactPhoneSecondary && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Phone Number to Display in Header
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="primaryPhone"
+                  value="primary"
+                  checked={siteInfo.primaryPhoneForHeader === 'primary' || !siteInfo.primaryPhoneForHeader}
+                  onChange={(e) => setSiteInfo(prev => ({ ...prev, primaryPhoneForHeader: 'primary' }))}
+                  className="mr-2"
+                />
+                <span className="text-sm">Primary ({siteInfo.contactPhone})</span>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="primaryPhone"
+                  value="secondary"
+                  checked={siteInfo.primaryPhoneForHeader === 'secondary'}
+                  onChange={(e) => setSiteInfo(prev => ({ ...prev, primaryPhoneForHeader: 'secondary' }))}
+                  className="mr-2"
+                />
+                <span className="text-sm">Secondary ({siteInfo.contactPhoneSecondary})</span>
+              </label>
+            </div>
+            <p className="text-xs text-gray-600 mt-2">This phone number will appear as the call-to-action button in the site header.</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Address

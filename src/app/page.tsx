@@ -279,9 +279,10 @@ export default function Home() {
               }
               let firstImage = images[0] || '/api/placeholder/400/300';
               
-              // Use thumbnail variant for Cloudflare Images (300x300 optimized)
+              // Ensure we use the public variant for Cloudflare Images (full quality)
               if (firstImage && firstImage.includes('imagedelivery.net')) {
-                firstImage = firstImage.replace('/public', '/thumbnail');
+                // Replace thumbnail with public for better quality
+                firstImage = firstImage.replace('/thumbnail', '/public');
               }
               
               return (
@@ -386,9 +387,10 @@ export default function Home() {
                 }
                 let firstImage = images[0] || '/api/placeholder/400/300';
                 
-                // Use thumbnail variant for Cloudflare Images (300x300 optimized)
+                // Ensure we use the public variant for Cloudflare Images (full quality)
                 if (firstImage && firstImage.includes('imagedelivery.net')) {
-                  firstImage = firstImage.replace('/public', '/thumbnail');
+                  // Replace thumbnail with public for better quality
+                  firstImage = firstImage.replace('/thumbnail', '/public');
                 }
                 
                 return (

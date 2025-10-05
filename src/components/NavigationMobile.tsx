@@ -89,10 +89,6 @@ export default function NavigationMobile() {
                 <Zap className="h-4 w-4" />
                 <span>Electric</span>
               </Link>
-              <Link href="/about" className="hover:opacity-80 transition"
-                   style={{ color: themeColors.headerText || '#000' }}>
-                About
-              </Link>
               <Link href="/contact" className="hover:opacity-80 transition"
                    style={{ color: themeColors.headerText || '#000' }}>
                 Contact
@@ -201,14 +197,6 @@ export default function NavigationMobile() {
               >
                 <Zap className="h-4 w-4" />
                 <span>Electric Vehicles</span>
-              </Link>
-              <Link 
-                href="/about" 
-                className="block px-3 py-2 rounded-lg hover:bg-gray-100 transition font-medium"
-                style={{ color: themeColors.headerText || '#000' }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                About
               </Link>
               <Link 
                 href="/contact" 
