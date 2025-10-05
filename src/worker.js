@@ -615,9 +615,12 @@ export default {
           const updateFieldsMap = new Map();
           const values = [];
           
-          // Add all updates from request (except id)
+          // UI-only fields that should not be sent to the database
+          const uiOnlyFields = ['imagesList', 'originalImages', 'newImages', 'deletedImages', 'id', 'isSold', 'listing_status'];
+          
+          // Add all updates from request (except id, isSold, listing_status, and UI-only fields)
           for (const [key, value] of Object.entries(updates)) {
-            if (key !== 'id' && key !== 'isSold' && key !== 'listing_status') {
+            if (!uiOnlyFields.includes(key)) {
               updateFieldsMap.set(key, value);
             }
           }
@@ -771,12 +774,15 @@ export default {
                 cfFormData.append('file', file);
                 
                 // Upload to Cloudflare Images
+                const accountId = env.CLOUDFLARE_ACCOUNT_ID || env.CF_ACCOUNT_ID;
+                const apiToken = env.CLOUDFLARE_IMAGES_TOKEN || env.CF_IMAGES_TOKEN;
+                
                 const uploadResponse = await fetch(
-                  `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/images/v1`,
+                  `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`,
                   {
                     method: 'POST',
                     headers: {
-                      'Authorization': `Bearer ${env.CLOUDFLARE_IMAGES_TOKEN}`,
+                      'Authorization': `Bearer ${apiToken}`,
                     },
                     body: cfFormData,
                   }

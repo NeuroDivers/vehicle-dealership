@@ -832,12 +832,18 @@ export default function EnhancedVehicleManager() {
                         <button
                           onClick={() => handleToggleSold(vehicle)}
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            vehicle.isSold === 1
+                            vehicle.listing_status === 'sold'
                               ? 'bg-red-100 text-red-800'
+                              : vehicle.listing_status === 'draft'
+                              ? 'bg-gray-100 text-gray-800'
+                              : vehicle.listing_status === 'unlisted'
+                              ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-green-100 text-green-800'
                           }`}
                         >
-                          {vehicle.isSold === 1 ? 'Sold' : 'Available'}
+                          {vehicle.listing_status === 'sold' ? 'Sold' : 
+                           vehicle.listing_status === 'draft' ? 'Draft' :
+                           vehicle.listing_status === 'unlisted' ? 'Unlisted' : 'Published'}
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
