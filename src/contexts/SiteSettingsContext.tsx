@@ -194,9 +194,9 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   const getThemeColors = () => {
     // Return the custom colors with fallbacks
     return {
-      primary: settings.themeColors?.primary || '#2563eb',
-      secondary: settings.themeColors?.secondary || '#1e3a8a',
-      accent: settings.themeColors?.accent || '#3b82f6',
+      primary: settings.themeColors?.primary || '#1f4d2f',
+      secondary: settings.themeColors?.secondary || '#15803d',
+      accent: settings.themeColors?.accent || '#1f4d2f',
       headerText: settings.themeColors?.headerText || '#000000'
     };
   };
