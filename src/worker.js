@@ -482,7 +482,7 @@ export default {
             transmission, drivetrain, color, vin, stockNumber,
             description, images, isSold,
             vendor_id, vendor_name, vendor_status, is_published, 
-            created_at
+            listing_status, created_at
           FROM vehicles 
           ORDER BY created_at DESC
         `).all();
@@ -492,18 +492,19 @@ export default {
         });
       }
 
-      // GET /api/vehicles - Get all vehicles
+      // GET /api/vehicles - Get all vehicles (public - only published)
       if (url.pathname === '/api/vehicles' && request.method === 'GET') {
         const { results } = await env.DB.prepare(`
           SELECT 
             id, make, model, year, price, odometer, bodyType, fuelType,
             transmission, drivetrain, color, vin, stockNumber,
             description, images, isSold,
-            vendor_id, vendor_name, vendor_status, is_published, created_at
+            vendor_id, vendor_name, vendor_status, is_published, listing_status, created_at
           FROM vehicles 
           WHERE (is_published = 1 OR is_published IS NULL)
             AND (vendor_status = 'active' OR vendor_status IS NULL)
             AND (isSold = 0 OR isSold IS NULL)
+            AND (listing_status = 'published' OR listing_status IS NULL)
           ORDER BY created_at DESC
           LIMIT 500
         `).all();

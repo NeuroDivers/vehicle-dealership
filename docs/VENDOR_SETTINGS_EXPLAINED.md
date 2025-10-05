@@ -13,12 +13,14 @@ The Vendor Management system has three important settings for each vendor:
 - `weekly` - Sync once per week
 - `manual` - Only sync when manually triggered
 
-**Current Status:** ⚠️ **NOT IMPLEMENTED**
-- This is currently just a UI setting
-- No automatic scheduling exists
-- All syncs must be triggered manually via the "Sync Now" button
+**Current Status:** ✅ **PARTIALLY IMPLEMENTED**
+- Automatic syncing now enabled via Cloudflare Workers Cron Triggers
+- Runs every 3 days at 2 AM UTC
+- Rotates through vendors by day of month (Lambert days 1-10, NaniAuto 11-20, SLT 21-31)
+- Manual "Sync Now" button still available for immediate updates
+- UI setting not yet editable (currently hardcoded)
 
-**To Implement:** Would need to use Cloudflare Workers Cron Triggers to schedule automatic syncs.
+**Note:** The sync runs automatically in the background. You'll see results in the Sync History table.
 
 ---
 

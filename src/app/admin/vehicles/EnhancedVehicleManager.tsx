@@ -42,6 +42,7 @@ interface Vehicle {
   vendor_name?: string;
   vendor_stock_number?: string;
   vendor_status?: string;
+  listing_status?: 'draft' | 'published' | 'unlisted' | 'sold';
 }
 
 export default function EnhancedVehicleManager() {
@@ -53,6 +54,10 @@ export default function EnhancedVehicleManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSold, setShowSold] = useState(false);
   const [showAvailable, setShowAvailable] = useState(true);
+  // Listing status filters
+  const [showDraft, setShowDraft] = useState(false);
+  const [showPublished, setShowPublished] = useState(true);
+  const [showUnlisted, setShowUnlisted] = useState(false);
   const [selectedBodyType, setSelectedBodyType] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedVendor, setSelectedVendor] = useState('');
@@ -89,9 +94,16 @@ export default function EnhancedVehicleManager() {
   // Filter and sort vehicles
   const filteredVehicles = useMemo(() => {
     let filtered = vehicles.filter(vehicle => {
-      // Status filter
+      // Old status filter (for backwards compatibility)
       if (!showSold && vehicle.isSold === 1) return false;
       if (!showAvailable && vehicle.isSold === 0) return false;
+      
+      // New listing status filter
+      const status = vehicle.listing_status || 'published';
+      if (!showDraft && status === 'draft') return false;
+      if (!showPublished && status === 'published') return false;
+      if (!showUnlisted && status === 'unlisted') return false;
+      if (!showSold && status === 'sold') return false;
       
       // Search filter
       if (searchTerm) {
@@ -137,7 +149,7 @@ export default function EnhancedVehicleManager() {
     });
     
     return filtered;
-  }, [vehicles, searchTerm, showSold, showAvailable, selectedBodyType, selectedYear, selectedVendor, priceRange, sortBy, sortOrder]);
+  }, [vehicles, searchTerm, showSold, showAvailable, showDraft, showPublished, showUnlisted, selectedBodyType, selectedYear, selectedVendor, priceRange, sortBy, sortOrder]);
 
   // Get unique values for filters
   const bodyTypes = useMemo(() => {
@@ -325,15 +337,21 @@ export default function EnhancedVehicleManager() {
     setPriceRange({ min: '', max: '' });
     setShowSold(false);
     setShowAvailable(true);
+    setShowDraft(false);
+    setShowPublished(true);
+    setShowUnlisted(false);
   };
 
   const stats = useMemo(() => {
-    const sold = vehicles.filter(v => v.isSold === 1).length;
+    const draft = vehicles.filter(v => v.listing_status === 'draft').length;
+    const published = vehicles.filter(v => (v.listing_status || 'published') === 'published').length;
+    const unlisted = vehicles.filter(v => v.listing_status === 'unlisted').length;
+    const sold = vehicles.filter(v => v.listing_status === 'sold' || v.isSold === 1).length;
     const available = vehicles.filter(v => v.isSold === 0).length;
-    const totalValue = vehicles.filter(v => v.isSold === 0).reduce((sum, v) => sum + v.price, 0);
-    const avgPrice = available > 0 ? totalValue / available : 0;
+    const totalValue = vehicles.filter(v => (v.listing_status || 'published') === 'published' && v.isSold === 0).reduce((sum, v) => sum + v.price, 0);
+    const avgPrice = published > 0 ? totalValue / published : 0;
     
-    return { sold, available, totalValue, avgPrice };
+    return { draft, published, unlisted, sold, available, totalValue, avgPrice };
   }, [vehicles]);
 
   if (loading) {
@@ -388,23 +406,41 @@ export default function EnhancedVehicleManager() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Available</p>
-              <p className="text-2xl font-bold text-green-600">{stats.available}</p>
+              <p className="text-sm text-gray-600">Published</p>
+              <p className="text-2xl font-bold text-green-600">{stats.published}</p>
             </div>
-            <Car className="h-8 w-8 text-green-600" />
+            <Eye className="h-8 w-8 text-green-600" />
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Draft</p>
+              <p className="text-2xl font-bold text-blue-600">{stats.draft}</p>
+            </div>
+            <Edit className="h-8 w-8 text-blue-600" />
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Unlisted</p>
+              <p className="text-2xl font-bold text-orange-600">{stats.unlisted}</p>
+            </div>
+            <EyeOff className="h-8 w-8 text-orange-600" />
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Sold</p>
-              <p className="text-2xl font-bold text-red-600">{stats.sold}</p>
+              <p className="text-2xl font-bold text-gray-600">{stats.sold}</p>
             </div>
-            <CheckSquare className="h-8 w-8 text-red-600" />
+            <CheckSquare className="h-8 w-8 text-gray-600" />
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
@@ -444,25 +480,44 @@ export default function EnhancedVehicleManager() {
             </div>
           </div>
           
-          {/* Status Filter */}
-          <div className="flex items-center space-x-4">
+          {/* Listing Status Filter */}
+          <div className="flex items-center space-x-3">
+            <span className="text-sm font-medium text-gray-700">Status:</span>
             <label className="flex items-center">
               <input
                 type="checkbox"
-                checked={showAvailable}
-                onChange={(e) => setShowAvailable(e.target.checked)}
-                className="mr-2"
+                checked={showDraft}
+                onChange={(e) => setShowDraft(e.target.checked)}
+                className="mr-1.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm">Available</span>
+              <span className="text-sm text-gray-600">Draft</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={showPublished}
+                onChange={(e) => setShowPublished(e.target.checked)}
+                className="mr-1.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+              />
+              <span className="text-sm text-gray-600">Published</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={showUnlisted}
+                onChange={(e) => setShowUnlisted(e.target.checked)}
+                className="mr-1.5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+              />
+              <span className="text-sm text-gray-600">Unlisted</span>
             </label>
             <label className="flex items-center">
               <input
                 type="checkbox"
                 checked={showSold}
                 onChange={(e) => setShowSold(e.target.checked)}
-                className="mr-2"
+                className="mr-1.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500"
               />
-              <span className="text-sm">Sold</span>
+              <span className="text-sm text-gray-600">Sold</span>
             </label>
           </div>
           
