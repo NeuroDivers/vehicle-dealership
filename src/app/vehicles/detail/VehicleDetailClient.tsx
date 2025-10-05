@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getVehicleEndpoint } from '@/lib/api-config';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import Image from 'next/image';
@@ -26,8 +26,23 @@ interface Vehicle {
 export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { getThemeColors } = useSiteSettings();
   const themeColors = getThemeColors();
+  
+  // Touch gesture detection
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (vehicle) {
@@ -41,6 +56,36 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
       });
     }
   }, [vehicle]);
+
+  // Touch handlers for swipe gestures
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = null;
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  
+  const handleTouchEnd = (images: string[]) => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 50;
+    
+    if (Math.abs(distance) > minSwipeDistance) {
+      if (distance > 0) {
+        // Swiped left - next image
+        setCurrentImageIndex((prev) => (prev + 1) % images.length);
+      } else {
+        // Swiped right - previous image
+        setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+      }
+    }
+    
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
 
   if (!vehicle) {
     return (
@@ -78,7 +123,12 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Image Gallery */}
-        <div className="relative h-96 bg-gray-100 rounded-lg overflow-hidden">
+        <div 
+          className="relative h-96 bg-gray-100 rounded-lg overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={() => handleTouchEnd(images)}
+        >
           {images.length > 0 ? (
             <>
               <Image
@@ -92,13 +142,23 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
                 <>
                   <button
                     onClick={() => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full hover:bg-white"
+                    className={`absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full transition ${
+                      isMobile 
+                        ? 'bg-white/30 hover:bg-white/50' 
+                        : 'bg-white/80 hover:bg-white'
+                    }`}
+                    aria-label="Previous image"
                   >
                     <ChevronLeft className="h-6 w-6" />
                   </button>
                   <button
                     onClick={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full hover:bg-white"
+                    className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full transition ${
+                      isMobile 
+                        ? 'bg-white/30 hover:bg-white/50' 
+                        : 'bg-white/80 hover:bg-white'
+                    }`}
+                    aria-label="Next image"
                   >
                     <ChevronRight className="h-6 w-6" />
                   </button>

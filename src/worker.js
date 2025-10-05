@@ -482,7 +482,7 @@ export default {
             transmission, drivetrain, color, vin, stockNumber,
             description, images, isSold,
             vendor_id, vendor_name, vendor_status, is_published, 
-            created_at, updated_at
+            created_at
           FROM vehicles 
           ORDER BY created_at DESC
         `).all();
