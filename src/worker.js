@@ -599,7 +599,7 @@ export default {
         const updates = await request.json();
         
         // Get current vehicle to check if sold status is changing
-        const currentVehicle = await env.DB.prepare('SELECT isSold FROM vehicles WHERE id = ?')
+        const currentVehicle = await env.DB.prepare('SELECT isSold, listing_status FROM vehicles WHERE id = ?')
           .bind(vehicleId)
           .first();
         
@@ -614,13 +614,28 @@ export default {
           }
         }
         
-        // Handle sold_at timestamp
+        // Handle sold_at timestamp and sync isSold/listing_status
         if ('isSold' in updates) {
           if (updates.isSold === 1 && currentVehicle?.isSold !== 1) {
-            // Vehicle is being marked as sold - set sold_at
+            // Vehicle is being marked as sold - set sold_at and listing_status
             updateFields.push('sold_at = datetime(\'now\')');
+            updateFields.push('listing_status = \'sold\'');
           } else if (updates.isSold === 0 && currentVehicle?.isSold === 1) {
-            // Vehicle is being marked as available - clear sold_at
+            // Vehicle is being marked as available - clear sold_at and update listing_status
+            updateFields.push('sold_at = NULL');
+            updateFields.push('listing_status = \'published\'');
+          }
+        }
+        
+        // Handle listing_status changes and sync with isSold
+        if ('listing_status' in updates) {
+          if (updates.listing_status === 'sold' && currentVehicle?.isSold !== 1) {
+            // Listing marked as sold - sync isSold and set sold_at
+            updateFields.push('isSold = 1');
+            updateFields.push('sold_at = datetime(\'now\')');
+          } else if (updates.listing_status !== 'sold' && currentVehicle?.isSold === 1) {
+            // Listing no longer sold - sync isSold and clear sold_at
+            updateFields.push('isSold = 0');
             updateFields.push('sold_at = NULL');
           }
         }
