@@ -740,6 +740,88 @@ export default {
         }
       }
 
+      // POST /api/vehicles/[id]/images - Upload images for a vehicle
+      if (url.pathname.match(/^\/api\/vehicles\/[\w-]+\/images$/) && request.method === 'POST') {
+        try {
+          const vehicleId = url.pathname.split('/')[3];
+          const formData = await request.formData();
+          const uploadedImages = [];
+          
+          // Get all files from the form data
+          const files = formData.getAll('images');
+          
+          if (files.length === 0) {
+            return new Response(JSON.stringify({ 
+              success: false,
+              error: 'No images provided' 
+            }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          
+          console.log(`Uploading ${files.length} images for vehicle ${vehicleId}`);
+          
+          // Upload each file to Cloudflare Images
+          for (const file of files) {
+            if (file instanceof File) {
+              try {
+                // Create form data for Cloudflare Images upload
+                const cfFormData = new FormData();
+                cfFormData.append('file', file);
+                
+                // Upload to Cloudflare Images
+                const uploadResponse = await fetch(
+                  `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/images/v1`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${env.CLOUDFLARE_IMAGES_TOKEN}`,
+                    },
+                    body: cfFormData,
+                  }
+                );
+                
+                const uploadResult = await uploadResponse.json();
+                
+                if (uploadResult.success && uploadResult.result) {
+                  uploadedImages.push({
+                    id: uploadResult.result.id,
+                    filename: uploadResult.result.filename,
+                    uploaded: uploadResult.result.uploaded,
+                    variants: uploadResult.result.variants,
+                  });
+                  console.log(`Image uploaded: ${uploadResult.result.id}`);
+                } else {
+                  console.error('Cloudflare Images upload failed:', uploadResult);
+                  throw new Error(uploadResult.errors?.[0]?.message || 'Upload failed');
+                }
+              } catch (uploadError) {
+                console.error('Error uploading file:', uploadError);
+                throw uploadError;
+              }
+            }
+          }
+          
+          return new Response(JSON.stringify({ 
+            success: true,
+            images: uploadedImages,
+            count: uploadedImages.length
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('Error uploading images:', error);
+          return new Response(JSON.stringify({ 
+            success: false,
+            error: error.message 
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
       // POST /api/admin/vehicles/[id]/sync-from-vendor - Sync single vehicle from vendor
       if (url.pathname.match(/^\/api\/admin\/vehicles\/[\w-]+\/sync-from-vendor$/) && request.method === 'POST') {
         try {
@@ -843,80 +925,17 @@ export default {
       }
 
       // POST /api/admin/images/cleanup-sold - Clean up images from sold vehicles
-      // Graceful deletion: Keep for 14d, then keep only first image for 90d
+      // Graceful deletion: Keep for 14d, then keep only first image for 90d, then delete all
       if (url.pathname === '/api/admin/images/cleanup-sold' && request.method === 'POST') {
         try {
-          let deletedCount = 0;
-          let vehiclesProcessed = 0;
-          
-          // Find vehicles sold > 90 days ago (delete all images)
-          const vehiclesOld = await env.DB.prepare(`
-            SELECT id, images FROM vehicles 
-            WHERE sold_at IS NOT NULL 
-            AND julianday('now') - julianday(sold_at) > 90
-            AND images IS NOT NULL
-          `).all();
-          
-          for (const vehicle of vehiclesOld.results) {
-            const images = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
-            if (Array.isArray(images)) {
-              for (const img of images) {
-                const imageId = typeof img === 'string' ? img.split('/').pop() : (img.id || img.variants?.public?.split('/').pop());
-                if (imageId) {
-                  try {
-                    await this.deleteCloudflareImage(imageId, env);
-                    deletedCount++;
-                  } catch (e) {
-                    console.error(`Failed to delete image ${imageId}:`, e.message);
-                  }
-                }
-              }
-              // Clear images array
-              await env.DB.prepare('UPDATE vehicles SET images = NULL WHERE id = ?')
-                .bind(vehicle.id)
-                .run();
-              vehiclesProcessed++;
-            }
-          }
-          
-          // Find vehicles sold > 14 days but < 90 days (delete all except first image)
-          const vehiclesRecent = await env.DB.prepare(`
-            SELECT id, images FROM vehicles 
-            WHERE sold_at IS NOT NULL 
-            AND julianday('now') - julianday(sold_at) > 14
-            AND julianday('now') - julianday(sold_at) <= 90
-            AND images IS NOT NULL
-          `).all();
-          
-          for (const vehicle of vehiclesRecent.results) {
-            const images = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
-            if (Array.isArray(images) && images.length > 1) {
-              // Keep first image, delete the rest
-              const imagesToDelete = images.slice(1);
-              for (const img of imagesToDelete) {
-                const imageId = typeof img === 'string' ? img.split('/').pop() : (img.id || img.variants?.public?.split('/').pop());
-                if (imageId) {
-                  try {
-                    await this.deleteCloudflareImage(imageId, env);
-                    deletedCount++;
-                  } catch (e) {
-                    console.error(`Failed to delete image ${imageId}:`, e.message);
-                  }
-                }
-              }
-              // Keep only first image
-              await env.DB.prepare('UPDATE vehicles SET images = ? WHERE id = ?')
-                .bind(JSON.stringify([images[0]]), vehicle.id)
-                .run();
-              vehiclesProcessed++;
-            }
-          }
+          const result = await this.cleanupSoldVehicleImages(env);
           
           return new Response(JSON.stringify({
-            success: true,
-            imagesDeleted: deletedCount,
-            vehiclesProcessed,
-            message: `Cleaned up ${deletedCount} images from ${vehiclesProcessed} sold vehicles`
+            success: result.success,
+            imagesDeleted: result.imagesDeleted,
+            vehiclesProcessed: result.vehiclesProcessed,
+            totalVehiclesChecked: result.totalVehiclesChecked,
+            message: `Cleaned up ${result.imagesDeleted} images from ${result.vehiclesProcessed} sold vehicles`
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
@@ -930,6 +949,26 @@ export default {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
+      }
+
+      // POST /api/admin/clear-cache - Clear browser cache (returns cache-clearing headers)
+      if (url.pathname === '/api/admin/clear-cache' && request.method === 'POST') {
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'Cache clear headers sent. The browser cache should be cleared on the client side.',
+          instructions: {
+            step1: 'Open browser DevTools (F12)',
+            step2: 'Go to Application tab',
+            step3: 'Click "Clear site data"',
+            alternative: 'Or call caches.delete() and localStorage.clear() from console'
+          }
+        }), {
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Clear-Site-Data': '"cache", "storage"'
+          }
+        });
       }
 
       // GET /api/reviews - Get all reviews
@@ -1600,5 +1639,101 @@ export default {
         error: error.message
       };
     }
+  },
+
+  /**
+   * Scheduled handler for cron triggers
+   * Runs daily at 2 AM UTC to clean up old vehicle images
+   */
+  async scheduled(event, env, ctx) {
+    console.log('🕐 Running scheduled image cleanup cron job...');
+    
+    try {
+      // Call the cleanup-sold endpoint logic
+      const result = await this.cleanupSoldVehicleImages(env);
+      
+      console.log('✓ Scheduled cleanup completed:', result);
+      return result;
+    } catch (error) {
+      console.error('✗ Scheduled cleanup failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
+  /**
+   * Helper function to clean up sold vehicle images
+   * Called by both the API endpoint and scheduled cron job
+   */
+  async cleanupSoldVehicleImages(env) {
+    const accountId = env.CLOUDFLARE_ACCOUNT_ID || env.CF_ACCOUNT_ID;
+    const apiToken = env.CLOUDFLARE_IMAGES_TOKEN || env.CF_IMAGES_TOKEN;
+    
+    if (!accountId || !apiToken) {
+      throw new Error('Cloudflare Images credentials not configured');
+    }
+
+    // Get sold vehicles with images
+    const soldVehicles = await env.DB.prepare(`
+      SELECT id, images, sold_at 
+      FROM vehicles 
+      WHERE listing_status = 'sold' 
+      AND images IS NOT NULL 
+      AND images != '[]'
+      ORDER BY sold_at DESC
+    `).all();
+
+    let totalDeleted = 0;
+    let vehiclesProcessed = 0;
+    const now = new Date();
+
+    for (const vehicle of soldVehicles.results || []) {
+      try {
+        const images = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
+        if (!Array.isArray(images) || images.length === 0) continue;
+
+        const soldDate = new Date(vehicle.sold_at);
+        const daysSinceSold = Math.floor((now - soldDate) / (1000 * 60 * 60 * 24));
+
+        let imagesToDelete = [];
+        let remainingImages = images;
+
+        if (daysSinceSold >= 90) {
+          // 90+ days: Delete all images
+          imagesToDelete = images;
+          remainingImages = [];
+        } else if (daysSinceSold >= 14) {
+          // 14-89 days: Keep only first image
+          imagesToDelete = images.slice(1);
+          remainingImages = [images[0]];
+        }
+        // 0-13 days: Keep all images (no deletion)
+
+        if (imagesToDelete.length > 0) {
+          const deleted = await this.deleteVehicleImagesByUrls(imagesToDelete, env);
+          totalDeleted += deleted;
+
+          // Update vehicle with remaining images
+          await env.DB.prepare(`
+            UPDATE vehicles 
+            SET images = ?, updatedAt = datetime('now')
+            WHERE id = ?
+          `).bind(JSON.stringify(remainingImages), vehicle.id).run();
+
+          vehiclesProcessed++;
+        }
+      } catch (error) {
+        console.error(`Error processing vehicle ${vehicle.id}:`, error);
+      }
+    }
+
+    return {
+      success: true,
+      vehiclesProcessed,
+      imagesDeleted: totalDeleted,
+      totalVehiclesChecked: soldVehicles.results?.length || 0
+    };
   }
 };
