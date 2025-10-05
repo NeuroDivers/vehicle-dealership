@@ -114,24 +114,37 @@ export default {
         // Only upload images for NEW vehicles (optimization!)
         const vehiclesToProcess = [...newVehicles, ...updatedVehicles];
         
-        if (env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN) {
-          console.log(`🖼️  Uploading images for ${newVehicles.length} new vehicles only...`);
-          for (const vehicle of newVehicles) {
-            if (vehicle.images && vehicle.images.length > 0) {
-              console.log(`Uploading ${vehicle.images.length} images for NEW: ${vehicle.make} ${vehicle.model}...`);
-              const uploadedImages = await this.uploadImagesToCloudflare(
-                vehicle.images,
-                vehicle.vin || `${vehicle.year}-${vehicle.make}-${vehicle.model}`.replace(/\s+/g, '-'),
-                env
-              );
-              vehicle.images = uploadedImages;
-            }
+        // NEW APPROACH: Save vehicles quickly with vendor URLs
+        // Images will be processed asynchronously by image-processor worker
+        console.log(`💾 Saving vehicles with vendor URLs (async image processing will follow)`);
+        console.log(`   📊 New: ${newVehicles.length}, Updated: ${updatedVehicles.length}`);
+        
+        // Collect vehicle IDs that need image processing
+        const vehicleIdsNeedingImages = [];
+        for (const vehicle of newVehicles) {
+          if (vehicle.images && vehicle.images.length > 0) {
+            // Keep vendor URLs for now - image processor will convert them
+            vehicleIdsNeedingImages.push(vehicle.id || vehicle.vin);
           }
+        }
+        
+        // Trigger async image processing (fire-and-forget)
+        if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR_URL) {
+          console.log(`🚀 Triggering async image processing for ${vehicleIdsNeedingImages.length} vehicles...`);
           
-          // For updated vehicles, keep existing images (no re-upload)
-          console.log(`⚡ Skipping image upload for ${updatedVehicles.length} updated vehicles (images already exist)`);
+          // Don't await - let it run in background
+          fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              vehicleIds: vehicleIdsNeedingImages.slice(0, 10), // Limit to 10 per batch
+              batchSize: 10
+            })
+          }).catch(err => {
+            console.warn('⚠️  Image processor trigger failed (images will remain as vendor URLs):', err.message);
+          });
         } else {
-          console.log('⚠️  No Cloudflare Images token - keeping original URLs');
+          console.log('ℹ️  Image processing disabled (set IMAGE_PROCESSOR_URL to enable)');
         }
         
         const duration = Math.round((Date.now() - startTime) / 1000);

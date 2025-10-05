@@ -3,10 +3,13 @@ main = "lambert-scraper-enhanced.js"
 compatibility_date = "2023-12-01"
 account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 
-[vars]
-ENVIRONMENT = "production"
-CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
-CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
+[env.production]
+vars = { 
+  ENVIRONMENT = "production",
+  CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4",
+  CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA",
+  IMAGE_PROCESSOR_URL = "https://image-processor.nick-damato0011527.workers.dev"
+}
 CF_IMAGES_TOKEN = "hxqfnYpHcT8FrQYyiRiOiOmkPtGkTuhdf6aCfYVT"
 
 # Note: CF_IMAGES_TOKEN is the Cloudflare Images API token
