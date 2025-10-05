@@ -48,10 +48,10 @@ interface SiteSettings {
 }
 
 const defaultSettings: SiteSettings = {
-  siteName: 'Autoprêt 123',
+  siteName: 'AutoPrêt 123',
   logo: '',
   contactEmail: 'info@autopret123.com',
-  contactPhone: '514-444-2769',
+  contactPhone: '514-907-7738',
   contactPhoneSecondary: '',
   primaryPhoneForHeader: 'primary',
   address: '',

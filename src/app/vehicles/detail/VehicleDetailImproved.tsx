@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getVehicleEndpoint } from '@/lib/api-config';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import Image from 'next/image';
@@ -24,6 +24,47 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
   
   // Get current language
   const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('en');
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Touch gesture detection
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+  
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    
+    if (isLeftSwipe) {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }
+    if (isRightSwipe) {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
+    
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+  
+  // Detect mobile device based on screen width
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // Mobile if width < 768px
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   useEffect(() => {
     const storedLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
@@ -148,7 +189,12 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Enhanced Image Gallery */}
         <div>
-          <div className="relative h-[400px] md:h-[450px] lg:h-[500px] bg-gray-100 rounded-xl overflow-hidden shadow-lg">
+          <div 
+            className="relative h-[400px] md:h-[450px] lg:h-[500px] bg-gray-100 rounded-xl overflow-hidden shadow-lg"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             {images.length > 0 ? (
               <>
                 <Image
@@ -161,18 +207,23 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                 />
                 {images.length > 1 && (
                   <>
-                    <button
-                      onClick={() => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white transition"
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </button>
-                    <button
-                      onClick={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white transition"
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </button>
+                    {/* Hide arrows on mobile - swipe gestures only */}
+                    {!isMobile && (
+                      <>
+                        <button
+                          onClick={() => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white transition"
+                        >
+                          <ChevronLeft className="h-6 w-6" />
+                        </button>
+                        <button
+                          onClick={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white transition"
+                        >
+                          <ChevronRight className="h-6 w-6" />
+                        </button>
+                      </>
+                    )}
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 px-3 py-1 rounded-full">
                       <span className="text-white text-sm">{currentImageIndex + 1} / {images.length}</span>
                     </div>

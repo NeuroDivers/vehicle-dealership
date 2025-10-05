@@ -739,6 +739,8 @@ export default {
           
           // Call vendor-sync-worker to sync this specific vehicle
           const syncWorkerUrl = 'https://vendor-sync-worker.nick-damato0011527.workers.dev';
+          console.log('Calling vendor-sync-worker for vehicle:', vehicle.vin, vehicle.vendor_id);
+          
           const syncResponse = await fetch(`${syncWorkerUrl}/api/sync-vendor`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -750,7 +752,9 @@ export default {
             })
           });
           
+          console.log('Sync response status:', syncResponse.status);
           const syncData = await syncResponse.json();
+          console.log('Sync data:', JSON.stringify(syncData));
           
           if (syncResponse.ok && syncData.success) {
             return new Response(JSON.stringify({
