@@ -3,7 +3,7 @@ main = "lambert-scraper-enhanced.js"
 compatibility_date = "2023-12-01"
 account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 
-[env.production.vars]
+[vars]
 ENVIRONMENT = "production"
 CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
 CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"

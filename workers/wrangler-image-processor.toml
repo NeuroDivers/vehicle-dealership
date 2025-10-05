@@ -1,16 +1,18 @@
 name = "image-processor"
 main = "image-processor.js"
 compatibility_date = "2024-01-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 
-[env.production.vars]
+[vars]
 ENVIRONMENT = "production"
 CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
 CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
+CF_IMAGES_TOKEN = "hxqfnYpHcT8FrQYyiRiOiOmkPtGkTuhdf6aCfYVT"
 
-[[env.production.d1_databases]]
+[[d1_databases]]
 binding = "DB"
 database_name = "vehicle-dealership-analytics"
 database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
 
-# Add your Cloudflare Images API token as a secret:
-# wrangler secret put CF_IMAGES_TOKEN --config workers/wrangler-image-processor.toml
+# Note: CF_IMAGES_TOKEN is set in [vars] above
+# D1 binding is now at root level for default environment

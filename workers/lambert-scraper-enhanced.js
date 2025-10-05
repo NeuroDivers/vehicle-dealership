@@ -119,38 +119,12 @@ export default {
         console.log(`💾 Saving vehicles with vendor URLs (async image processing will follow)`);
         console.log(`   📊 New: ${newVehicles.length}, Updated: ${updatedVehicles.length}`);
         
-        // Collect vehicle IDs that need image processing
-        const vehicleIdsNeedingImages = [];
-        for (const vehicle of newVehicles) {
-          if (vehicle.images && vehicle.images.length > 0) {
-            // Keep vendor URLs for now - image processor will convert them
-            vehicleIdsNeedingImages.push(vehicle.id || vehicle.vin);
-          }
-        }
+        // NOTE: Image processing happens in the vehicle-api when vehicles are saved to DB
+        // The scraper just returns vehicles with vendor URLs
+        // The API will call the image processor after saving
+        console.log(`ℹ️  Vehicles ready with vendor URLs. Image processing will be triggered by API after saving to database.`);
         
-        // Trigger async image processing (fire-and-forget)
         let imageJobId = null;
-        if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR_URL) {
-          // Create unique job ID for tracking
-          imageJobId = `lambert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          console.log(`🚀 Triggering async image processing for ${vehicleIdsNeedingImages.length} vehicles (Job: ${imageJobId})...`);
-          
-          // Don't await - let it run in background
-          fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              vehicleIds: vehicleIdsNeedingImages.slice(0, 10), // Limit to 10 per batch
-              batchSize: 10,
-              jobId: imageJobId,
-              vendorName: 'Lambert Auto'
-            })
-          }).catch(err => {
-            console.warn('⚠️  Image processor trigger failed (images will remain as vendor URLs):', err.message);
-          });
-        } else {
-          console.log('ℹ️  Image processing disabled (set IMAGE_PROCESSOR_URL to enable)');
-        }
         
         const duration = Math.round((Date.now() - startTime) / 1000);
         

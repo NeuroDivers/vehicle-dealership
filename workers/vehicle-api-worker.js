@@ -544,6 +544,30 @@ export default {
           vehicle.is_published !== false ? 1 : 0
         ).run();
         
+        // Trigger async image processing if vehicle has vendor URLs
+        const images = vehicle.images || [];
+        const hasVendorUrls = images.some(img => 
+          typeof img === 'string' && img.startsWith('http') && !img.includes('imagedelivery.net')
+        );
+        
+        if (hasVendorUrls && env.IMAGE_PROCESSOR_URL) {
+          const jobId = `api-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Don't await - let it run in background
+          fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              vehicleIds: [id],
+              batchSize: 1,
+              jobId: jobId,
+              vendorName: vehicle.vendor_name || 'API Upload'
+            })
+          }).catch(err => {
+            console.warn('Image processor trigger failed:', err.message);
+          });
+        }
+        
         return new Response(JSON.stringify({ success: true, id }), {
           status: 201,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }

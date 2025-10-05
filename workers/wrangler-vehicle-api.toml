@@ -12,6 +12,7 @@ database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
 [vars]
 ENVIRONMENT = "production"
 CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
+IMAGE_PROCESSOR_URL = "https://image-processor.nick-damato0011527.workers.dev"
 
 # Cloudflare Images API token should be added as a secret:
 # npx wrangler secret put CF_IMAGES_TOKEN --config wrangler-vehicle-api.toml
