@@ -1322,5 +1322,64 @@ export default {
     if (upper.includes('RWD') || upper.includes('REAR')) return 'RWD';
     if (upper.includes('4WD') || upper.includes('4X4')) return '4WD';
     return drive;
+  },
+  
+  /**
+   * Scheduled handler for automatic syncing
+   * Runs every 3 days, rotating through vendors
+   */
+  async scheduled(event, env, ctx) {
+    try {
+      console.log('Scheduled sync triggered at:', new Date().toISOString());
+      
+      // Rotate through vendors based on day of month
+      // Days 1-10: Lambert, Days 11-20: NaniAuto, Days 21-31: SLT Autos
+      const dayOfMonth = new Date().getDate();
+      let vendorId;
+      
+      if (dayOfMonth <= 10) {
+        vendorId = 'lambert';
+      } else if (dayOfMonth <= 20) {
+        vendorId = 'naniauto';
+      } else {
+        vendorId = 'sltautos';
+      }
+      
+      console.log(`Auto-syncing vendor: ${vendorId}`);
+      
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      };
+      
+      // Execute the sync
+      let result;
+      if (vendorId === 'lambert') {
+        result = await this.syncLambert(env, corsHeaders);
+      } else if (vendorId === 'naniauto') {
+        result = await this.syncNaniAuto(env, corsHeaders);
+      } else if (vendorId === 'sltautos') {
+        result = await this.syncSLTAutos(env, corsHeaders);
+      }
+      
+      const resultData = await result.json();
+      console.log(`Auto-sync completed for ${vendorId}:`, resultData);
+      
+    } catch (error) {
+      console.error('Scheduled sync error:', error);
+      // Log error to database
+      try {
+        await env.DB.prepare(`
+          INSERT INTO vendor_sync_logs (
+            vendor_id, vendor_name, sync_date,
+            vehicles_found, new_vehicles, updated_vehicles,
+            status, error_message
+          ) VALUES (?, ?, datetime('now'), 0, 0, 0, 'failed', ?)
+        `).bind('auto-sync', 'Automatic Sync', error.message).run();
+      } catch (logError) {
+        console.error('Failed to log scheduled sync error:', logError);
+      }
+    }
   }
 };

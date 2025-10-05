@@ -474,6 +474,24 @@ export default {
         }
       }
 
+      // GET /api/admin/vehicles - Get ALL vehicles (admin only, includes sold/draft/unlisted)
+      if (url.pathname === '/api/admin/vehicles' && request.method === 'GET') {
+        const { results } = await env.DB.prepare(`
+          SELECT 
+            id, make, model, year, price, odometer, bodyType, fuelType,
+            transmission, drivetrain, color, vin, stockNumber,
+            description, images, isSold,
+            vendor_id, vendor_name, vendor_status, is_published, 
+            created_at, updated_at
+          FROM vehicles 
+          ORDER BY created_at DESC
+        `).all();
+        
+        return new Response(JSON.stringify(results), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       // GET /api/vehicles - Get all vehicles
       if (url.pathname === '/api/vehicles' && request.method === 'GET') {
         const { results } = await env.DB.prepare(`

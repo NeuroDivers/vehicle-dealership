@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Car, X } from 'lucide-react';
 
 interface VehicleImageGalleryProps {
@@ -11,6 +11,21 @@ interface VehicleImageGalleryProps {
 export default function VehicleImageGallery({ images, vehicleName }: VehicleImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showFullscreen, setShowFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Touch gesture detection
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   if (!images || images.length === 0) {
     return (
@@ -27,13 +42,48 @@ export default function VehicleImageGallery({ images, vehicleName }: VehicleImag
   const prevImage = () => {
     setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
   };
+  
+  // Touch handlers for swipe gestures
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = null;
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 50; // Minimum distance for a swipe
+    
+    if (Math.abs(distance) > minSwipeDistance) {
+      if (distance > 0) {
+        // Swiped left - show next image
+        nextImage();
+      } else {
+        // Swiped right - show previous image
+        prevImage();
+      }
+    }
+    
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
 
   return (
     <>
       {/* Main Gallery */}
       <div className="space-y-4">
         {/* Main Image */}
-        <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+        <div 
+          className="relative bg-gray-100 rounded-lg overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <img
             src={images[currentIndex]}
             alt={`${vehicleName} - Image ${currentIndex + 1}`}
@@ -41,18 +91,28 @@ export default function VehicleImageGallery({ images, vehicleName }: VehicleImag
             onClick={() => setShowFullscreen(true)}
           />
           
-          {/* Navigation Arrows */}
+          {/* Navigation Arrows - More subtle on mobile */}
           {images.length > 1 && (
             <>
               <button
                 onClick={prevImage}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition"
+                className={`absolute left-2 top-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-full transition ${
+                  isMobile 
+                    ? 'bg-opacity-30 hover:bg-opacity-50' 
+                    : 'bg-opacity-50 hover:bg-opacity-70'
+                }`}
+                aria-label="Previous image"
               >
                 <ChevronLeft className="h-6 w-6" />
               </button>
               <button
                 onClick={nextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition"
+                className={`absolute right-2 top-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-full transition ${
+                  isMobile 
+                    ? 'bg-opacity-30 hover:bg-opacity-50' 
+                    : 'bg-opacity-50 hover:bg-opacity-70'
+                }`}
+                aria-label="Next image"
               >
                 <ChevronRight className="h-6 w-6" />
               </button>
@@ -99,25 +159,40 @@ export default function VehicleImageGallery({ images, vehicleName }: VehicleImag
             <X className="h-8 w-8" />
           </button>
           
-          <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center">
+          <div 
+            className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             <img
               src={images[currentIndex]}
               alt={`${vehicleName} - Image ${currentIndex + 1}`}
               className="max-w-full max-h-full object-contain"
             />
             
-            {/* Navigation in Fullscreen */}
+            {/* Navigation in Fullscreen - More subtle on mobile */}
             {images.length > 1 && (
               <>
                 <button
                   onClick={prevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition"
+                  className={`absolute left-4 top-1/2 -translate-y-1/2 bg-black text-white p-3 rounded-full transition ${
+                    isMobile 
+                      ? 'bg-opacity-30 hover:bg-opacity-50' 
+                      : 'bg-opacity-50 hover:bg-opacity-70'
+                  }`}
+                  aria-label="Previous image"
                 >
                   <ChevronLeft className="h-8 w-8" />
                 </button>
                 <button
                   onClick={nextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition"
+                  className={`absolute right-4 top-1/2 -translate-y-1/2 bg-black text-white p-3 rounded-full transition ${
+                    isMobile 
+                      ? 'bg-opacity-30 hover:bg-opacity-50' 
+                      : 'bg-opacity-50 hover:bg-opacity-70'
+                  }`}
+                  aria-label="Next image"
                 >
                   <ChevronRight className="h-8 w-8" />
                 </button>

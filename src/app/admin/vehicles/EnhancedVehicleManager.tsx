@@ -72,7 +72,9 @@ export default function EnhancedVehicleManager() {
   }, []);
 
   const fetchVehicles = () => {
-    fetch(getVehicleEndpoint())
+    // Use admin endpoint to get ALL vehicles including sold ones
+    const adminEndpoint = getVehicleEndpoint().replace('/api/vehicles', '/api/admin/vehicles');
+    fetch(adminEndpoint)
       .then(res => res.json())
       .then(data => {
         setVehicles(Array.isArray(data) ? data : []);

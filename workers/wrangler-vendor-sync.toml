@@ -32,6 +32,11 @@ service = "generic-dealer-scraper"
 ENVIRONMENT = "production"
 CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
 
+# Scheduled automatic syncing - Every 3 days at 2 AM UTC
+# Rotates through vendors: Day 1 Lambert, Day 4 NaniAuto, Day 7 SLT, repeat
+[triggers]
+crons = ["0 2 */3 * *"]
+
 # To set the Cloudflare Images API token, run:
 # npx wrangler secret put CLOUDFLARE_IMAGES_TOKEN --config workers/wrangler-vendor-sync.toml
 # Then paste your Cloudflare Images API token when prompted
