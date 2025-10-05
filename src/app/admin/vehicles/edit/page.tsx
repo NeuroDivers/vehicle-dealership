@@ -326,15 +326,22 @@ export default function EditVehicle() {
         // Add image info to form data - handle new Cloudflare Images response format
         if (result.images && result.images.length > 0) {
           const newImage = result.images[0];
-          // Use the public variant for display in the form (thumbnail doesn't exist)
-          const imageUrl = newImage.variants?.public || newImage.id;
-          setFormData(prev => ({
-            ...prev,
-            imagesList: [...prev.imagesList, imageUrl],
-            newImages: [...(prev.newImages || []), newImage], // Store full object for saving with safety check
-          }));
-          console.log('Image uploaded successfully:', newImage);
-          console.log('Image URL added to list:', imageUrl);
+          
+          // Extract URL using utility function (dynamically imported below)
+          const { extractImageUrl } = await import('@/lib/image-utils');
+          const imageUrl = extractImageUrl(newImage, 'public');
+          
+          if (imageUrl) {
+            setFormData(prev => ({
+              ...prev,
+              imagesList: [...prev.imagesList, imageUrl],
+              newImages: [...(prev.newImages || []), newImage],
+            }));
+            console.log('Image uploaded successfully:', newImage);
+            console.log('Image URL added to list:', imageUrl);
+          } else {
+            console.error('Could not extract image URL from response:', newImage);
+          }
         } else if (result.urls && result.urls.length > 0) {
           // Fallback for old format
           setFormData(prev => ({
