@@ -1,8 +1,8 @@
 'use client';
-
-import { useState, useEffect } from 'react';
-import { getVehicleEndpoint } from '@/lib/api-config';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { getVehicleEndpoint } from '@/lib/api-config';
+import { constructImageUrl } from '@/lib/image-utils';
 import Link from 'next/link';
 import { ArrowLeft, Upload, X, Save, Loader2 } from 'lucide-react';
 
@@ -104,54 +104,38 @@ export default function EditVehicle() {
           if (data.images) {
             const parsedImages = typeof data.images === 'string' ? JSON.parse(data.images) : data.images;
             
-            // Dynamically import image utils
-            import('@/lib/image-utils').then(({ constructImageUrl }) => {
-              // Handle different image formats
-              if (Array.isArray(parsedImages)) {
-                imageUrls = parsedImages.map((img: any) => {
-                  if (typeof img === 'string') {
-                    // Check if it's already a full URL or just an ID
-                    if (img.startsWith('http')) {
-                      return img; // Full URL - use as-is
-                    } else {
-                      // Just an ID - construct URL
-                      return constructImageUrl(img, 'public');
-                    }
-                  } else if (img && img.variants) {
-                    // Old format with variants object
-                    return img.variants.public || img.variants[0];
-                  } else if (img && img.id) {
-                    // Object with ID - construct URL from ID
-                    return constructImageUrl(img.id, 'public');
+            // Handle different image formats
+            if (Array.isArray(parsedImages)) {
+              imageUrls = parsedImages.map((img: any) => {
+                if (typeof img === 'string') {
+                  // Check if it's already a full URL or just an ID
+                  if (img.startsWith('http')) {
+                    return img; // Full URL - use as-is
+                  } else {
+                    // Just an ID - construct URL
+                    return constructImageUrl(img, 'public');
                   }
-                  return null;
-                }).filter((url: any) => url && typeof url === 'string');
-              }
-              
-              // Update form data after processing
-              setFormData({
-                ...data,
-                imagesList: imageUrls,
-                originalImages: data.images || [],
-                newImages: [],
-                deletedImages: [],
-              });
-              setLoading(false);
-            });
-          } else {
-            // No images - set form data immediately
-            setFormData({
-              ...data,
-              imagesList: [],
-              originalImages: [],
-              newImages: [],
-              deletedImages: [],
-            });
-            setLoading(false);
+                } else if (img && img.variants) {
+                  // Old format with variants object
+                  return img.variants.public || img.variants[0];
+                } else if (img && img.id) {
+                  // Object with ID - construct URL from ID
+                  return constructImageUrl(img.id, 'public');
+                }
+                return null;
+              }).filter((url: any) => url && typeof url === 'string');
+            }
           }
           
+          setFormData({
+            ...data,
+            imagesList: imageUrls,
+            originalImages: data.images || [],
+            newImages: [],
+            deletedImages: [],
+          });
         }
-        // setLoading is now handled in the image parsing logic above
+        setLoading(false);
       })
       .catch(err => {
         console.error('Failed to fetch vehicle:', err);
@@ -277,8 +261,8 @@ export default function EditVehicle() {
     if (!files || files.length === 0) return;
 
     // Check if adding these files would exceed the limit
-    if (formData.imagesList.length + files.length > 10) {
-      alert(`You can only have up to 10 images. You currently have ${formData.imagesList.length} images.`);
+    if (formData.imagesList.length + files.length > 20) {
+      alert(`You can only have up to 20 images. You currently have ${formData.imagesList.length} images.`);
       e.target.value = '';
       return;
     }
@@ -837,14 +821,14 @@ export default function EditVehicle() {
                     <>
                       <Upload className="h-5 w-5 text-gray-600" />
                       <span className="text-gray-600">
-                        {formData.imagesList.length >= 10 ? 'Maximum 10 images' : 'Upload Images'}
+                        {formData.imagesList.length >= 20 ? 'Maximum 20 images' : 'Upload Images'}
                       </span>
                     </>
                   )}
                 </div>
               </label>
               <span className="text-sm text-gray-500">
-                {formData.imagesList.length}/10 images uploaded
+                {formData.imagesList.length}/20 images uploaded
               </span>
             </div>
             <p className="mt-2 text-xs text-gray-500">

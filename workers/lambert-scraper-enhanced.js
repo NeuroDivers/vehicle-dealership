@@ -622,19 +622,19 @@ export default {
         if (uploadResponse.ok) {
           const result = await uploadResponse.json();
           if (result.success) {
-            // Use the account hash to build the delivery URL
-            const cfImageUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
-            uploadedImages.push(cfImageUrl);
-            console.log(`✅ Uploaded: ${cfImageUrl}`);
+            // Store only the image ID for consistency with manual uploads
+            // The frontend will construct URLs as needed
+            uploadedImages.push(imageId);
+            console.log(`✅ Uploaded: ${imageId}`);
           } else {
             console.error(`❌ Upload failed:`, JSON.stringify(result.errors));
-            uploadedImages.push(imageUrl); // Keep original URL on failure
+            uploadedImages.push(imageUrl); // Keep original vendor URL on failure
           }
         } else {
           const errorText = await uploadResponse.text();
           console.error(`❌ Upload request failed: ${uploadResponse.status}`);
           console.error(`Response: ${errorText}`);
-          uploadedImages.push(imageUrl); // Keep original URL on failure
+          uploadedImages.push(imageUrl); // Keep original vendor URL on failure
         }
         
         // Small delay to avoid rate limiting
