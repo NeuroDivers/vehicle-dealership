@@ -99,39 +99,59 @@ export default function EditVehicle() {
           alert('Vehicle not found');
           router.push('/admin/vehicles');
         } else {
-          // Parse images and extract URLs
+          // Parse images and construct URLs
           let imageUrls: string[] = [];
           if (data.images) {
             const parsedImages = typeof data.images === 'string' ? JSON.parse(data.images) : data.images;
             
-            // Handle both old format (array of strings) and new Cloudflare Images format
-            if (Array.isArray(parsedImages)) {
-              imageUrls = parsedImages.map((img: any) => {
-                if (typeof img === 'string') {
-                  return img; // Old format - direct URL
-                } else if (img && img.variants) {
-                  // New Cloudflare Images format - use public variant (thumbnail doesn't exist)
-                  return img.variants.public || img.variants.gallery;
-                } else if (img && img.url) {
-                  return img.url; // Other object format
-                } else if (img && img.id) {
-                  // Cloudflare Images with just ID
-                  return img.id;
-                }
-                return null; // Don't return the object itself
-              }).filter((url: any) => url && typeof url === 'string');
-            }
+            // Dynamically import image utils
+            import('@/lib/image-utils').then(({ constructImageUrl }) => {
+              // Handle different image formats
+              if (Array.isArray(parsedImages)) {
+                imageUrls = parsedImages.map((img: any) => {
+                  if (typeof img === 'string') {
+                    // Check if it's already a full URL or just an ID
+                    if (img.startsWith('http')) {
+                      return img; // Full URL - use as-is
+                    } else {
+                      // Just an ID - construct URL
+                      return constructImageUrl(img, 'public');
+                    }
+                  } else if (img && img.variants) {
+                    // Old format with variants object
+                    return img.variants.public || img.variants[0];
+                  } else if (img && img.id) {
+                    // Object with ID - construct URL from ID
+                    return constructImageUrl(img.id, 'public');
+                  }
+                  return null;
+                }).filter((url: any) => url && typeof url === 'string');
+              }
+              
+              // Update form data after processing
+              setFormData({
+                ...data,
+                imagesList: imageUrls,
+                originalImages: data.images || [],
+                newImages: [],
+                deletedImages: [],
+              });
+              setLoading(false);
+            });
+          } else {
+            // No images - set form data immediately
+            setFormData({
+              ...data,
+              imagesList: [],
+              originalImages: [],
+              newImages: [],
+              deletedImages: [],
+            });
+            setLoading(false);
           }
           
-          setFormData({
-            ...data,
-            imagesList: imageUrls,
-            originalImages: data.images || [], // Keep original format for saving, default to empty array
-            newImages: [], // Initialize newImages as empty array
-            deletedImages: [], // Initialize deletedImages as empty array
-          });
         }
-        setLoading(false);
+        // setLoading is now handled in the image parsing logic above
       })
       .catch(err => {
         console.error('Failed to fetch vehicle:', err);
@@ -145,20 +165,25 @@ export default function EditVehicle() {
     setLoading(true);
 
     try {
-      // Combine original images with new uploads
-      let finalImages: any[] = [];
+      // Combine original images with new uploads - store only IDs
+      let finalImages: string[] = [];
       
       // Parse original images if they exist
       if (formData.originalImages) {
         const original = typeof formData.originalImages === 'string' 
           ? JSON.parse(formData.originalImages) 
           : formData.originalImages;
-        finalImages = [...original];
+        // Extract IDs if they're objects, otherwise keep as-is (backward compatibility)
+        const originalIds = original.map((img: any) => 
+          typeof img === 'object' && img.id ? img.id : img
+        );
+        finalImages = [...originalIds];
       }
       
-      // Add new images (with safety check)
+      // Add new images - extract only the IDs
       if (formData.newImages && formData.newImages.length > 0) {
-        finalImages = [...finalImages, ...formData.newImages];
+        const newImageIds = formData.newImages.map((img: any) => img.id);
+        finalImages = [...finalImages, ...newImageIds];
       }
       
       const res = await fetch(getVehicleEndpoint(`/${vehicleId}`), {

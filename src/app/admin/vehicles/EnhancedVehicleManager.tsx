@@ -760,18 +760,26 @@ export default function EnhancedVehicleManager() {
                   if (images.length > 0) {
                     const img = images[0];
                     if (typeof img === 'string') {
-                      firstImageUrl = img;
+                      // Check if it's a full URL or just an ID
+                      if (img.startsWith('http')) {
+                        firstImageUrl = img;
+                        // Use thumbnail variant for table view
+                        if (firstImageUrl.includes('imagedelivery.net')) {
+                          firstImageUrl = firstImageUrl.replace(/\/(public|thumbnail|w=300|px300)$/, '/thumbnail');
+                        }
+                      } else {
+                        // It's an ID - construct thumbnail URL
+                        firstImageUrl = `https://imagedelivery.net/fxSXhaLsNKtcGJIGPzWBwA/${img}/thumbnail`;
+                      }
                     } else if (img && img.variants) {
-                      firstImageUrl = img.variants.public || img.variants.gallery;
-                    } else if (img && img.url) {
-                      firstImageUrl = img.url;
+                      // Old format with variants array/object
+                      firstImageUrl = Array.isArray(img.variants) 
+                        ? (img.variants.find((v: string) => v.includes('thumbnail')) || img.variants[0])
+                        : (img.variants.thumbnail || img.variants.public);
                     } else if (img && img.id) {
-                      firstImageUrl = img.id;
+                      // Object with ID - construct thumbnail URL
+                      firstImageUrl = `https://imagedelivery.net/fxSXhaLsNKtcGJIGPzWBwA/${img.id}/thumbnail`;
                     }
-                  }
-                  // Use thumbnail variant for table view (150px)
-                  if (firstImageUrl && firstImageUrl.includes('imagedelivery.net')) {
-                    firstImageUrl = firstImageUrl.replace(/\/(public|thumbnail|w=300)$/, '/thumbnail');
                   }
                   
                   return (
@@ -900,18 +908,26 @@ export default function EnhancedVehicleManager() {
             if (images.length > 0) {
               const img = images[0];
               if (typeof img === 'string') {
-                firstImageUrl = img;
+                // Check if it's a full URL or just an ID
+                if (img.startsWith('http')) {
+                  firstImageUrl = img;
+                  // Use w=300 variant for grid view
+                  if (firstImageUrl.includes('imagedelivery.net')) {
+                    firstImageUrl = firstImageUrl.replace(/\/(public|thumbnail|w=300|px300)$/, '/w=300');
+                  }
+                } else {
+                  // It's an ID - construct w=300 URL for grid cards
+                  firstImageUrl = `https://imagedelivery.net/fxSXhaLsNKtcGJIGPzWBwA/${img}/w=300`;
+                }
               } else if (img && img.variants) {
-                firstImageUrl = img.variants.public || img.variants.gallery;
-              } else if (img && img.url) {
-                firstImageUrl = img.url;
+                // Old format with variants array/object
+                firstImageUrl = Array.isArray(img.variants) 
+                  ? (img.variants.find((v: string) => v.includes('w=300') || v.includes('px300')) || img.variants[0])
+                  : (img.variants['w=300'] || img.variants.public);
               } else if (img && img.id) {
-                firstImageUrl = img.id;
+                // Object with ID - construct w=300 URL
+                firstImageUrl = `https://imagedelivery.net/fxSXhaLsNKtcGJIGPzWBwA/${img.id}/w=300`;
               }
-            }
-            // Use w=300 variant for grid view (300px)
-            if (firstImageUrl && firstImageUrl.includes('imagedelivery.net')) {
-              firstImageUrl = firstImageUrl.replace(/\/(public|thumbnail|w=300)$/, '/w=300');
             }
             
             return (
