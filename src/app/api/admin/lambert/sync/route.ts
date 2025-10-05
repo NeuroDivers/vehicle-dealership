@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+const IMAGE_PROCESSOR_URL = 'https://image-processor.nick-damato0011527.workers.dev';
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
     ];
     
     let synced = 0;
+    const vehicleIdsNeedingImages: (string | number)[] = [];
     
     for (const vehicle of lambertVehicles) {
       // Check if vehicle already exists
@@ -60,6 +62,8 @@ export async function POST(request: NextRequest) {
         }
       });
       
+      let vehicleId: string | number;
+      
       if (existing) {
         // Update existing vehicle
         await prisma.vehicle.update({
@@ -70,22 +74,58 @@ export async function POST(request: NextRequest) {
             lastSynced: new Date()
           }
         });
+        vehicleId = existing.id;
       } else {
         // Create new vehicle
-        await prisma.vehicle.create({
+        const created = await prisma.vehicle.create({
           data: {
             ...vehicle,
             lastSynced: new Date()
           }
         });
+        vehicleId = created.id;
+      }
+      
+      // Check if vehicle has vendor image URLs that need processing
+      const images = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
+      const hasVendorUrls = Array.isArray(images) && images.some(
+        (img: any) => typeof img === 'string' && img.startsWith('http') && !img.includes('imagedelivery.net')
+      );
+      
+      if (hasVendorUrls) {
+        vehicleIdsNeedingImages.push(vehicleId);
       }
       
       synced++;
     }
     
+    // Trigger async image processing for vehicles with vendor URLs
+    if (vehicleIdsNeedingImages.length > 0) {
+      const jobId = `lambert-sync-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      fetch(`${IMAGE_PROCESSOR_URL}/api/process-images`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vehicleIds: vehicleIdsNeedingImages,
+          batchSize: 10,
+          jobId: jobId,
+          vendorName: 'Lambert Auto'
+        })
+      }).catch(err => {
+        console.warn('Image processor trigger failed:', err.message);
+      });
+      
+      console.log(`🚀 Triggered image processing for ${vehicleIdsNeedingImages.length} vehicles (Job: ${jobId})`);
+    }
+    
     return NextResponse.json({
       success: true,
       synced,
+      imageProcessing: vehicleIdsNeedingImages.length > 0 ? {
+        triggered: true,
+        count: vehicleIdsNeedingImages.length
+      } : null,
       message: `Successfully synced ${synced} vehicles from Lambert`
     });
     
