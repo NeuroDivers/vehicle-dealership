@@ -7,7 +7,9 @@ account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 ENVIRONMENT = "production"
 CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
 CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
+IMAGE_PROCESSOR_URL = "https://image-processor.nick-damato0011527.workers.dev"
 CF_IMAGES_TOKEN = "hxqfnYpHcT8FrQYyiRiOiOmkPtGkTuhdf6aCfYVT"
 
-# Note: CF_IMAGES_TOKEN enables automatic image upload to Cloudflare Images
-# Images will be uploaded to imagedelivery.net CDN instead of using sltautos.com URLs
+# Note: Async image processing enabled via IMAGE_PROCESSOR_URL
+# Vehicles saved quickly with vendor URLs, images processed in background
+# CF_IMAGES_TOKEN used by image-processor worker

@@ -26,20 +26,35 @@ export default {
         const vehicles = await this.scrapeSLTAutosInventory();
         console.log(`🔍 Scraped ${vehicles.length} vehicles from SLT Autos`);
         
-        // Upload images to Cloudflare if token is available
-        if (env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN) {
-          console.log('🖼️  Uploading images to Cloudflare Images...');
-          for (const vehicle of vehicles) {
-            if (vehicle.images && vehicle.images.length > 0) {
-              console.log(`Uploading ${vehicle.images.length} images for ${vehicle.make} ${vehicle.model}...`);
-              const uploadedImages = await this.uploadImagesToCloudflare(
-                vehicle.images,
-                vehicle.vin || `${vehicle.year}-${vehicle.make}-${vehicle.model}`.replace(/\s+/g, '-'),
-                env
-              );
-              vehicle.images = uploadedImages;
-            }
+        // NEW APPROACH: Save vehicles with vendor URLs, trigger async image processing
+        console.log(`💾 Saving ${vehicles.length} vehicles with vendor URLs (async image processing will follow)`);
+        
+        // Collect vehicle IDs that need image processing
+        const vehicleIdsNeedingImages = [];
+        for (const vehicle of vehicles) {
+          if (vehicle.images && vehicle.images.length > 0) {
+            // Keep vendor URLs for now - image processor will convert them
+            vehicleIdsNeedingImages.push(vehicle.id || vehicle.vin);
           }
+        }
+        
+        // Trigger async image processing (fire-and-forget)
+        if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR_URL) {
+          console.log(`🚀 Triggering async image processing for ${vehicleIdsNeedingImages.length} vehicles...`);
+          
+          // Don't await - let it run in background
+          fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              vehicleIds: vehicleIdsNeedingImages.slice(0, 10), // Limit to 10 per batch
+              batchSize: 10
+            })
+          }).catch(err => {
+            console.warn('⚠️  Image processor trigger failed (images will remain as vendor URLs):', err.message);
+          });
+        } else {
+          console.log('ℹ️  Image processing disabled (set IMAGE_PROCESSOR_URL to enable)');
         }
         
         const duration = Math.round((Date.now() - startTime) / 1000);
