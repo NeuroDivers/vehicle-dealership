@@ -2,12 +2,10 @@ name = "image-processor"
 main = "image-processor.js"
 compatibility_date = "2024-01-01"
 
-[env.production]
-vars = { 
-  ENVIRONMENT = "production",
-  CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4",
-  CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
-}
+[env.production.vars]
+ENVIRONMENT = "production"
+CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
+CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
 
 [[env.production.d1_databases]]
 binding = "DB"
