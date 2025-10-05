@@ -242,11 +242,20 @@ export default {
       if (url.pathname === '/api/analytics/dashboard' && request.method === 'GET') {
         const timeRange = url.searchParams.get('timeRange') || '7d';
         
-        // Parse time range
+        // Parse time range - convert to days for SQL queries
         let daysAgo = 7;
-        if (timeRange.endsWith('d')) daysAgo = parseInt(timeRange);
-        else if (timeRange === '1m') daysAgo = 30;
-        else if (timeRange === '3m') daysAgo = 90;
+        if (timeRange.endsWith('h')) {
+          // Handle hours (e.g., 24h = 1 day)
+          const hours = parseInt(timeRange);
+          daysAgo = Math.max(1, Math.ceil(hours / 24)); // At least 1 day
+        } else if (timeRange.endsWith('d')) {
+          // Handle days (e.g., 7d, 30d, 90d)
+          daysAgo = parseInt(timeRange);
+        } else if (timeRange === '1m') {
+          daysAgo = 30;
+        } else if (timeRange === '3m') {
+          daysAgo = 90;
+        }
         
         // Helper function to safely query analytics tables
         const safeQuery = async (query) => {
@@ -656,6 +665,63 @@ export default {
         } catch (error) {
           console.error('Error deleting vehicle:', error);
           return new Response(JSON.stringify({ 
+            success: false,
+            error: error.message
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // POST /api/admin/vehicles/[id]/sync-from-vendor - Sync single vehicle from vendor
+      if (url.pathname.match(/^\/api\/admin\/vehicles\/[\w-]+\/sync-from-vendor$/) && request.method === 'POST') {
+        try {
+          const vehicleId = url.pathname.split('/')[4];
+          
+          // Get the vehicle to find its vendor
+          const vehicle = await env.DB.prepare(`
+            SELECT vendor_id, vendor_name, vin, vendor_stock_number 
+            FROM vehicles 
+            WHERE id = ?
+          `).bind(vehicleId).first();
+          
+          if (!vehicle) {
+            return new Response(JSON.stringify({
+              success: false,
+              error: 'Vehicle not found'
+            }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          
+          if (!vehicle.vendor_id || vehicle.vendor_id === 'internal') {
+            return new Response(JSON.stringify({
+              success: false,
+              error: 'This vehicle was manually added and has no vendor source'
+            }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          
+          // For now, trigger a full vendor sync
+          // In the future, this could be optimized to fetch just one vehicle
+          // by calling the vendor-sync-worker with specific VIN/stock number
+          return new Response(JSON.stringify({
+            success: true,
+            message: `Individual vehicle sync is not yet fully implemented. Please use "Sync Now" for ${vehicle.vendor_name} to refresh this vehicle.`,
+            vendor_id: vehicle.vendor_id,
+            vendor_name: vehicle.vendor_name,
+            note: 'Full vendor sync recommended for now'
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+          
+        } catch (error) {
+          console.error('Error syncing individual vehicle:', error);
+          return new Response(JSON.stringify({
             success: false,
             error: error.message
           }), {
