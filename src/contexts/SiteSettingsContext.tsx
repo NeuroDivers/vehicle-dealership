@@ -74,9 +74,9 @@ const defaultSettings: SiteSettings = {
     es: '© 2024 Premium Auto Sales. Todos los derechos reservados.'
   },
   themeColors: {
-    primary: '#10b981', // green-500
-    secondary: '#059669', // green-600
-    accent: '#34d399', // green-400
+    primary: '#1f4d2f', // green-500
+    secondary: '#15803d', // green-600
+    accent: '#1f4d2f', // green-400
     headerText: '#000000' // black for header text
   },
   disclaimers: {
