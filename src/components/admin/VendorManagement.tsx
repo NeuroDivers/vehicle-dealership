@@ -136,38 +136,46 @@ export default function VendorManagement() {
   const syncVendor = async (vendorId: string) => {
     setSyncing(vendorId);
     try {
-      const syncUrl = process.env.NEXT_PUBLIC_VENDOR_SYNC_URL || 
-                      'https://vendor-sync-worker.nick-damato0011527.workers.dev';
+      // Call scraper directly instead of vendor-sync-worker
+      const scraperUrls: Record<string, string> = {
+        lambert: process.env.NEXT_PUBLIC_LAMBERT_SCRAPER_URL || 'https://lambert-scraper.nick-damato0011527.workers.dev',
+        naniauto: process.env.NEXT_PUBLIC_NANIAUTO_SCRAPER_URL || 'https://naniauto-scraper.nick-damato0011527.workers.dev',
+        sltautos: process.env.NEXT_PUBLIC_SLTAUTOS_SCRAPER_URL || 'https://sltautos-scraper.nick-damato0011527.workers.dev'
+      };
       
-      const response = await fetch(`${syncUrl}/api/sync-vendor`, {
+      const scraperUrl = scraperUrls[vendorId];
+      if (!scraperUrl) {
+        alert(`Vendor ${vendorId} is not configured for scraping`);
+        return;
+      }
+      
+      const response = await fetch(`${scraperUrl}/api/scrape`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ vendorId })
+        }
       });
       
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          // Handle both snake_case (Lambert) and camelCase (NaniAuto/SLT) property names
-          const vehiclesFound = result.vehicles_found || result.totalVehicles || 0;
-          const newVehicles = result.new_vehicles || result.newVehicles || 0;
-          const updatedVehicles = result.updated_vehicles || result.updatedVehicles || 0;
-          const duration = result.sync_duration || (result.duration ? result.duration.replace('s', '') : '0');
+          const vehiclesCount = result.count || 0;
+          const duration = result.duration || '0';
+          const imageJobId = result.imageProcessingJobId;
           
-          alert(`✅ Sync completed successfully!
-• ${vehiclesFound} vehicles found
-• ${newVehicles} new vehicles added
-• ${updatedVehicles} vehicles updated
-• Sync took ${duration} seconds`);
+          alert(`✅ Scrape completed successfully!
+• ${vehiclesCount} vehicles scraped
+• Duration: ${duration} seconds
+• Images are being processed (Job: ${imageJobId?.substring(0, 20) || 'N/A'}...)
+
+Vehicles have been saved to the database. Image processing is running in the background.`);
           loadVendors();
           loadSyncLogs();
         } else {
-          alert(`Sync failed: ${result.error}`);
+          alert(`Scrape failed: ${result.error}`);
         }
       } else {
-        alert('Sync request failed. Check console for details.');
+        alert('Scrape request failed. Check console for details.');
       }
     } catch (error) {
       alert('Sync failed. Check console for details.');

@@ -162,7 +162,9 @@ export default {
                   make = ?, model = ?, year = ?, price = ?, odometer = ?,
                   bodyType = ?, color = ?, vin = ?, stockNumber = ?,
                   description = ?, images = ?,
-                  vendor_id = 'lambert', vendor_name = 'Lambert Auto'
+                  vendor_id = 'lambert', vendor_name = 'Lambert Auto',
+                  last_seen_from_vendor = datetime('now'),
+                  vendor_status = 'active'
                 WHERE id = ?
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
@@ -182,8 +184,9 @@ export default {
                 INSERT INTO vehicles (
                   make, model, year, price, odometer, bodyType, color, vin, stockNumber,
                   description, images, isSold,
-                  vendor_id, vendor_name
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'lambert', 'Lambert Auto')
+                  vendor_id, vendor_name,
+                  last_seen_from_vendor, vendor_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'lambert', 'Lambert Auto', datetime('now'), 'active')
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',

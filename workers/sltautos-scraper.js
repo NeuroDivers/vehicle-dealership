@@ -24,10 +24,10 @@ export default {
         console.log('🚀 Starting SLT Autos scrape...');
         
         const vehicles = await this.scrapeSLTAutosInventory();
-        console.log(`🔍 Scraped ${vehicles.length} vehicles from SLT Autos`);
+        console.log(`🔍 [${new Date().toISOString()}] Scraped ${vehicles.length} vehicles from SLT Autos`);
         
         // Save vehicles directly to D1 and trigger image processing
-        console.log(`💾 Saving ${vehicles.length} vehicles to D1...`);
+        console.log(`💾 [${new Date().toISOString()}] Starting to save ${vehicles.length} vehicles to D1...`);
         
         let savedCount = 0;
         let updatedCount = 0;
@@ -69,7 +69,9 @@ export default {
                   make = ?, model = ?, year = ?, price = ?, odometer = ?,
                   bodyType = ?, color = ?, vin = ?, stockNumber = ?,
                   description = ?, images = ?,
-                  vendor_id = 'sltautos', vendor_name = 'SLT Autos'
+                  vendor_id = 'sltautos', vendor_name = 'SLT Autos',
+                  last_seen_from_vendor = datetime('now'),
+                  vendor_status = 'active'
                 WHERE id = ?
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
@@ -89,8 +91,9 @@ export default {
                 INSERT INTO vehicles (
                   make, model, year, price, odometer, bodyType, color, vin, stockNumber,
                   description, images, isSold,
-                  vendor_id, vendor_name
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'sltautos', 'SLT Autos')
+                  vendor_id, vendor_name,
+                  last_seen_from_vendor, vendor_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'sltautos', 'SLT Autos', datetime('now'), 'active')
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
@@ -107,7 +110,10 @@ export default {
           }
         }
         
-        console.log(`✅ Saved ${savedCount} new vehicles, updated ${updatedCount} existing`);
+        console.log(`✅ [${new Date().toISOString()}] FINISHED saving: ${savedCount} new vehicles, ${updatedCount} existing`);
+        console.log(`📊 [${new Date().toISOString()}] Vehicle IDs needing images: ${vehicleIdsNeedingImages.length}`);
+        console.log(`   IDs: ${vehicleIdsNeedingImages.slice(0, 5).join(', ')}${vehicleIdsNeedingImages.length > 5 ? '...' : ''}`);
+        console.log(`🔄 [${new Date().toISOString()}] About to trigger image processing...`);
         
         // Trigger image processing using service binding
         let imageJobId = null;
@@ -121,7 +127,8 @@ export default {
             vendorName: 'SLT Autos'
           };
           
-          console.log(`📝 Triggering image processor for ${payload.vehicleIds.length} vehicles`);
+          console.log(`📝 [${new Date().toISOString()}] Triggering image processor for ${payload.vehicleIds.length} vehicles`);
+          console.log(`   Job ID: ${imageJobId}`);
           
           try {
             // Use service binding if available (worker-to-worker), fallback to HTTP
@@ -149,23 +156,26 @@ export default {
             }
             
             if (imgResponse) {
-              console.log(`✅ Image processor response: ${imgResponse.status}`);
+              console.log(`📬 [${new Date().toISOString()}] Image processor response received: ${imgResponse.status}`);
               
               if (imgResponse.ok) {
                 const imgData = await imgResponse.json();
-                console.log(`✅ Processed ${imgData.processed} vehicles, ${imgData.succeeded} succeeded`);
+                console.log(`✅ [${new Date().toISOString()}] Image processor COMPLETED: ${imgData.processed} vehicles, ${imgData.succeeded} succeeded`);
               } else {
-                console.warn(`⚠️  Image processor returned ${imgResponse.status}`);
+                console.warn(`⚠️  [${new Date().toISOString()}] Image processor returned ${imgResponse.status}`);
               }
             }
           } catch (err) {
             console.error('❌ Image processor trigger failed:', err.message);
           }
           
-          console.log(`🚀 Image processing triggered (Job: ${imageJobId})`);
+          console.log(`🚀 [${new Date().toISOString()}] Image processing trigger complete (Job: ${imageJobId})`);
         }
         
         const duration = Math.round((Date.now() - startTime) / 1000);
+        
+        console.log(`🏁 [${new Date().toISOString()}] Scraper FINISHED - About to return response`);
+        console.log(`   Duration: ${duration}s, Total vehicles: ${vehicles.length}`);
         
         return new Response(JSON.stringify({
           success: true,
