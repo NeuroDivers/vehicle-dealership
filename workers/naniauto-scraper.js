@@ -35,17 +35,24 @@ export default {
         
         for (const vehicle of vehicles) {
           try {
-            // Check if vehicle exists in D1
-            const existing = await env.DB.prepare(`
-              SELECT id FROM vehicles 
-              WHERE vin = ? OR (make = ? AND model = ? AND year = ?)
-              LIMIT 1
-            `).bind(
-              vehicle.vin || '',
-              vehicle.make,
-              vehicle.model,
-              vehicle.year
-            ).first();
+            // Check if vehicle exists in D1 (only check VIN if it's not empty)
+            let existing = null;
+            
+            if (vehicle.vin && vehicle.vin.trim() !== '') {
+              // If we have a VIN, search by VIN first
+              existing = await env.DB.prepare(`
+                SELECT id FROM vehicles WHERE vin = ? LIMIT 1
+              `).bind(vehicle.vin).first();
+            }
+            
+            // If no VIN match, try make/model/year
+            if (!existing) {
+              existing = await env.DB.prepare(`
+                SELECT id FROM vehicles 
+                WHERE make = ? AND model = ? AND year = ?
+                LIMIT 1
+              `).bind(vehicle.make, vehicle.model, vehicle.year).first();
+            }
             
             if (existing) {
               // Update existing vehicle
@@ -53,7 +60,8 @@ export default {
                 UPDATE vehicles SET
                   make = ?, model = ?, year = ?, price = ?, odometer = ?,
                   bodyType = ?, color = ?, vin = ?, stockNumber = ?,
-                  description = ?, images = ?
+                  description = ?, images = ?,
+                  vendor_id = 'naniauto', vendor_name = 'Nani Auto'
                 WHERE id = ?
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
@@ -65,12 +73,13 @@ export default {
               vehicleIdsNeedingImages.push(existing.id);
               updatedCount++;
             } else {
-              // Insert new vehicle
+              // Insert new vehicle with vendor tracking
               const result = await env.DB.prepare(`
                 INSERT INTO vehicles (
                   make, model, year, price, odometer, bodyType, color, vin, stockNumber,
-                  description, images, isSold
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                  description, images, isSold,
+                  vendor_id, vendor_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'naniauto', 'Nani Auto')
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
@@ -89,25 +98,60 @@ export default {
         
         console.log(`✅ Saved ${savedCount} new vehicles, updated ${updatedCount} existing`);
         
-        // Trigger image processing
+        // Trigger image processing using service binding
         let imageJobId = null;
-        if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR_URL) {
+        if (vehicleIdsNeedingImages.length > 0) {
           imageJobId = `nani-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           
-          fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              vehicleIds: vehicleIdsNeedingImages.slice(0, 20),
-              batchSize: 20,
-              jobId: imageJobId,
-              vendorName: 'Nani Auto'
-            })
-          }).catch(err => {
-            console.warn('⚠️  Image processor trigger failed:', err.message);
-          });
+          const payload = {
+            vehicleIds: vehicleIdsNeedingImages.slice(0, 20),
+            batchSize: 20,
+            jobId: imageJobId,
+            vendorName: 'Nani Auto'
+          };
           
-          console.log(`🚀 Triggered image processing for ${vehicleIdsNeedingImages.length} vehicles (Job: ${imageJobId})`);
+          console.log(`📝 Triggering image processor for ${payload.vehicleIds.length} vehicles`);
+          
+          try {
+            // Use service binding if available (worker-to-worker), fallback to HTTP
+            let imgResponse;
+            
+            if (env.IMAGE_PROCESSOR) {
+              console.log('✅ Using service binding (worker-to-worker)');
+              imgResponse = await env.IMAGE_PROCESSOR.fetch(
+                new Request('https://dummy/api/process-images', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                })
+              );
+            } else if (env.IMAGE_PROCESSOR_URL) {
+              console.log('🔗 Using HTTP fallback');
+              imgResponse = await fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+            } else {
+              console.warn('⚠️  No image processor configured');
+              imageJobId = null;
+            }
+            
+            if (imgResponse) {
+              console.log(`✅ Image processor response: ${imgResponse.status}`);
+              
+              if (imgResponse.ok) {
+                const imgData = await imgResponse.json();
+                console.log(`✅ Processed ${imgData.processed} vehicles, ${imgData.succeeded} succeeded`);
+              } else {
+                console.warn(`⚠️  Image processor returned ${imgResponse.status}`);
+              }
+            }
+          } catch (err) {
+            console.error('❌ Image processor trigger failed:', err.message);
+          }
+          
+          console.log(`🚀 Image processing triggered (Job: ${imageJobId})`);
         }
         
         const duration = Math.round((Date.now() - startTime) / 1000);
