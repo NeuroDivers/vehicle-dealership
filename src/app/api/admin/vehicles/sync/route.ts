@@ -62,19 +62,24 @@ export async function POST(request: NextRequest) {
       const stockNumber = vehicle.stock_number || vehicle.stockNumber;
       
       // Check if vehicle exists (by VIN or stock number + vendor)
-      const existing = await prisma.vehicle.findFirst({
-        where: {
-          OR: [
-            vehicle.vin ? { vin: vehicle.vin } : {},
-            stockNumber ? { 
-              AND: [
-                { stockNumber: stockNumber },
-                { vendor_id: vehicle.vendor_id || vendorId }
-              ]
-            } : {},
-          ].filter(obj => Object.keys(obj).length > 0)
+      let existing = null;
+      
+      if (vehicle.vin || stockNumber) {
+        const orConditions: any[] = [];
+        if (vehicle.vin) orConditions.push({ vin: vehicle.vin });
+        if (stockNumber) {
+          orConditions.push({ 
+            AND: [
+              { stockNumber: stockNumber },
+              { vendor_id: vehicle.vendor_id || vendorId }
+            ]
+          });
         }
-      });
+        
+        existing = await prisma.vehicle.findFirst({
+          where: { OR: orConditions }
+        });
+      }
 
       const vehicleData = {
         make: vehicle.make,

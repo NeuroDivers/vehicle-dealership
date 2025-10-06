@@ -53,14 +53,15 @@ export async function POST(request: NextRequest) {
     
     for (const vehicle of lambertVehicles) {
       // Check if vehicle already exists
-      const existing = await prisma.vehicle.findFirst({
-        where: {
-          OR: [
-            { partnerVin: vehicle.partnerVin },
-            { partnerUrl: vehicle.partnerUrl }
-          ]
-        }
-      });
+      const orConditions: any[] = [];
+      if (vehicle.partnerVin) orConditions.push({ partnerVin: vehicle.partnerVin });
+      if (vehicle.partnerUrl) orConditions.push({ partnerUrl: vehicle.partnerUrl });
+      
+      const existing = orConditions.length > 0
+        ? await prisma.vehicle.findFirst({
+            where: { OR: orConditions }
+          })
+        : null;
       
       let vehicleId: string | number;
       
