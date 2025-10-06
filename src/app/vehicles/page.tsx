@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Search, Filter, X, Car } from 'lucide-react';
 import { trackSearchQuery } from '@/lib/analytics-config';
 import VehicleRequestModal from '@/components/VehicleRequestModal';
+import { getAllVehicleImageUrls } from '@/utils/imageUtils';
 
 interface Vehicle {
   id: string;
@@ -438,30 +439,8 @@ export default function VehiclesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 {filteredVehicles.map((vehicle) => {
-  let images: string[] = [];
-  if (vehicle.images) {
-    const imageData = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
-    // Safety check: ensure imageData is an array
-    if (Array.isArray(imageData)) {
-      images = imageData.map((img: any) => {
-      let imageUrl = '';
-      if (typeof img === 'string') {
-        imageUrl = img;
-      } else if (img.variants) {
-        imageUrl = img.variants.thumbnail || img.variants.public || img.variants.gallery;
-      } else if (img.url) {
-        imageUrl = img.url;
-      }
-      
-      // Use w=600 variant for Cloudflare Images (600px width, better quality for cards)
-      if (imageUrl && imageUrl.includes('imagedelivery.net')) {
-        imageUrl = imageUrl.replace(/\/(public|thumbnail|w=300|w=600)$/, '/w=600');
-      }
-      
-      return imageUrl;
-    }).filter((url: any) => url);
-    }
-  }
+  // Use utility function to get all image URLs (handles both vendor URLs and Cloudflare IDs)
+  const images = getAllVehicleImageUrls(vehicle.images, 'thumbnail');
   return (
                 <Link 
                   key={vehicle.id} 
