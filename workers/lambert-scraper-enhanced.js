@@ -119,12 +119,95 @@ export default {
         console.log(`💾 Saving vehicles with vendor URLs (async image processing will follow)`);
         console.log(`   📊 New: ${newVehicles.length}, Updated: ${updatedVehicles.length}`);
         
-        // NOTE: Image processing happens in the vehicle-api when vehicles are saved to DB
-        // The scraper just returns vehicles with vendor URLs
-        // The API will call the image processor after saving
-        console.log(`ℹ️  Vehicles ready with vendor URLs. Image processing will be triggered by API after saving to database.`);
+        // Save vehicles directly to D1 and trigger image processing
+        console.log(`💾 Saving ${vehiclesToProcess.length} vehicles to D1...`);
         
+        let savedCount = 0;
+        let updatedCount = 0;
+        const vehicleIdsNeedingImages = [];
+        
+        for (const vehicle of vehiclesToProcess) {
+          try {
+            // Check if vehicle exists in D1
+            const existing = await env.DB.prepare(`
+              SELECT id FROM vehicles 
+              WHERE vin = ? OR (make = ? AND model = ? AND year = ?)
+              LIMIT 1
+            `).bind(
+              vehicle.vin || '',
+              vehicle.make,
+              vehicle.model,
+              vehicle.year
+            ).first();
+            
+            if (existing) {
+              // Update existing vehicle
+              await env.DB.prepare(`
+                UPDATE vehicles SET
+                  make = ?, model = ?, year = ?, price = ?, odometer = ?,
+                  bodyType = ?, color = ?, vin = ?, stockNumber = ?,
+                  description = ?, images = ?,
+                  vendor_id = 'lambert', vendor_name = 'Lambert Auto',
+                  vendor_status = 'active',
+                  last_seen_from_vendor = datetime('now'),
+                  updated_at = datetime('now')
+                WHERE id = ?
+              `).bind(
+                vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
+                vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
+                vehicle.description || '', JSON.stringify(vehicle.images || []),
+                existing.id
+              ).run();
+              
+              vehicleIdsNeedingImages.push(existing.id);
+              updatedCount++;
+            } else {
+              // Insert new vehicle
+              const result = await env.DB.prepare(`
+                INSERT INTO vehicles (
+                  make, model, year, price, odometer, bodyType, color, vin, stockNumber,
+                  description, images, isSold,
+                  vendor_id, vendor_name, vendor_status, last_seen_from_vendor,
+                  created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'lambert', 'Lambert Auto', 'active', datetime('now'), datetime('now'), datetime('now'))
+              `).bind(
+                vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
+                vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
+                vehicle.description || '', JSON.stringify(vehicle.images || [])
+              ).run();
+              
+              if (result.meta.last_row_id) {
+                vehicleIdsNeedingImages.push(result.meta.last_row_id);
+              }
+              savedCount++;
+            }
+          } catch (err) {
+            console.error(`Failed to save vehicle ${vehicle.make} ${vehicle.model}:`, err.message);
+          }
+        }
+        
+        console.log(`✅ Saved ${savedCount} new vehicles, updated ${updatedCount} existing`);
+        
+        // Trigger image processing
         let imageJobId = null;
+        if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR_URL) {
+          imageJobId = `lambert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              vehicleIds: vehicleIdsNeedingImages.slice(0, 20),
+              batchSize: 20,
+              jobId: imageJobId,
+              vendorName: 'Lambert Auto'
+            })
+          }).catch(err => {
+            console.warn('⚠️  Image processor trigger failed:', err.message);
+          });
+          
+          console.log(`🚀 Triggered image processing for ${vehicleIdsNeedingImages.length} vehicles (Job: ${imageJobId})`);
+        }
         
         const duration = Math.round((Date.now() - startTime) / 1000);
         

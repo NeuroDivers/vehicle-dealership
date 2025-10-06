@@ -26,38 +26,94 @@ export default {
         const vehicles = await this.scrapeNaniAutoInventory();
         console.log(`🔍 Scraped ${vehicles.length} vehicles from NaniAuto`);
         
-        // NEW APPROACH: Save vehicles with vendor URLs, trigger async image processing
-        console.log(`💾 Saving ${vehicles.length} vehicles with vendor URLs (async image processing will follow)`);
+        // Save vehicles directly to D1 and trigger image processing
+        console.log(`💾 Saving ${vehicles.length} vehicles to D1...`);
         
-        // Collect vehicle IDs that need image processing
+        let savedCount = 0;
+        let updatedCount = 0;
         const vehicleIdsNeedingImages = [];
+        
         for (const vehicle of vehicles) {
-          if (vehicle.images && vehicle.images.length > 0) {
-            // Keep vendor URLs for now - image processor will convert them
-            vehicleIdsNeedingImages.push(vehicle.id || vehicle.vin);
+          try {
+            // Check if vehicle exists in D1
+            const existing = await env.DB.prepare(`
+              SELECT id FROM vehicles 
+              WHERE vin = ? OR (make = ? AND model = ? AND year = ?)
+              LIMIT 1
+            `).bind(
+              vehicle.vin || '',
+              vehicle.make,
+              vehicle.model,
+              vehicle.year
+            ).first();
+            
+            if (existing) {
+              // Update existing vehicle
+              await env.DB.prepare(`
+                UPDATE vehicles SET
+                  make = ?, model = ?, year = ?, price = ?, odometer = ?,
+                  bodyType = ?, color = ?, vin = ?, stockNumber = ?,
+                  description = ?, images = ?,
+                  vendor_id = 'naniauto', vendor_name = 'Nani Auto',
+                  vendor_status = 'active',
+                  last_seen_from_vendor = datetime('now'),
+                  updated_at = datetime('now')
+                WHERE id = ?
+              `).bind(
+                vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
+                vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
+                vehicle.description || '', JSON.stringify(vehicle.images || []),
+                existing.id
+              ).run();
+              
+              vehicleIdsNeedingImages.push(existing.id);
+              updatedCount++;
+            } else {
+              // Insert new vehicle
+              const result = await env.DB.prepare(`
+                INSERT INTO vehicles (
+                  make, model, year, price, odometer, bodyType, color, vin, stockNumber,
+                  description, images, isSold,
+                  vendor_id, vendor_name, vendor_status, last_seen_from_vendor,
+                  created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'naniauto', 'Nani Auto', 'active', datetime('now'), datetime('now'), datetime('now'))
+              `).bind(
+                vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
+                vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
+                vehicle.description || '', JSON.stringify(vehicle.images || [])
+              ).run();
+              
+              if (result.meta.last_row_id) {
+                vehicleIdsNeedingImages.push(result.meta.last_row_id);
+              }
+              savedCount++;
+            }
+          } catch (err) {
+            console.error(`Failed to save vehicle ${vehicle.make} ${vehicle.model}:`, err.message);
           }
         }
         
-        // Trigger async image processing (fire-and-forget)
+        console.log(`✅ Saved ${savedCount} new vehicles, updated ${updatedCount} existing`);
+        
+        // Trigger image processing
         let imageJobId = null;
         if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR_URL) {
           imageJobId = `nani-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          console.log(`🚀 Triggering async image processing for ${vehicleIdsNeedingImages.length} vehicles (Job: ${imageJobId})...`);
           
           fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              vehicleIds: vehicleIdsNeedingImages.slice(0, 10),
-              batchSize: 10,
+              vehicleIds: vehicleIdsNeedingImages.slice(0, 20),
+              batchSize: 20,
               jobId: imageJobId,
               vendorName: 'Nani Auto'
             })
           }).catch(err => {
-            console.warn('⚠️  Image processor trigger failed (images will remain as vendor URLs):', err.message);
+            console.warn('⚠️  Image processor trigger failed:', err.message);
           });
-        } else {
-          console.log('ℹ️  Image processing disabled (set IMAGE_PROCESSOR_URL to enable)');
+          
+          console.log(`🚀 Triggered image processing for ${vehicleIdsNeedingImages.length} vehicles (Job: ${imageJobId})`);
         }
         
         const duration = Math.round((Date.now() - startTime) / 1000);
