@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚗 Vehicle Dealership Platform
 
-## Getting Started
+A production-ready, AI-powered vehicle dealership management system built with Next.js and deployed on Cloudflare Pages.
 
-First, run the development server:
+## 🌐 Production Deployment
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+This application is deployed on **Cloudflare Pages** with automatic deployments from the `main` branch.
+
+### Deployment Process
+1. Push changes to GitHub `main` branch
+2. Cloudflare Pages automatically builds and deploys
+3. Changes are live within 2-3 minutes
+
+### Tech Stack
+- **Frontend**: Next.js 14 (Static Site Generation)
+- **Backend**: Cloudflare Workers
+- **Database**: Cloudflare D1 (SQLite)
+- **Images**: Cloudflare Images CDN
+- **Analytics**: Cloudflare D1
+- **AI**: OpenAI GPT-4
+
+### Production Architecture
+```
+┌─────────────────────────────────────────────────────────┐
+│                 Cloudflare Pages                        │
+│              (Next.js Frontend)                         │
+│          https://autopret123.ca                         │
+└────────────────┬────────────────────────────────────────┘
+                 │
+                 ├──> Cloudflare Workers API
+                 │    ├─> vehicle-dealership-api (Main API)
+                 │    ├─> naniauto-scraper (Vendor sync)
+                 │    ├─> sltautos-scraper (Vendor sync)
+                 │    ├─> lambert-scraper (Vendor sync)
+                 │    └─> image-processor (Cloudflare Images)
+                 │
+                 ├──> Cloudflare D1 Database
+                 │    └─> vehicle-dealership-analytics
+                 │
+                 └──> Cloudflare Images CDN
+                      └─> Optimized vehicle photos
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Workers Deployed
+1. **vehicle-dealership-api** - Main REST API for vehicle data
+2. **naniauto-scraper** - NaniAuto.com inventory sync
+3. **sltautos-scraper** - SLTAutos.com inventory sync  
+4. **lambert-scraper** - LambertAuto inventory sync
+5. **image-processor** - Cloudflare Images upload handler
+6. **vendor-sync-worker** - Vendor lifecycle management
 
 ## 🚀 Advanced Features
 
@@ -95,8 +112,10 @@ LINKEDIN_ACCESS_TOKEN=your_access_token
 LINKEDIN_ORGANIZATION_ID=your_org_id
 ```
 
-### Environment Variables Template
-Copy `.env.example` to `.env.local` and fill in your credentials.
+### Environment Variables
+Environment variables are configured in:
+- **Cloudflare Pages**: Project settings > Environment variables
+- **Cloudflare Workers**: wrangler.toml files in `/workers` directory
 
 ## ⚙️ Admin Settings & Permissions
 
