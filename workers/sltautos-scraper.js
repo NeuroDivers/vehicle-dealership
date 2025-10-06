@@ -53,11 +53,7 @@ export default {
                 UPDATE vehicles SET
                   make = ?, model = ?, year = ?, price = ?, odometer = ?,
                   bodyType = ?, color = ?, vin = ?, stockNumber = ?,
-                  description = ?, images = ?,
-                  vendor_id = 'sltautos', vendor_name = 'SLT Autos',
-                  vendor_status = 'active',
-                  last_seen_from_vendor = datetime('now'),
-                  updated_at = datetime('now')
+                  description = ?, images = ?
                 WHERE id = ?
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
@@ -73,10 +69,8 @@ export default {
               const result = await env.DB.prepare(`
                 INSERT INTO vehicles (
                   make, model, year, price, odometer, bodyType, color, vin, stockNumber,
-                  description, images, isSold,
-                  vendor_id, vendor_name, vendor_status, last_seen_from_vendor,
-                  created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'sltautos', 'SLT Autos', 'active', datetime('now'), datetime('now'), datetime('now'))
+                  description, images, isSold
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',

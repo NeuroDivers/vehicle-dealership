@@ -146,11 +146,7 @@ export default {
                 UPDATE vehicles SET
                   make = ?, model = ?, year = ?, price = ?, odometer = ?,
                   bodyType = ?, color = ?, vin = ?, stockNumber = ?,
-                  description = ?, images = ?,
-                  vendor_id = 'lambert', vendor_name = 'Lambert Auto',
-                  vendor_status = 'active',
-                  last_seen_from_vendor = datetime('now'),
-                  updated_at = datetime('now')
+                  description = ?, images = ?
                 WHERE id = ?
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
@@ -166,10 +162,8 @@ export default {
               const result = await env.DB.prepare(`
                 INSERT INTO vehicles (
                   make, model, year, price, odometer, bodyType, color, vin, stockNumber,
-                  description, images, isSold,
-                  vendor_id, vendor_name, vendor_status, last_seen_from_vendor,
-                  created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'lambert', 'Lambert Auto', 'active', datetime('now'), datetime('now'), datetime('now'))
+                  description, images, isSold
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
@@ -187,26 +181,44 @@ export default {
         }
         
         console.log(`✅ Saved ${savedCount} new vehicles, updated ${updatedCount} existing`);
+        console.log(`📊 Vehicle IDs needing images: ${vehicleIdsNeedingImages.length}`);
+        console.log(`🔧 IMAGE_PROCESSOR_URL: ${env.IMAGE_PROCESSOR_URL ? 'SET' : 'NOT SET'}`);
         
         // Trigger image processing
         let imageJobId = null;
         if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR_URL) {
           imageJobId = `lambert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           
-          fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              vehicleIds: vehicleIdsNeedingImages.slice(0, 20),
-              batchSize: 20,
-              jobId: imageJobId,
-              vendorName: 'Lambert Auto'
-            })
-          }).catch(err => {
-            console.warn('⚠️  Image processor trigger failed:', err.message);
-          });
+          const payload = {
+            vehicleIds: vehicleIdsNeedingImages.slice(0, 20),
+            batchSize: 20,
+            jobId: imageJobId,
+            vendorName: 'Lambert Auto'
+          };
           
-          console.log(`🚀 Triggered image processing for ${vehicleIdsNeedingImages.length} vehicles (Job: ${imageJobId})`);
+          console.log(`📝 Payload for image processor:`, JSON.stringify(payload));
+          console.log(`🔗 Calling: ${env.IMAGE_PROCESSOR_URL}/api/process-images`);
+          
+          try {
+            const imgResponse = await fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            
+            console.log(`✅ Image processor response: ${imgResponse.status}`);
+            
+            if (imgResponse.ok) {
+              const imgData = await imgResponse.json();
+              console.log(`✅ Image processor result:`, JSON.stringify(imgData).substring(0, 200));
+            } else {
+              console.warn(`⚠️  Image processor returned ${imgResponse.status}`);
+            }
+          } catch (err) {
+            console.error('❌ Image processor trigger failed:', err.message);
+          }
+          
+          console.log(`🚀 Image processing request sent (Job: ${imageJobId})`);
         }
         
         const duration = Math.round((Date.now() - startTime) / 1000);
