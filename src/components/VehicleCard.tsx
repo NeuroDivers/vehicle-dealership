@@ -32,7 +32,8 @@ interface VehicleCardProps {
 
 export default function VehicleCard({ vehicle, showPrice = true }: VehicleCardProps) {
   // Get the main image URL using utility function (handles both vendor URLs and Cloudflare IDs)
-  const mainImage = getVehicleImageUrl(vehicle.images, 0, 'thumbnail');
+  // Using 'public' variant for higher quality
+  const mainImage = getVehicleImageUrl(vehicle.images, 0, 'public');
   
   // Determine if this is a partner vehicle
   const isPartnerVehicle = vehicle.source && vehicle.source !== 'internal';

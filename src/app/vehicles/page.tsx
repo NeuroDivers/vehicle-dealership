@@ -440,7 +440,8 @@ export default function VehiclesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 {filteredVehicles.map((vehicle) => {
   // Use utility function to get all image URLs (handles both vendor URLs and Cloudflare IDs)
-  const images = getAllVehicleImageUrls(vehicle.images, 'thumbnail');
+  // Using 'public' variant for higher quality on vehicle cards
+  const images = getAllVehicleImageUrls(vehicle.images, 'public');
   return (
                 <Link 
                   key={vehicle.id} 
