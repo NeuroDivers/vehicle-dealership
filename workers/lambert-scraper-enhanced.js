@@ -128,17 +128,24 @@ export default {
         
         for (const vehicle of vehiclesToProcess) {
           try {
-            // Check if vehicle exists in D1
-            const existing = await env.DB.prepare(`
-              SELECT id FROM vehicles 
-              WHERE vin = ? OR (make = ? AND model = ? AND year = ?)
-              LIMIT 1
-            `).bind(
-              vehicle.vin || '',
-              vehicle.make,
-              vehicle.model,
-              vehicle.year
-            ).first();
+            // Check if vehicle exists in D1 (only check VIN if it's not empty)
+            let existing = null;
+            
+            if (vehicle.vin && vehicle.vin.trim() !== '') {
+              // If we have a VIN, search by VIN first
+              existing = await env.DB.prepare(`
+                SELECT id FROM vehicles WHERE vin = ? LIMIT 1
+              `).bind(vehicle.vin).first();
+            }
+            
+            // If no VIN match, try make/model/year
+            if (!existing) {
+              existing = await env.DB.prepare(`
+                SELECT id FROM vehicles 
+                WHERE make = ? AND model = ? AND year = ?
+                LIMIT 1
+              `).bind(vehicle.make, vehicle.model, vehicle.year).first();
+            }
             
             if (existing) {
               // Update existing vehicle
@@ -146,7 +153,8 @@ export default {
                 UPDATE vehicles SET
                   make = ?, model = ?, year = ?, price = ?, odometer = ?,
                   bodyType = ?, color = ?, vin = ?, stockNumber = ?,
-                  description = ?, images = ?
+                  description = ?, images = ?,
+                  vendor_id = 'lambert', vendor_name = 'Lambert Auto'
                 WHERE id = ?
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
@@ -158,12 +166,13 @@ export default {
               vehicleIdsNeedingImages.push(existing.id);
               updatedCount++;
             } else {
-              // Insert new vehicle
+              // Insert new vehicle with vendor tracking
               const result = await env.DB.prepare(`
                 INSERT INTO vehicles (
                   make, model, year, price, odometer, bodyType, color, vin, stockNumber,
-                  description, images, isSold
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                  description, images, isSold,
+                  vendor_id, vendor_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'lambert', 'Lambert Auto')
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
