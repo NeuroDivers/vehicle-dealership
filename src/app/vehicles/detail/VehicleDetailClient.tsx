@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Car, MapPin, Phone, Mail, Calendar, Fuel, Ga
 import Link from 'next/link';
 import VehicleSEO from './VehicleSEO';
 import { trackVehicleView } from '@/lib/analytics-config';
+import { getAllVehicleImageUrls } from '@/utils/imageUtils';
 
 interface Vehicle {
   id: string;
@@ -100,25 +101,8 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
     );
   }
 
-  // Parse images if they exist and extract URLs
-  let images: string[] = [];
-  if (vehicle.images) {
-    const parsedImages = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
-    
-    // Handle both old format (array of strings) and new Cloudflare Images format (array of objects)
-    images = parsedImages.map((img: any) => {
-      if (typeof img === 'string') {
-        // Old format - direct URL or base64
-        return img;
-      } else if (img.variants) {
-        // New Cloudflare Images format - use gallery variant for detail page
-        return img.variants.gallery || img.variants.public || img.variants.thumbnail;
-      } else if (img.url) {
-        // Fallback for other object formats
-        return img.url;
-      }
-    }).filter((url: any) => url); // Filter out any undefined/null values
-  }
+  // Get all images using utility function (handles both vendor URLs and Cloudflare IDs)
+  const images = getAllVehicleImageUrls(vehicle.images, 'public');
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { Search, Phone, MapPin, Clock, ChevronRight, Star, Shield, Award, Car } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getVehicleImageUrl } from '@/utils/imageUtils';
 
 interface Vehicle {
   id: string;
@@ -270,29 +271,20 @@ export default function Home() {
               </div>
             )}
             {featuredVehicles.map((vehicle) => {
-              let images = [];
-              try {
-                images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
-              } catch (e) {
-                console.error('Error parsing images:', e);
-                images = [];
-              }
-              let firstImage = images[0] || '/api/placeholder/400/300';
-              
-              // Ensure we use the public variant for Cloudflare Images (full quality)
-              if (firstImage && firstImage.includes('imagedelivery.net')) {
-                // Replace thumbnail with public for better quality
-                firstImage = firstImage.replace('/thumbnail', '/public');
-              }
+              // Use utility function to get proper image URL (handles both vendor URLs and Cloudflare IDs)
+              const firstImage = getVehicleImageUrl(vehicle.images, 0, 'public');
               
               return (
               <div key={vehicle.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
                 <div className="h-48 bg-gray-200 relative">
-                  {firstImage !== '/api/placeholder/400/300' ? (
-                    <img src={firstImage} alt={`${vehicle.make} ${vehicle.model}`} className="w-full h-full object-cover" />
-                  ) : (
-                    <Car className="h-full w-full p-12 text-gray-400" />
-                  )}
+                  <img 
+                    src={firstImage} 
+                    alt={`${vehicle.make} ${vehicle.model}`} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-vehicle.jpg';
+                    }}
+                  />
                   <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-sm font-semibold"
                        style={{ color: themeColors.primary }}>
                     {vehicle.bodyType}
@@ -379,19 +371,8 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {carouselVehicles[activeCategory].length > 0 ? (
               carouselVehicles[activeCategory].map((vehicle) => {
-                let images = [];
-                try {
-                  images = vehicle.images ? (typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images) : [];
-                } catch (e) {
-                  images = [];
-                }
-                let firstImage = images[0] || '/api/placeholder/400/300';
-                
-                // Ensure we use the public variant for Cloudflare Images (full quality)
-                if (firstImage && firstImage.includes('imagedelivery.net')) {
-                  // Replace thumbnail with public for better quality
-                  firstImage = firstImage.replace('/thumbnail', '/public');
-                }
+                // Use utility function to get proper image URL (handles both vendor URLs and Cloudflare IDs)
+                const firstImage = getVehicleImageUrl(vehicle.images, 0, 'public');
                 
                 return (
                   <Link
@@ -400,15 +381,14 @@ export default function Home() {
                     className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group"
                   >
                     <div className="h-48 bg-gray-200 relative overflow-hidden">
-                      {firstImage !== '/api/placeholder/400/300' ? (
-                        <img 
-                          src={firstImage} 
-                          alt={`${vehicle.make} ${vehicle.model}`} 
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
-                        />
-                      ) : (
-                        <Car className="h-full w-full p-12 text-gray-400" />
-                      )}
+                      <img 
+                        src={firstImage} 
+                        alt={`${vehicle.make} ${vehicle.model}`} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder-vehicle.jpg';
+                        }}
+                      />
                     </div>
                     <div className="p-4">
                       <h3 className="font-semibold text-lg mb-1">

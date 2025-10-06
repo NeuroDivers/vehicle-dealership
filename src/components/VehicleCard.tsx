@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Car, MapPin, Gauge, Fuel, ExternalLink } from 'lucide-react';
+import { getVehicleImageUrl } from '@/utils/imageUtils';
 
 interface Vehicle {
   id: string;
@@ -30,13 +31,8 @@ interface VehicleCardProps {
 }
 
 export default function VehicleCard({ vehicle, showPrice = true }: VehicleCardProps) {
-  const images = vehicle.images ? JSON.parse(vehicle.images) : [];
-  let mainImage = images[0] || '/placeholder-vehicle.jpg';
-  
-  // Use thumbnail variant for Cloudflare Images (300x300 optimized)
-  if (mainImage && mainImage.includes('imagedelivery.net')) {
-    mainImage = mainImage.replace('/public', '/thumbnail');
-  }
+  // Get the main image URL using utility function (handles both vendor URLs and Cloudflare IDs)
+  const mainImage = getVehicleImageUrl(vehicle.images, 0, 'thumbnail');
   
   // Determine if this is a partner vehicle
   const isPartnerVehicle = vehicle.source && vehicle.source !== 'internal';
@@ -59,17 +55,15 @@ export default function VehicleCard({ vehicle, showPrice = true }: VehicleCardPr
           </div>
         )}
         
-        {mainImage.startsWith('http') || mainImage.startsWith('/') ? (
-          <img
-            src={mainImage}
-            alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Car className="h-16 w-16 text-gray-400" />
-          </div>
-        )}
+        <img
+          src={mainImage}
+          alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to placeholder if image fails to load
+            (e.target as HTMLImageElement).src = '/placeholder-vehicle.jpg';
+          }}
+        />
       </div>
       
       {/* Content */}

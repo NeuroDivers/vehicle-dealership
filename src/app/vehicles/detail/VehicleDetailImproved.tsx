@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getVehicleEndpoint } from '@/lib/api-config';
-import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import Link from 'next/link';
 import Image from 'next/image';
 import { 
-  ChevronLeft, ChevronRight, Car, MapPin, Phone, Mail, 
-  Calendar, Fuel, Gauge, ArrowLeft, Palette, Shield,
-  CheckCircle, Info, Star, Heart, Share2, Printer, DollarSign,
-  Settings, Hash
+  ArrowLeft, Phone, Mail, Car, Share2, Calendar, Gauge, Fuel, Settings, 
+  Palette, Hash, Barcode, MapPin, ChevronLeft, ChevronRight, Shield,
+  CheckCircle, Info, Star, Heart, Printer, DollarSign
 } from 'lucide-react';
-import Link from 'next/link';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import { getAllVehicleImageUrls } from '@/utils/imageUtils';
 import { trackVehicleView } from '@/lib/analytics-config';
 import FinancingModal from '@/components/FinancingModal';
 
@@ -107,23 +108,8 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
     );
   }
 
-  // Process images
-  let images: string[] = [];
-  if (vehicle.images) {
-    const imageData = typeof vehicle.images === 'string' ? 
-      JSON.parse(vehicle.images) : vehicle.images;
-    
-    images = imageData.map((img: any) => {
-      if (typeof img === 'string') {
-        return img;
-      } else if (img.variants) {
-        return img.variants.gallery || img.variants.public || img.variants.thumbnail;
-      } else if (img.url) {
-        return img.url;
-      }
-      return null;
-    }).filter((url: any) => url);
-  }
+  // Get all images using utility function (handles both vendor URLs and Cloudflare IDs)
+  const images = getAllVehicleImageUrls(vehicle.images, 'public');
 
   // Get disclaimer text based on language
   const getDisclaimer = () => {
