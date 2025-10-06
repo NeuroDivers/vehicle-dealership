@@ -354,14 +354,24 @@ export default {
       // Combine: existing Cloudflare IDs + new uploads + failed vendor URLs
       const finalImages = [...cloudflareIds, ...newCloudflareIds, ...failedUrls];
       
-      // Update database with processed Cloudflare images
-      await env.DB.prepare(`
-        UPDATE vehicles 
-        SET images = ?, updatedAt = datetime('now')
-        WHERE id = ?
-      `).bind(JSON.stringify(finalImages), vehicle.id).run();
+      console.log(`  💾 Updating DB for vehicle ${vehicle.id} with ${finalImages.length} images`);
+      console.log(`     New CF IDs: ${newCloudflareIds.length}, Failed: ${failedUrls.length}, Existing CF: ${cloudflareIds.length}`);
       
-      console.log(`✅ Updated vehicle ${vehicle.id} with ${cloudflareImages.length} Cloudflare images`);
+      // Update database with processed Cloudflare images
+      try {
+        const updateResult = await env.DB.prepare(`
+          UPDATE vehicles 
+          SET images = ?, updatedAt = datetime('now')
+          WHERE id = ?
+        `).bind(JSON.stringify(finalImages), vehicle.id).run();
+        
+        console.log(`  ✅ DB Update success: ${updateResult.meta?.changes || 0} rows changed`);
+      } catch (dbError) {
+        console.error(`  ❌ DB Update failed for vehicle ${vehicle.id}:`, dbError.message);
+        throw dbError;
+      }
+      
+      console.log(`✅ Updated vehicle ${vehicle.id}: uploaded ${newCloudflareIds.length}, failed ${failedUrls.length}, total ${finalImages.length}`);
       
       return {
         success: true,

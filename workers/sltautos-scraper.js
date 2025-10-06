@@ -39,23 +39,31 @@ export default {
             let existing = null;
             
             if (vehicle.vin && vehicle.vin.trim() !== '') {
-              // If we have a VIN, search by VIN first
+              // If we have a VIN, search by VIN first (get images field too)
               existing = await env.DB.prepare(`
-                SELECT id FROM vehicles WHERE vin = ? LIMIT 1
+                SELECT id, images FROM vehicles WHERE vin = ? LIMIT 1
               `).bind(vehicle.vin).first();
             }
             
             // If no VIN match, try make/model/year
             if (!existing) {
               existing = await env.DB.prepare(`
-                SELECT id FROM vehicles 
+                SELECT id, images FROM vehicles 
                 WHERE make = ? AND model = ? AND year = ?
                 LIMIT 1
               `).bind(vehicle.make, vehicle.model, vehicle.year).first();
             }
             
             if (existing) {
-              // Update existing vehicle
+              // Check if existing vehicle already has Cloudflare image IDs
+              const existingImages = existing.images ? JSON.parse(existing.images) : [];
+              const hasCloudflareIds = existingImages.length > 0 && 
+                typeof existingImages[0] === 'string' && 
+                !existingImages[0].startsWith('http');
+              
+              // Update existing vehicle (preserve Cloudflare IDs if they exist)
+              const imagesToSave = hasCloudflareIds ? existing.images : JSON.stringify(vehicle.images || []);
+              
               await env.DB.prepare(`
                 UPDATE vehicles SET
                   make = ?, model = ?, year = ?, price = ?, odometer = ?,
@@ -66,11 +74,14 @@ export default {
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
-                vehicle.description || '', JSON.stringify(vehicle.images || []),
+                vehicle.description || '', imagesToSave,
                 existing.id
               ).run();
               
-              vehicleIdsNeedingImages.push(existing.id);
+              // Only trigger image processing if we don't have Cloudflare IDs yet
+              if (!hasCloudflareIds) {
+                vehicleIdsNeedingImages.push(existing.id);
+              }
               updatedCount++;
             } else {
               // Insert new vehicle with vendor tracking
