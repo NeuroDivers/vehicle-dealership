@@ -162,6 +162,7 @@ export default {
                   make = ?, model = ?, year = ?, price = ?, odometer = ?,
                   bodyType = ?, color = ?, vin = ?, stockNumber = ?,
                   description = ?, images = ?,
+                  fuelType = ?, transmission = ?, drivetrain = ?, engineSize = ?,
                   vendor_id = 'lambert', vendor_name = 'Lambert Auto',
                   last_seen_from_vendor = datetime('now'),
                   vendor_status = 'active'
@@ -170,6 +171,7 @@ export default {
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
                 vehicle.description || '', imagesToSave,
+                vehicle.fuelType || null, vehicle.transmission || null, vehicle.drivetrain || null, vehicle.engineSize || null,
                 existing.id
               ).run();
               
@@ -184,13 +186,15 @@ export default {
                 INSERT INTO vehicles (
                   make, model, year, price, odometer, bodyType, color, vin, stockNumber,
                   description, images, isSold,
+                  fuelType, transmission, drivetrain, engineSize,
                   vendor_id, vendor_name,
                   last_seen_from_vendor, vendor_status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'lambert', 'Lambert Auto', datetime('now'), 'active')
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'lambert', 'Lambert Auto', datetime('now'), 'active')
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
-                vehicle.description || '', JSON.stringify(vehicle.images || [])
+                vehicle.description || '', JSON.stringify(vehicle.images || []),
+                vehicle.fuelType || null, vehicle.transmission || null, vehicle.drivetrain || null, vehicle.engineSize || null
               ).run();
               
               if (result.meta.last_row_id) {
