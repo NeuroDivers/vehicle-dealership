@@ -354,12 +354,14 @@ export default {
       // Combine: existing Cloudflare IDs + new uploads + failed vendor URLs
       const finalImages = [...cloudflareIds, ...newCloudflareIds, ...failedUrls];
       
-      // Update database
+      // Update database with processed Cloudflare images
       await env.DB.prepare(`
         UPDATE vehicles 
         SET images = ?, updatedAt = datetime('now')
         WHERE id = ?
       `).bind(JSON.stringify(finalImages), vehicle.id).run();
+      
+      console.log(`✅ Updated vehicle ${vehicle.id} with ${cloudflareImages.length} Cloudflare images`);
       
       return {
         success: true,

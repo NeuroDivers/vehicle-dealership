@@ -184,9 +184,9 @@ export default {
         console.log(`📊 Vehicle IDs needing images: ${vehicleIdsNeedingImages.length}`);
         console.log(`🔧 IMAGE_PROCESSOR_URL: ${env.IMAGE_PROCESSOR_URL ? 'SET' : 'NOT SET'}`);
         
-        // Trigger image processing
+        // Trigger image processing using service binding
         let imageJobId = null;
-        if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR_URL) {
+        if (vehicleIdsNeedingImages.length > 0) {
           imageJobId = `lambert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           
           const payload = {
@@ -196,29 +196,48 @@ export default {
             vendorName: 'Lambert Auto'
           };
           
-          console.log(`📝 Payload for image processor:`, JSON.stringify(payload));
-          console.log(`🔗 Calling: ${env.IMAGE_PROCESSOR_URL}/api/process-images`);
+          console.log(`📝 Triggering image processor for ${payload.vehicleIds.length} vehicles`);
           
           try {
-            const imgResponse = await fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
+            // Use service binding if available (worker-to-worker), fallback to HTTP
+            let imgResponse;
             
-            console.log(`✅ Image processor response: ${imgResponse.status}`);
-            
-            if (imgResponse.ok) {
-              const imgData = await imgResponse.json();
-              console.log(`✅ Image processor result:`, JSON.stringify(imgData).substring(0, 200));
+            if (env.IMAGE_PROCESSOR) {
+              console.log('✅ Using service binding (worker-to-worker)');
+              imgResponse = await env.IMAGE_PROCESSOR.fetch(
+                new Request('https://dummy/api/process-images', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                })
+              );
+            } else if (env.IMAGE_PROCESSOR_URL) {
+              console.log('🔗 Using HTTP fallback');
+              imgResponse = await fetch(env.IMAGE_PROCESSOR_URL + '/api/process-images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
             } else {
-              console.warn(`⚠️  Image processor returned ${imgResponse.status}`);
+              console.warn('⚠️  No image processor configured');
+              imageJobId = null;
+            }
+            
+            if (imgResponse) {
+              console.log(`✅ Image processor response: ${imgResponse.status}`);
+              
+              if (imgResponse.ok) {
+                const imgData = await imgResponse.json();
+                console.log(`✅ Processed ${imgData.processed} vehicles, ${imgData.succeeded} succeeded`);
+              } else {
+                console.warn(`⚠️  Image processor returned ${imgResponse.status}`);
+              }
             }
           } catch (err) {
             console.error('❌ Image processor trigger failed:', err.message);
           }
           
-          console.log(`🚀 Image processing request sent (Job: ${imageJobId})`);
+          console.log(`🚀 Image processing triggered (Job: ${imageJobId})`);
         }
         
         const duration = Math.round((Date.now() - startTime) / 1000);
