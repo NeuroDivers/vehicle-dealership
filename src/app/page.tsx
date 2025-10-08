@@ -31,8 +31,19 @@ const translations = {
     featuredVehicles: 'Véhicules en vedette',
     featuredSubtitle: 'Découvrez notre sélection triée sur le volet',
     viewDetails: 'Voir les détails',
-    whyChooseUs: 'Pourquoi nous choisir',
-    whyChooseSubtitle: 'Votre satisfaction est notre priorité',
+    viewAllInventory: 'Voir tout l\'inventaire',
+    exploreByCategory: 'Explorez par catégorie',
+    findPerfectVehicle: 'Trouvez le véhicule parfait pour votre style de vie',
+    whyChooseUs: 'Pourquoi choisir',
+    whyChooseSubtitle: 'Nous faisons tout notre possible pour nos clients',
+    certifiedVehicles: 'Véhicules certifiés',
+    certifiedVehiclesDesc: 'Tous les véhicules subissent une inspection approfondie',
+    bestWarranty: 'Meilleure garantie',
+    bestWarrantyDesc: 'Couverture complète pour votre tranquillité d\'esprit',
+    fiveStarService: 'Service 5 étoiles',
+    fiveStarServiceDesc: 'Excellente note de nos clients',
+    support247: 'Support 24/7',
+    support247Desc: 'Toujours là quand vous avez besoin de nous',
     qualityVehicles: 'Véhicules de qualité',
     qualityDesc: 'Chaque véhicule est inspecté et certifié',
     bestPrices: 'Meilleurs prix',
@@ -54,8 +65,19 @@ const translations = {
     featuredVehicles: 'Featured Vehicles',
     featuredSubtitle: 'Check out our hand-picked selection',
     viewDetails: 'View Details',
-    whyChooseUs: 'Why Choose Us',
-    whyChooseSubtitle: 'Your satisfaction is our priority',
+    viewAllInventory: 'View All Inventory',
+    exploreByCategory: 'Explore by Category',
+    findPerfectVehicle: 'Find the perfect vehicle for your lifestyle',
+    whyChooseUs: 'Why Choose',
+    whyChooseSubtitle: 'We go above and beyond for our customers',
+    certifiedVehicles: 'Certified Vehicles',
+    certifiedVehiclesDesc: 'All vehicles undergo thorough inspection',
+    bestWarranty: 'Best Warranty',
+    bestWarrantyDesc: 'Comprehensive coverage for peace of mind',
+    fiveStarService: '5-Star Service',
+    fiveStarServiceDesc: 'Rated excellent by our customers',
+    support247: '24/7 Support',
+    support247Desc: 'Always here when you need us',
     qualityVehicles: 'Quality Vehicles',
     qualityDesc: 'Every vehicle is inspected and certified',
     bestPrices: 'Best Prices',
@@ -77,8 +99,19 @@ const translations = {
     featuredVehicles: 'Vehículos destacados',
     featuredSubtitle: 'Vea nuestra selección cuidadosamente elegida',
     viewDetails: 'Ver detalles',
-    whyChooseUs: 'Por qué elegirnos',
-    whyChooseSubtitle: 'Su satisfacción es nuestra prioridad',
+    viewAllInventory: 'Ver todo el inventario',
+    exploreByCategory: 'Explorar por categoría',
+    findPerfectVehicle: 'Encuentra el vehículo perfecto para tu estilo de vida',
+    whyChooseUs: 'Por qué elegir',
+    whyChooseSubtitle: 'Hacemos todo lo posible por nuestros clientes',
+    certifiedVehicles: 'Vehículos certificados',
+    certifiedVehiclesDesc: 'Todos los vehículos pasan por una inspección exhaustiva',
+    bestWarranty: 'Mejor garantía',
+    bestWarrantyDesc: 'Cobertura integral para su tranquilidad',
+    fiveStarService: 'Servicio 5 estrellas',
+    fiveStarServiceDesc: 'Calificado como excelente por nuestros clientes',
+    support247: 'Soporte 24/7',
+    support247Desc: 'Siempre aquí cuando nos necesite',
     qualityVehicles: 'Vehículos de calidad',
     qualityDesc: 'Cada vehículo es inspeccionado y certificado',
     bestPrices: 'Mejores precios',
@@ -322,7 +355,7 @@ export default function Home() {
                 color: 'white'
               }}
             >
-              <span>View All Inventory</span>
+              <span>{t.viewAllInventory}</span>
               <ChevronRight className="h-5 w-5" />
             </Link>
           </div>
@@ -334,14 +367,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-4xl font-bold mb-4" style={{ color: themeColors.primary }}>
-              {language === 'fr' ? 'Explorez par catégorie' : 
-               language === 'es' ? 'Explorar por categoría' : 
-               'Explore by Category'}
+              {t.exploreByCategory}
             </h2>
             <p className="text-gray-600">
-              {language === 'fr' ? 'Trouvez le véhicule parfait pour votre style de vie' : 
-               language === 'es' ? 'Encuentra el vehículo perfecto para tu estilo de vida' : 
-               'Find the perfect vehicle for your lifestyle'}
+              {t.findPerfectVehicle}
             </p>
           </div>
 
@@ -424,9 +453,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold mb-4" style={{ color: themeColors.primary }}>
-              Why Choose {settings.siteName}?
+              {t.whyChooseUs} {settings.siteName}?
             </h2>
-            <p className="text-gray-600">We go above and beyond for our customers</p>
+            <p className="text-gray-600">{t.whyChooseSubtitle}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -435,32 +464,32 @@ export default function Home() {
                    style={{ backgroundColor: `${themeColors.accent}20` }}>
                 <Shield className="h-10 w-10" style={{ color: themeColors.primary }} />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Certified Vehicles</h3>
-              <p className="text-gray-600">All vehicles undergo thorough inspection</p>
+              <h3 className="text-xl font-semibold mb-2">{t.certifiedVehicles}</h3>
+              <p className="text-gray-600">{t.certifiedVehiclesDesc}</p>
             </div>
             <div className="text-center">
               <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
                    style={{ backgroundColor: `${themeColors.accent}20` }}>
                 <Award className="h-10 w-10" style={{ color: themeColors.primary }} />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Best Warranty</h3>
-              <p className="text-gray-600">Comprehensive coverage for peace of mind</p>
+              <h3 className="text-xl font-semibold mb-2">{t.bestWarranty}</h3>
+              <p className="text-gray-600">{t.bestWarrantyDesc}</p>
             </div>
             <div className="text-center">
               <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
                    style={{ backgroundColor: `${themeColors.accent}20` }}>
                 <Star className="h-10 w-10" style={{ color: themeColors.primary }} />
               </div>
-              <h3 className="text-xl font-semibold mb-2">5-Star Service</h3>
-              <p className="text-gray-600">Rated excellent by our customers</p>
+              <h3 className="text-xl font-semibold mb-2">{t.fiveStarService}</h3>
+              <p className="text-gray-600">{t.fiveStarServiceDesc}</p>
             </div>
             <div className="text-center">
               <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
                    style={{ backgroundColor: `${themeColors.accent}20` }}>
                 <Phone className="h-10 w-10" style={{ color: themeColors.primary }} />
               </div>
-              <h3 className="text-xl font-semibold mb-2">24/7 Support</h3>
-              <p className="text-gray-600">Always here when you need us</p>
+              <h3 className="text-xl font-semibold mb-2">{t.support247}</h3>
+              <p className="text-gray-600">{t.support247Desc}</p>
             </div>
           </div>
         </div>
