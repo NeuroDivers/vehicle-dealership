@@ -46,6 +46,7 @@ interface SiteInfo {
     headerText: string;
   };
   showVIN?: boolean;
+  showElectricVehiclesLink?: boolean;
 }
 
 const defaultSiteInfo: SiteInfo = {
@@ -579,7 +580,7 @@ export default function SiteInfoManager() {
       {/* Display Settings */}
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4">Display Settings</h3>
-        <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="bg-gray-50 p-4 rounded-lg space-y-4">
           <label className="flex items-center space-x-3 cursor-pointer">
             <input
               type="checkbox"
@@ -593,6 +594,22 @@ export default function SiteInfoManager() {
             <div>
               <span className="text-sm font-medium text-gray-900">Show VIN on Vehicle Details</span>
               <p className="text-xs text-gray-500">Display the Vehicle Identification Number (VIN) on public vehicle detail pages</p>
+            </div>
+          </label>
+          
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={siteInfo.showElectricVehiclesLink !== false}
+              onChange={(e) => setSiteInfo(prev => ({
+                ...prev,
+                showElectricVehiclesLink: e.target.checked
+              }))}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-900">Show Electric Vehicles Link in Header</span>
+              <p className="text-xs text-gray-500">Display the "Electric" link in the navigation menu (both desktop and mobile)</p>
             </div>
           </label>
         </div>

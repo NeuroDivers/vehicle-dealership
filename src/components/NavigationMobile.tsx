@@ -83,12 +83,14 @@ export default function NavigationMobile() {
                    style={{ color: themeColors.headerText || '#000' }}>
                 Vehicles
               </Link>
-              <Link href="/vehicles?fuelType=electric" 
-                   className="flex items-center space-x-1 hover:opacity-80 transition"
-                   style={{ color: themeColors.accent }}>
-                <Zap className="h-4 w-4" />
-                <span>Electric</span>
-              </Link>
+              {settings.showElectricVehiclesLink !== false && (
+                <Link href="/vehicles?fuelType=electric" 
+                     className="flex items-center space-x-1 hover:opacity-80 transition"
+                     style={{ color: themeColors.accent }}>
+                  <Zap className="h-4 w-4" />
+                  <span>Electric</span>
+                </Link>
+              )}
               <Link href="/contact" className="hover:opacity-80 transition"
                    style={{ color: themeColors.headerText || '#000' }}>
                 Contact
@@ -189,15 +191,17 @@ export default function NavigationMobile() {
               >
                 Vehicles
               </Link>
-              <Link 
-                href="/vehicles?fuelType=electric" 
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition font-medium"
-                style={{ color: themeColors.accent }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Zap className="h-4 w-4" />
-                <span>Electric Vehicles</span>
-              </Link>
+              {settings.showElectricVehiclesLink !== false && (
+                <Link 
+                  href="/vehicles?fuelType=electric" 
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition font-medium"
+                  style={{ color: themeColors.accent }}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Zap className="h-4 w-4" />
+                  <span>Electric Vehicles</span>
+                </Link>
+              )}
               <Link 
                 href="/contact" 
                 className="block px-3 py-2 rounded-lg hover:bg-gray-100 transition font-medium"

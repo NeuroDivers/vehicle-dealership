@@ -45,6 +45,7 @@ interface SiteSettings {
     es: string;
   };
   showVIN?: boolean; // Toggle to show/hide VIN on vehicle detail pages
+  showElectricVehiclesLink?: boolean; // Toggle to show/hide Electric Vehicles link in header
 }
 
 const defaultSettings: SiteSettings = {
@@ -83,7 +84,8 @@ const defaultSettings: SiteSettings = {
     en: "This vehicle is offered for sale subject to prior sale. All information provided is believed to be accurate but is not guaranteed. Please verify all details with our sales team.",
     fr: "Ce véhicule est offert à la vente sous réserve de vente préalable. Toutes les informations fournies sont considérées comme exactes mais ne sont pas garanties. Veuillez vérifier tous les détails avec notre équipe de vente.",
     es: "Este vehículo se ofrece a la venta sujeto a venta previa. Toda la información proporcionada se considera precisa pero no está garantizada. Por favor verifique todos los detalles con nuestro equipo de ventas."
-  }
+  },
+  showElectricVehiclesLink: true // Show Electric Vehicles link by default
 };
 
 const SiteSettingsContext = createContext<{
