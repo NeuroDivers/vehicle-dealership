@@ -4,10 +4,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { getVehicleEndpoint } from '@/lib/api-config';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, Filter, X, Car } from 'lucide-react';
+import { Search, Filter, X, Car, Gauge, Calendar, Fuel, Settings2, ArrowRight, MapPin } from 'lucide-react';
 import { trackSearchQuery } from '@/lib/analytics-config';
 import VehicleRequestModal from '@/components/VehicleRequestModal';
 import { getAllVehicleImageUrls } from '@/utils/imageUtils';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 interface Vehicle {
   id: string;
@@ -34,6 +35,8 @@ interface Vehicle {
 }
 
 export default function VehiclesPage() {
+  const { settings, getThemeColors } = useSiteSettings();
+  const themeColors = getThemeColors();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -437,92 +440,166 @@ export default function VehiclesPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 {filteredVehicles.map((vehicle) => {
   // Use utility function to get all image URLs (handles both vendor URLs and Cloudflare IDs)
-  // Using 'public' variant for higher quality on vehicle cards
   const images = getAllVehicleImageUrls(vehicle.images, 'public');
   return (
                 <Link 
                   key={vehicle.id} 
                   href={`/vehicles/detail?id=${vehicle.id}`}
-                  className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition block"
+                  className="group bg-white rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-transparent block"
+                  style={{
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
                 >
-                  {/* Vehicle Image */}
-                  <div className="relative h-48 bg-gray-100">
+                  {/* Vehicle Image with Gradient Overlay */}
+                  <div className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
                     {images.length > 0 ? (
-                      <img
-                        src={images[0]}
-                        alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          // Fallback to placeholder if image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const parent = target.parentElement;
-                          if (parent) {
-                            parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400"><svg class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></div>';
-                          }
-                        }}
-                      />
+                      <>
+                        <img
+                          src={images[0]}
+                          alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <Car className="h-16 w-16" />
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Car className="h-20 w-20 text-gray-300" />
                       </div>
                     )}
+                    
+                    {/* Top Badges */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+                      {/* Body Type Badge */}
+                      <div 
+                        className="px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-lg backdrop-blur-sm"
+                        style={{ backgroundColor: `${themeColors.primary}` }}
+                      >
+                        {vehicle.bodyType}
+                      </div>
+                      {/* Year Badge */}
+                      <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-sm text-gray-800 shadow-lg">
+                        <Calendar className="inline h-3 w-3 mr-1" />
+                        {vehicle.year}
+                      </div>
+                    </div>
+
+                    {/* Photo Count */}
                     {images.length > 1 && (
-                      <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded z-10">
-                        +{images.length - 1} photos
+                      <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-medium shadow-lg z-10">
+                        📸 {images.length} photos
                       </div>
                     )}
+
                     {/* SOLD Banner */}
                     {vehicle.isSold === 1 && (
-                      <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-2 font-bold text-lg z-20 shadow-lg">
-                        SOLD
-                      </div>
-                    )}
-                    {/* Vendor Badge - Hidden from public view */}
-                    {/* Status Badges */}
-                    {vehicle.vendor_status === 'unlisted' && !vehicle.isSold && (
-                      <div className="absolute top-2 right-2 bg-yellow-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded z-10">
-                        Unlisted
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-20 flex items-center justify-center">
+                        <div className="bg-red-600 text-white px-8 py-4 rounded-xl font-bold text-2xl shadow-2xl transform -rotate-12">
+                          SOLD
+                        </div>
                       </div>
                     )}
                   </div>
                   
                   {/* Vehicle Details */}
                   <div className="p-6">
-                    <h2 className="text-xl font-semibold mb-2">
+                    {/* Title */}
+                    <h2 className="text-xl font-bold mb-3 text-gray-900 group-hover:text-current transition-colors"
+                        style={{ color: `${themeColors.primary}` }}>
                       {vehicle.year} {vehicle.make} {vehicle.model}
                     </h2>
-                    <div className="text-sm text-gray-600 mb-3">
-                      <div className="flex items-center gap-2">
-                        {vehicle.color && (
-                          <>
-                            {vehicle.color.startsWith('#') ? (
-                              <div className="flex items-center gap-1">
-                                <div 
-                                  className="w-4 h-4 rounded border border-gray-300" 
-                                  style={{ backgroundColor: vehicle.color }}
-                                  title={vehicle.color}
-                                />
-                                <span>Color</span>
-                              </div>
-                            ) : (
-                              <span>{vehicle.color}</span>
-                            )}
-                          </>
-                        )}
-                        <span>• {vehicle.bodyType}</span>
+
+                    {/* Specs Grid */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      {/* Odometer */}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                             style={{ backgroundColor: `${themeColors.accent}15` }}>
+                          <Gauge className="h-4 w-4" style={{ color: themeColors.accent }} />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 font-medium">Mileage</p>
+                          <p className="font-semibold text-gray-700">{vehicle.odometer.toLocaleString()} km</p>
+                        </div>
                       </div>
-                      <p>{vehicle.odometer.toLocaleString()} km</p>
+
+                      {/* Fuel Type */}
+                      {vehicle.fuelType && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                               style={{ backgroundColor: `${themeColors.accent}15` }}>
+                            <Fuel className="h-4 w-4" style={{ color: themeColors.accent }} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 font-medium">Fuel</p>
+                            <p className="font-semibold text-gray-700">{vehicle.fuelType}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Transmission */}
+                      {vehicle.transmission && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                               style={{ backgroundColor: `${themeColors.accent}15` }}>
+                            <Settings2 className="h-4 w-4" style={{ color: themeColors.accent }} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 font-medium">Trans.</p>
+                            <p className="font-semibold text-gray-700">{vehicle.transmission}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Color */}
+                      {vehicle.color && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200">
+                            {vehicle.color.startsWith('#') ? (
+                              <div 
+                                className="w-5 h-5 rounded-full border-2 border-white shadow-sm" 
+                                style={{ backgroundColor: vehicle.color }}
+                              />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full bg-gray-300"></div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 font-medium">Color</p>
+                            <p className="font-semibold text-gray-700 capitalize">
+                              {vehicle.color.startsWith('#') ? 'Custom' : vehicle.color}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-2xl font-bold text-green-600 mb-3">
-                      ${vehicle.price.toLocaleString()}
-                    </p>
-                    <span className="text-blue-700 text-sm font-semibold hover:text-blue-900">
-                      View Details →
-                    </span>
+
+                    {/* Divider */}
+                    <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent my-4"></div>
+
+                    {/* Price and CTA */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium mb-1">Price</p>
+                        <p className="text-3xl font-bold" style={{ color: themeColors.primary }}>
+                          ${vehicle.price.toLocaleString()}
+                        </p>
+                      </div>
+                      <div 
+                        className="px-5 py-2.5 rounded-xl font-semibold text-white flex items-center gap-2 group-hover:gap-3 transition-all shadow-md group-hover:shadow-lg"
+                        style={{ backgroundColor: themeColors.accent }}
+                      >
+                        View
+                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
                   </div>
                 </Link>
               );
