@@ -52,7 +52,14 @@ const translations = {
     expertTeamDesc: 'Personnel professionnel et expérimenté',
     testimonials: 'Témoignages',
     testimonialsSubtitle: 'Ce que disent nos clients',
-    viewAllVehicles: 'Voir tous les véhicules'
+    viewAllVehicles: 'Voir tous les véhicules',
+    readyToFind: 'Prêt à trouver la voiture de vos rêves?',
+    visitShowroom: 'Visitez notre salle d\'exposition ou parcourez en ligne aujourd\'hui',
+    browseInventory: 'Parcourir l\'inventaire',
+    call: 'Appeler',
+    visitUs: 'Visitez-nous',
+    openToday: 'Ouvert aujourd\'hui',
+    checkOurHours: 'Vérifier nos heures'
   },
   en: {
     welcome: 'Welcome to',
@@ -86,7 +93,14 @@ const translations = {
     expertTeamDesc: 'Professional and experienced staff',
     testimonials: 'Testimonials',
     testimonialsSubtitle: 'What our customers say',
-    viewAllVehicles: 'View All Vehicles'
+    viewAllVehicles: 'View All Vehicles',
+    readyToFind: 'Ready to Find Your Dream Car?',
+    visitShowroom: 'Visit our showroom or browse online today',
+    browseInventory: 'Browse Inventory',
+    call: 'Call',
+    visitUs: 'Visit Us',
+    openToday: 'Open Today',
+    checkOurHours: 'Check our hours'
   },
   es: {
     welcome: 'Bienvenido a',
@@ -120,7 +134,14 @@ const translations = {
     expertTeamDesc: 'Personal profesional y experimentado',
     testimonials: 'Testimonios',
     testimonialsSubtitle: 'Lo que dicen nuestros clientes',
-    viewAllVehicles: 'Ver todos los vehículos'
+    viewAllVehicles: 'Ver todos los vehículos',
+    readyToFind: '¿Listo para encontrar el auto de sus sueños?',
+    visitShowroom: 'Visite nuestro salón de exhibición o navegue en línea hoy',
+    browseInventory: 'Explorar inventario',
+    call: 'Llamar',
+    visitUs: 'Visítenos',
+    openToday: 'Abierto hoy',
+    checkOurHours: 'Consultar nuestro horario'
   }
 };
 
@@ -532,9 +553,9 @@ export default function Home() {
       <section className="py-16" style={{ backgroundColor: `${themeColors.primary}10` }}>
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4" style={{ color: themeColors.primary }}>
-            Ready to Find Your Dream Car?
+            {t.readyToFind}
           </h2>
-          <p className="text-gray-600 mb-8">Visit our showroom or browse online today</p>
+          <p className="text-gray-600 mb-8">{t.visitShowroom}</p>
           
           <div className="flex flex-col md:flex-row gap-4 justify-center">
             <Link
@@ -545,7 +566,7 @@ export default function Home() {
                 color: 'white'
               }}
             >
-              Browse Inventory
+              {t.browseInventory}
             </Link>
             <a
               href={`tel:${settings.contactPhone}`}
@@ -556,7 +577,7 @@ export default function Home() {
               }}
             >
               <Phone className="inline-block h-5 w-5 mr-2" />
-              Call {settings.contactPhone}
+              {t.call} {settings.contactPhone}
             </a>
           </div>
 
@@ -564,16 +585,16 @@ export default function Home() {
             <div className="flex items-start space-x-3">
               <MapPin className="h-5 w-5 mt-1" style={{ color: themeColors.primary }} />
               <div>
-                <p className="font-semibold">Visit Us</p>
+                <p className="font-semibold">{t.visitUs}</p>
                 <p className="text-gray-600">{settings.address}, {settings.city}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <Clock className="h-5 w-5 mt-1" style={{ color: themeColors.primary }} />
               <div>
-                <p className="font-semibold">Open Today</p>
+                <p className="font-semibold">{t.openToday}</p>
                 <p className="text-gray-600">
-                  {settings.businessHours[new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()]?.en || 'Check our hours'}
+                  {settings.businessHours[new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()]?.[language] || t.checkOurHours}
                 </p>
               </div>
             </div>
