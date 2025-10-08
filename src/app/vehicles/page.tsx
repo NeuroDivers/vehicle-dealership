@@ -34,6 +34,147 @@ interface Vehicle {
   last_seen_from_vendor?: string;
 }
 
+const translations = {
+  en: {
+    searchPlaceholder: 'Search vehicles...',
+    filters: 'Filters',
+    clearAll: 'Clear All',
+    sortBy: 'Sort by:',
+    priceLowHigh: 'Price: Low to High',
+    priceHighLow: 'Price: High to Low',
+    yearNewest: 'Year: Newest First',
+    yearOldest: 'Year: Oldest First',
+    makeAZ: 'Make: A to Z',
+    mileageLowHigh: 'Mileage: Low to High',
+    vehicle: 'vehicle',
+    vehicles: 'vehicles',
+    found: 'found',
+    bodyType: 'Body Type',
+    allTypes: 'All Types',
+    fuelType: 'Fuel Type',
+    allFuels: 'All Fuels',
+    gasoline: 'Gasoline',
+    diesel: 'Diesel',
+    electric: 'Electric',
+    hybrid: 'Hybrid',
+    pluginHybrid: 'Plug-in Hybrid',
+    minPrice: 'Min Price',
+    maxPrice: 'Max Price',
+    minPricePlaceholder: '$ Min',
+    maxPricePlaceholder: '$ Max',
+    minYear: 'Min Year',
+    maxYear: 'Max Year',
+    from: 'From',
+    to: 'To',
+    applyFilters: 'Apply Filters',
+    noVehiclesTitle: 'No vehicles found',
+    noVehiclesMessage: 'Try adjusting your filters or search terms',
+    requestVehicle: 'Request a Vehicle',
+    requestVehicleMessage: "Can't find what you're looking for?",
+    loading: 'Loading vehicles...',
+    mileage: 'Mileage',
+    fuel: 'Fuel',
+    trans: 'Trans.',
+    color: 'Color',
+    custom: 'Custom',
+    price: 'Price',
+    view: 'View',
+    photos: 'photos'
+  },
+  fr: {
+    searchPlaceholder: 'Rechercher des véhicules...',
+    filters: 'Filtres',
+    clearAll: 'Effacer tout',
+    sortBy: 'Trier par:',
+    priceLowHigh: 'Prix: Bas à élevé',
+    priceHighLow: 'Prix: Élevé à bas',
+    yearNewest: 'Année: Plus récent',
+    yearOldest: 'Année: Plus ancien',
+    makeAZ: 'Marque: A à Z',
+    mileageLowHigh: 'Kilométrage: Bas à élevé',
+    vehicle: 'véhicule',
+    vehicles: 'véhicules',
+    found: 'trouvé(s)',
+    bodyType: 'Type de carrosserie',
+    allTypes: 'Tous les types',
+    fuelType: 'Type de carburant',
+    allFuels: 'Tous les carburants',
+    gasoline: 'Essence',
+    diesel: 'Diesel',
+    electric: 'Électrique',
+    hybrid: 'Hybride',
+    pluginHybrid: 'Hybride rechargeable',
+    minPrice: 'Prix min',
+    maxPrice: 'Prix max',
+    minPricePlaceholder: '$ Min',
+    maxPricePlaceholder: '$ Max',
+    minYear: 'Année min',
+    maxYear: 'Année max',
+    from: 'De',
+    to: 'À',
+    applyFilters: 'Appliquer les filtres',
+    noVehiclesTitle: 'Aucun véhicule trouvé',
+    noVehiclesMessage: 'Essayez d\'ajuster vos filtres ou termes de recherche',
+    requestVehicle: 'Demander un véhicule',
+    requestVehicleMessage: 'Vous ne trouvez pas ce que vous cherchez?',
+    loading: 'Chargement des véhicules...',
+    mileage: 'Kilométrage',
+    fuel: 'Carburant',
+    trans: 'Trans.',
+    color: 'Couleur',
+    custom: 'Personnalisé',
+    price: 'Prix',
+    view: 'Voir',
+    photos: 'photos'
+  },
+  es: {
+    searchPlaceholder: 'Buscar vehículos...',
+    filters: 'Filtros',
+    clearAll: 'Borrar todo',
+    sortBy: 'Ordenar por:',
+    priceLowHigh: 'Precio: Bajo a alto',
+    priceHighLow: 'Precio: Alto a bajo',
+    yearNewest: 'Año: Más reciente',
+    yearOldest: 'Año: Más antiguo',
+    makeAZ: 'Marca: A a Z',
+    mileageLowHigh: 'Kilometraje: Bajo a alto',
+    vehicle: 'vehículo',
+    vehicles: 'vehículos',
+    found: 'encontrado(s)',
+    bodyType: 'Tipo de carrocería',
+    allTypes: 'Todos los tipos',
+    fuelType: 'Tipo de combustible',
+    allFuels: 'Todos los combustibles',
+    gasoline: 'Gasolina',
+    diesel: 'Diésel',
+    electric: 'Eléctrico',
+    hybrid: 'Híbrido',
+    pluginHybrid: 'Híbrido enchufable',
+    minPrice: 'Precio mín',
+    maxPrice: 'Precio máx',
+    minPricePlaceholder: '$ Mín',
+    maxPricePlaceholder: '$ Máx',
+    minYear: 'Año mín',
+    maxYear: 'Año máx',
+    from: 'Desde',
+    to: 'Hasta',
+    applyFilters: 'Aplicar filtros',
+    noVehiclesTitle: 'No se encontraron vehículos',
+    noVehiclesMessage: 'Intente ajustar sus filtros o términos de búsqueda',
+    requestVehicle: 'Solicitar un vehículo',
+    requestVehicleMessage: '¿No encuentra lo que busca?',
+    loading: 'Cargando vehículos...',
+    mileage: 'Kilometraje',
+    fuel: 'Combustible',
+    trans: 'Trans.',
+    color: 'Color',
+    custom: 'Personalizado',
+    price: 'Precio',
+    view: 'Ver',
+    photos: 'fotos'
+  }
+};
+
 export default function VehiclesPage() {
   const { settings, getThemeColors } = useSiteSettings();
   const themeColors = getThemeColors();
@@ -53,6 +194,7 @@ export default function VehiclesPage() {
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [language, setLanguage] = useState<'en' | 'fr' | 'es'>('en');
+  const t = translations[language];
 
   // Check URL params for fuel type filter and search term
   useEffect(() => {
@@ -226,7 +368,7 @@ export default function VehiclesPage() {
       <main className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Our Vehicles</h1>
-          <p className="text-gray-600">Loading vehicles from database...</p>
+          <p className="text-gray-600">{t.loading}</p>
         </div>
       </main>
     );
@@ -242,7 +384,7 @@ export default function VehiclesPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search vehicles..."
+              placeholder={t.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -257,7 +399,7 @@ export default function VehiclesPage() {
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
           >
             <Filter className="h-4 w-4 mr-2" />
-            <span>Filters</span>
+            <span>{t.filters}</span>
             {Object.values(filters).some(v => v) && (
               <span className="ml-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
                 {Object.values(filters).filter(v => v).length}
@@ -275,30 +417,30 @@ export default function VehiclesPage() {
                 className="flex items-center text-sm text-gray-600 hover:text-gray-800"
               >
                 <X className="h-4 w-4 mr-1" />
-                Clear All
+                {t.clearAll}
               </button>
             )}
             
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Sort by:</label>
+              <label className="text-sm text-gray-600">{t.sortBy}</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="year-desc">Year: Newest First</option>
-                <option value="year-asc">Year: Oldest First</option>
-                <option value="make-asc">Make: A to Z</option>
-                <option value="odometer-asc">Mileage: Low to High</option>
+                <option value="price-asc">{t.priceLowHigh}</option>
+                <option value="price-desc">{t.priceHighLow}</option>
+                <option value="year-desc">{t.yearNewest}</option>
+                <option value="year-asc">{t.yearOldest}</option>
+                <option value="make-asc">{t.makeAZ}</option>
+                <option value="odometer-asc">{t.mileageLowHigh}</option>
               </select>
             </div>
           </div>
           
           <span className="text-sm text-gray-600">
-            {filteredVehicles.length} {filteredVehicles.length === 1 ? 'vehicle' : 'vehicles'} found
+            {filteredVehicles.length} {filteredVehicles.length === 1 ? t.vehicle : t.vehicles} {t.found}
           </span>
         </div>
         {/* Filters Panel - Slide-in Modal on Mobile, Regular Panel on Desktop */}
@@ -314,7 +456,7 @@ export default function VehiclesPage() {
             <div className="fixed md:relative inset-y-0 right-0 md:inset-auto w-full max-w-sm md:max-w-none bg-white md:rounded-lg shadow-lg md:shadow p-6 mb-0 md:mb-8 z-50 md:z-auto overflow-y-auto md:overflow-visible transform transition-transform duration-300 ease-in-out">
               {/* Mobile Header */}
               <div className="flex justify-between items-center mb-4 md:hidden">
-                <h3 className="text-lg font-semibold">Filters</h3>
+                <h3 className="text-lg font-semibold">{t.filters}</h3>
                 <button
                   onClick={() => setShowFilters(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg"
@@ -325,13 +467,13 @@ export default function VehiclesPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Body Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.bodyType}</label>
                 <select
                   value={filters.bodyType}
                   onChange={(e) => setFilters({...filters, bodyType: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">All Types</option>
+                  <option value="">{t.allTypes}</option>
                   {bodyTypes.map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
@@ -339,26 +481,26 @@ export default function VehiclesPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.fuelType}</label>
                 <select
                   value={filters.fuelType}
                   onChange={(e) => setFilters({...filters, fuelType: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">All Fuels</option>
-                  <option value="gasoline">Gasoline</option>
-                  <option value="diesel">Diesel</option>
-                  <option value="electric">Electric</option>
-                  <option value="hybrid">Hybrid</option>
-                  <option value="plugin-hybrid">Plug-in Hybrid</option>
+                  <option value="">{t.allFuels}</option>
+                  <option value="gasoline">{t.gasoline}</option>
+                  <option value="diesel">{t.diesel}</option>
+                  <option value="electric">{t.electric}</option>
+                  <option value="hybrid">{t.hybrid}</option>
+                  <option value="plugin-hybrid">{t.pluginHybrid}</option>
                 </select>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.minPrice}</label>
                 <input
                   type="number"
-                  placeholder="$ Min"
+                  placeholder={t.minPricePlaceholder}
                   value={filters.minPrice}
                   onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -366,10 +508,10 @@ export default function VehiclesPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Price</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.maxPrice}</label>
                 <input
                   type="number"
-                  placeholder="$ Max"
+                  placeholder={t.maxPricePlaceholder}
                   value={filters.maxPrice}
                   onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -377,10 +519,10 @@ export default function VehiclesPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Min Year</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.minYear}</label>
                 <input
                   type="number"
-                  placeholder="From"
+                  placeholder={t.from}
                   value={filters.minYear}
                   onChange={(e) => setFilters({...filters, minYear: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -388,10 +530,10 @@ export default function VehiclesPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Year</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.maxYear}</label>
                 <input
                   type="number"
-                  placeholder="To"
+                  placeholder={t.to}
                   value={filters.maxYear}
                   onChange={(e) => setFilters({...filters, maxYear: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -405,13 +547,13 @@ export default function VehiclesPage() {
                   onClick={clearFilters}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
-                  Clear All
+                  {t.clearAll}
                 </button>
                 <button
                   onClick={() => setShowFilters(false)}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  Apply Filters
+                  {t.applyFilters}
                 </button>
               </div>
             </div>
@@ -494,7 +636,7 @@ export default function VehiclesPage() {
                     {/* Photo Count */}
                     {images.length > 1 && (
                       <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-medium shadow-lg z-10">
-                        📸 {images.length} photos
+                        📸 {images.length} {t.photos}
                       </div>
                     )}
 
@@ -525,7 +667,7 @@ export default function VehiclesPage() {
                           <Gauge className="h-4 w-4" style={{ color: themeColors.accent }} />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-400 font-medium">Mileage</p>
+                          <p className="text-xs text-gray-400 font-medium">{t.mileage}</p>
                           <p className="font-semibold text-gray-700">{vehicle.odometer.toLocaleString()} km</p>
                         </div>
                       </div>
@@ -538,7 +680,7 @@ export default function VehiclesPage() {
                             <Fuel className="h-4 w-4" style={{ color: themeColors.accent }} />
                           </div>
                           <div>
-                            <p className="text-xs text-gray-400 font-medium">Fuel</p>
+                            <p className="text-xs text-gray-400 font-medium">{t.fuel}</p>
                             <p className="font-semibold text-gray-700">{vehicle.fuelType}</p>
                           </div>
                         </div>
@@ -552,7 +694,7 @@ export default function VehiclesPage() {
                             <Settings2 className="h-4 w-4" style={{ color: themeColors.accent }} />
                           </div>
                           <div>
-                            <p className="text-xs text-gray-400 font-medium">Trans.</p>
+                            <p className="text-xs text-gray-400 font-medium">{t.trans}</p>
                             <p className="font-semibold text-gray-700">{vehicle.transmission}</p>
                           </div>
                         </div>
@@ -572,9 +714,9 @@ export default function VehiclesPage() {
                             )}
                           </div>
                           <div>
-                            <p className="text-xs text-gray-400 font-medium">Color</p>
+                            <p className="text-xs text-gray-400 font-medium">{t.color}</p>
                             <p className="font-semibold text-gray-700 capitalize">
-                              {vehicle.color.startsWith('#') ? 'Custom' : vehicle.color}
+                              {vehicle.color.startsWith('#') ? t.custom : vehicle.color}
                             </p>
                           </div>
                         </div>
@@ -587,7 +729,7 @@ export default function VehiclesPage() {
                     {/* Price and CTA */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs text-gray-500 font-medium mb-1">Price</p>
+                        <p className="text-xs text-gray-500 font-medium mb-1">{t.price}</p>
                         <p className="text-3xl font-bold" style={{ color: themeColors.primary }}>
                           ${vehicle.price.toLocaleString()}
                         </p>
@@ -596,7 +738,7 @@ export default function VehiclesPage() {
                         className="px-5 py-2.5 rounded-xl font-semibold text-white flex items-center gap-2 group-hover:gap-3 transition-all shadow-md group-hover:shadow-lg"
                         style={{ backgroundColor: themeColors.accent }}
                       >
-                        View
+                        {t.view}
                         <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
