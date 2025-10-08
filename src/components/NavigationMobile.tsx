@@ -96,6 +96,15 @@ export default function NavigationMobile() {
                 Contact
               </Link>
               
+              {/* Get Pre-Approved CTA Button */}
+              <Link
+                href="/contact?type=preapproval"
+                className="px-4 py-2 rounded-lg font-semibold text-white transition-all hover:shadow-lg hover:scale-105"
+                style={{ backgroundColor: themeColors.accent }}
+              >
+                Get Pre-Approved
+              </Link>
+              
               {/* Language Selector */}
               <div className="relative">
                 <button
@@ -209,6 +218,16 @@ export default function NavigationMobile() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Contact
+              </Link>
+              
+              {/* Get Pre-Approved CTA Button (Mobile) */}
+              <Link
+                href="/contact?type=preapproval"
+                className="block text-center px-4 py-3 rounded-lg font-semibold text-white transition-all shadow-md mt-2"
+                style={{ backgroundColor: themeColors.accent }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                🎯 Get Pre-Approved
               </Link>
               
               {/* Dashboard Button (Mobile) */}
