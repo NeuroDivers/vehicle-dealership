@@ -193,7 +193,7 @@ export default function VehiclesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const [language, setLanguage] = useState<'en' | 'fr' | 'es'>('en');
+  const [language, setLanguage] = useState<'en' | 'fr' | 'es'>('fr');
   const t = translations[language];
 
   // Check URL params for fuel type filter and search term
@@ -211,10 +211,12 @@ export default function VehiclesPage() {
       setSearchTerm(searchParam);
     }
 
-    // Get language from localStorage
+    // Get language from localStorage or default to French
     const storedLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
     if (storedLang) {
       setLanguage(storedLang);
+    } else {
+      localStorage.setItem('language', 'fr'); // Set French as default
     }
   }, []);
 

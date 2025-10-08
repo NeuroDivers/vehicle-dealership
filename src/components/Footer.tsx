@@ -7,15 +7,17 @@ import { Facebook, Instagram, Twitter, Youtube, Linkedin, Phone, Mail, MapPin } 
 export default function Footer() {
   const { settings, getThemeColors } = useSiteSettings();
   const [mounted, setMounted] = useState(false);
-  const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('en');
+  const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('fr');
   const themeColors = getThemeColors();
 
   useEffect(() => {
     setMounted(true);
-    // Get language from localStorage or browser
+    // Get language from localStorage or default to French
     const storedLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
     if (storedLang) {
       setCurrentLang(storedLang);
+    } else {
+      localStorage.setItem('language', 'fr'); // Set French as default
     }
   }, []);
 

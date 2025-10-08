@@ -24,7 +24,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
   const themeColors = getThemeColors();
   
   // Get current language
-  const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('en');
+  const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('fr');
   const [isMobile, setIsMobile] = useState(false);
   
   // Touch gesture detection
@@ -71,6 +71,8 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
     const storedLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
     if (storedLang) {
       setCurrentLang(storedLang);
+    } else {
+      localStorage.setItem('language', 'fr'); // Set French as default
     }
     
     // Listen for language changes

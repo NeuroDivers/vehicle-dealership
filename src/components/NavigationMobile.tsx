@@ -8,7 +8,7 @@ import { Phone, Zap, Globe, Menu, X, LayoutDashboard } from 'lucide-react';
 export default function NavigationMobile() {
   const { settings, getThemeColors } = useSiteSettings();
   const [mounted, setMounted] = useState(false);
-  const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('en');
+  const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('fr');
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -19,6 +19,8 @@ export default function NavigationMobile() {
     const storedLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
     if (storedLang) {
       setCurrentLang(storedLang);
+    } else {
+      localStorage.setItem('language', 'fr'); // Set French as default
     }
 
     // Check if user is logged in

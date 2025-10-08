@@ -32,13 +32,15 @@ const translations = {
 
 export default function ContactPage() {
   const { settings } = useSiteSettings();
-  const [language, setLanguage] = useState<'en' | 'fr' | 'es'>('en');
+  const [language, setLanguage] = useState<'en' | 'fr' | 'es'>('fr');
   const t = translations[language];
 
   useEffect(() => {
     const storedLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
     if (storedLang) {
       setLanguage(storedLang);
+    } else {
+      localStorage.setItem('language', 'fr'); // Set French as default
     }
   }, []);
 
