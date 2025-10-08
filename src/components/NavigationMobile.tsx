@@ -75,6 +75,7 @@ export default function NavigationMobile() {
             
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-6">
+              {/* Main Navigation Links */}
               <Link href="/" className="hover:opacity-80 transition"
                    style={{ color: themeColors.headerText || '#000' }}>
                 Home
@@ -96,14 +97,8 @@ export default function NavigationMobile() {
                 Contact
               </Link>
               
-              {/* Get Pre-Approved CTA Button */}
-              <Link
-                href="/contact?type=preapproval"
-                className="px-4 py-2 rounded-lg font-semibold text-white transition-all hover:shadow-lg hover:scale-105"
-                style={{ backgroundColor: themeColors.accent }}
-              >
-                Get Pre-Approved
-              </Link>
+              {/* Divider */}
+              <div className="h-6 w-px bg-gray-300"></div>
               
               {/* Language Selector */}
               <div className="relative">
@@ -147,7 +142,7 @@ export default function NavigationMobile() {
                 )}
               </div>
               
-              {/* Dashboard Button (Desktop) */}
+              {/* Dashboard Button (Desktop) - Only for logged in users */}
               {isLoggedIn && (
                 <Link
                   href="/admin"
@@ -158,8 +153,17 @@ export default function NavigationMobile() {
                 </Link>
               )}
               
+              {/* CTA Buttons */}
+              <Link
+                href="/contact?type=preapproval"
+                className="flex items-center space-x-2 px-4 py-2.5 rounded-lg font-semibold text-white transition-all hover:shadow-lg hover:scale-105"
+                style={{ backgroundColor: themeColors.accent }}
+              >
+                <span>Get Pre-Approved</span>
+              </Link>
+              
               <a href={`tel:${settings.contactPhone}`} 
-                 className="flex items-center space-x-2 px-4 py-2 rounded-lg transition"
+                 className="flex items-center space-x-2 px-4 py-2.5 rounded-lg font-semibold transition hover:shadow-lg"
                  style={{ backgroundColor: themeColors.primary, color: 'white' }}>
                 <Phone className="h-4 w-4" />
                 <span>{settings.contactPhone}</span>
@@ -184,6 +188,7 @@ export default function NavigationMobile() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t">
             <div className="px-4 py-2 space-y-1">
+              {/* Main Navigation Links */}
               <Link 
                 href="/" 
                 className="block px-3 py-2 rounded-lg hover:bg-gray-100 transition font-medium"
@@ -220,21 +225,11 @@ export default function NavigationMobile() {
                 Contact
               </Link>
               
-              {/* Get Pre-Approved CTA Button (Mobile) */}
-              <Link
-                href="/contact?type=preapproval"
-                className="block text-center px-4 py-3 rounded-lg font-semibold text-white transition-all shadow-md mt-2"
-                style={{ backgroundColor: themeColors.accent }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                🎯 Get Pre-Approved
-              </Link>
-              
-              {/* Dashboard Button (Mobile) */}
+              {/* Dashboard Button (Mobile) - Only for logged in users */}
               {isLoggedIn && (
                 <Link
                   href="/admin"
-                  className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold transition hover:from-green-700 hover:to-emerald-700 shadow-md"
+                  className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold transition hover:from-green-700 hover:to-emerald-700 shadow-md mt-2"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <LayoutDashboard className="h-4 w-4" />
@@ -242,56 +237,67 @@ export default function NavigationMobile() {
                 </Link>
               )}
               
-              {/* Language Selector for Mobile */}
-              <div className="border-t pt-2 mt-2">
-                <div className="px-3 py-2 text-sm text-gray-500">Language</div>
-                <div className="flex space-x-2 px-3">
-                  <button
-                    onClick={() => changeLang('en')}
-                    className={`px-3 py-1 rounded-lg text-sm ${
-                      currentLang === 'en' 
-                        ? 'text-white' 
-                        : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                    style={currentLang === 'en' ? { backgroundColor: themeColors.primary } : {}}
-                  >
-                    EN
-                  </button>
-                  <button
-                    onClick={() => changeLang('fr')}
-                    className={`px-3 py-1 rounded-lg text-sm ${
-                      currentLang === 'fr' 
-                        ? 'text-white' 
-                        : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                    style={currentLang === 'fr' ? { backgroundColor: themeColors.primary } : {}}
-                  >
-                    FR
-                  </button>
-                  <button
-                    onClick={() => changeLang('es')}
-                    className={`px-3 py-1 rounded-lg text-sm ${
-                      currentLang === 'es' 
-                        ? 'text-white' 
-                        : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                    style={currentLang === 'es' ? { backgroundColor: themeColors.primary } : {}}
-                  >
-                    ES
-                  </button>
-                </div>
-              </div>
-              
-              {/* Phone Number for Mobile */}
-              <div className="border-t pt-2 mt-2">
+              {/* CTA Buttons Section */}
+              <div className="border-t pt-3 mt-3 space-y-2">
+                {/* Get Pre-Approved CTA Button */}
+                <Link
+                  href="/contact?type=preapproval"
+                  className="block text-center px-4 py-3 rounded-lg font-semibold text-white transition-all shadow-md hover:shadow-lg"
+                  style={{ backgroundColor: themeColors.accent }}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  🎯 Get Pre-Approved
+                </Link>
+                
+                {/* Phone CTA Button */}
                 <a 
                   href={`tel:${settings.contactPhone}`} 
-                  className="flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white font-medium"
+                  className="flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white font-semibold transition-all shadow-md hover:shadow-lg"
                   style={{ backgroundColor: themeColors.primary }}
                 >
                   <Phone className="h-5 w-5" />
                   <span>Call {settings.contactPhone}</span>
                 </a>
+              </div>
+              
+              {/* Language Selector for Mobile */}
+              <div className="border-t pt-3 mt-3">
+                <div className="px-3 py-2 text-sm font-medium text-gray-600">Language</div>
+                <div className="flex space-x-2 px-3">
+                  <button
+                    onClick={() => changeLang('en')}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      currentLang === 'en' 
+                        ? 'text-white shadow-md' 
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                    style={currentLang === 'en' ? { backgroundColor: themeColors.primary } : {}}
+                  >
+                    English
+                  </button>
+                  <button
+                    onClick={() => changeLang('fr')}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      currentLang === 'fr' 
+                        ? 'text-white shadow-md' 
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                    style={currentLang === 'fr' ? { backgroundColor: themeColors.primary } : {}}
+                  >
+                    Français
+                  </button>
+                  <button
+                    onClick={() => changeLang('es')}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      currentLang === 'es' 
+                        ? 'text-white shadow-md' 
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                    style={currentLang === 'es' ? { backgroundColor: themeColors.primary } : {}}
+                  >
+                    Español
+                  </button>
+                </div>
               </div>
             </div>
           </div>
