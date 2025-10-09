@@ -19,6 +19,17 @@ export default function Footer() {
     } else {
       localStorage.setItem('language', 'fr'); // Set French as default
     }
+
+    // Listen for language changes from other components (like header)
+    const handleLanguageChange = () => {
+      const newLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
+      if (newLang) {
+        setCurrentLang(newLang);
+      }
+    };
+
+    window.addEventListener('languageChange', handleLanguageChange);
+    return () => window.removeEventListener('languageChange', handleLanguageChange);
   }, []);
 
   if (!mounted) {
@@ -131,6 +142,8 @@ export default function Footer() {
                   onClick={() => {
                     setCurrentLang(lang);
                     localStorage.setItem('language', lang);
+                    // Dispatch event to notify other components (header, pages)
+                    window.dispatchEvent(new Event('languageChange'));
                   }}
                   className={`px-3 py-1 rounded text-sm transition ${
                     currentLang === lang 

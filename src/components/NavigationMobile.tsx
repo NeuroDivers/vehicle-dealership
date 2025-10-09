@@ -30,18 +30,28 @@ export default function NavigationMobile() {
     };
     
     checkLoginStatus();
+
+    // Listen for language changes from other components (like footer)
+    const handleLanguageChange = () => {
+      const newLang = localStorage.getItem('language') as 'en' | 'fr' | 'es';
+      if (newLang && newLang !== currentLang) {
+        setCurrentLang(newLang);
+      }
+    };
     
     // Listen for login/logout events
     window.addEventListener('storage', checkLoginStatus);
     window.addEventListener('userLoggedIn', checkLoginStatus);
+    window.addEventListener('languageChange', handleLanguageChange);
     const interval = setInterval(checkLoginStatus, 500);
     
     return () => {
       window.removeEventListener('storage', checkLoginStatus);
       window.removeEventListener('userLoggedIn', checkLoginStatus);
+      window.removeEventListener('languageChange', handleLanguageChange);
       clearInterval(interval);
     };
-  }, []);
+  }, [currentLang]);
 
   const changeLang = (lang: 'en' | 'fr' | 'es') => {
     setCurrentLang(lang);
