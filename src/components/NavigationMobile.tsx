@@ -90,23 +90,31 @@ export default function NavigationMobile() {
               {/* Main Navigation Links */}
               <Link href="/" className="hover:opacity-80 transition"
                    style={{ color: themeColors.headerText || '#000' }}>
-                Home
+                {currentLang === 'fr' ? 'Accueil' : 
+                 currentLang === 'es' ? 'Inicio' : 
+                 'Home'}
               </Link>
               <Link href="/vehicles" className="hover:opacity-80 transition"
                    style={{ color: themeColors.headerText || '#000' }}>
-                Vehicles
+                {currentLang === 'fr' ? 'Véhicules' : 
+                 currentLang === 'es' ? 'Vehículos' : 
+                 'Vehicles'}
               </Link>
               {settings.showElectricVehiclesLink !== false && (
                 <Link href="/vehicles?fuelType=electric" 
                      className="flex items-center space-x-1 hover:opacity-80 transition"
                      style={{ color: themeColors.accent }}>
                   <Zap className="h-4 w-4" />
-                  <span>Electric</span>
+                  <span>{currentLang === 'fr' ? 'Électrique' : 
+                        currentLang === 'es' ? 'Eléctrico' : 
+                        'Electric'}</span>
                 </Link>
               )}
               <Link href="/contact" className="hover:opacity-80 transition"
                    style={{ color: themeColors.headerText || '#000' }}>
-                Contact
+                {currentLang === 'fr' ? 'Contact' : 
+                 currentLang === 'es' ? 'Contacto' : 
+                 'Contact'}
               </Link>
               
               {/* Divider */}
@@ -171,7 +179,9 @@ export default function NavigationMobile() {
                 className="flex items-center space-x-2 px-4 py-2.5 rounded-lg font-semibold text-white transition-all hover:shadow-lg hover:scale-105"
                 style={{ backgroundColor: themeColors.accent }}
               >
-                <span>Get Pre-Approved</span>
+                <span>{currentLang === 'fr' ? 'Préapprobation' : 
+                      currentLang === 'es' ? 'Pre-aprobación' : 
+                      'Get Pre-Approved'}</span>
               </Link>
               
               <a href={`tel:${settings.contactPhone}`} 
@@ -209,7 +219,9 @@ export default function NavigationMobile() {
                 style={{ color: themeColors.headerText || '#000' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Home
+                {currentLang === 'fr' ? 'Accueil' : 
+                 currentLang === 'es' ? 'Inicio' : 
+                 'Home'}
               </Link>
               <Link 
                 href="/vehicles" 
@@ -217,7 +229,9 @@ export default function NavigationMobile() {
                 style={{ color: themeColors.headerText || '#000' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Vehicles
+                {currentLang === 'fr' ? 'Véhicules' : 
+                 currentLang === 'es' ? 'Vehículos' : 
+                 'Vehicles'}
               </Link>
               {settings.showElectricVehiclesLink !== false && (
                 <Link 
@@ -227,7 +241,9 @@ export default function NavigationMobile() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Zap className="h-4 w-4" />
-                  <span>Electric Vehicles</span>
+                  <span>{currentLang === 'fr' ? 'Véhicules électriques' : 
+                        currentLang === 'es' ? 'Vehículos eléctricos' : 
+                        'Electric Vehicles'}</span>
                 </Link>
               )}
               <Link 
@@ -236,7 +252,9 @@ export default function NavigationMobile() {
                 style={{ color: themeColors.headerText || '#000' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Contact
+                {currentLang === 'fr' ? 'Contact' : 
+                 currentLang === 'es' ? 'Contacto' : 
+                 'Contact'}
               </Link>
               
               {/* Dashboard Button (Mobile) - Only for logged in users */}
@@ -260,17 +278,20 @@ export default function NavigationMobile() {
                   style={{ backgroundColor: themeColors.accent }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  🎯 Get Pre-Approved
+                  {currentLang === 'fr' ? 'Préapprobation' : 
+                   currentLang === 'es' ? 'Pre-aprobación' : 
+                   'Get Pre-Approved'}
                 </Link>
                 
                 {/* Phone CTA Button */}
                 <a 
                   href={`tel:${settings.contactPhone}`} 
-                  className="flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-white font-semibold transition-all shadow-md hover:shadow-lg"
+                  className="block text-center px-4 py-3 rounded-lg text-white font-semibold transition-all shadow-md hover:shadow-lg"
                   style={{ backgroundColor: themeColors.primary }}
                 >
-                  <Phone className="h-5 w-5" />
-                  <span>Call {settings.contactPhone}</span>
+                  {currentLang === 'fr' ? 'Appeler' : 
+                   currentLang === 'es' ? 'Llamar' : 
+                   'Call'} {settings.contactPhone}
                 </a>
               </div>
               
