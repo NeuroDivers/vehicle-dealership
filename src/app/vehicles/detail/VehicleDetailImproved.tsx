@@ -15,6 +15,66 @@ import { getAllVehicleImageUrls } from '@/utils/imageUtils';
 import { trackVehicleView } from '@/lib/analytics-config';
 import FinancingModal from '@/components/FinancingModal';
 
+const translations = {
+  fr: {
+    backToInventory: 'Retour à l\'inventaire',
+    vehicleNotFound: 'Véhicule non trouvé',
+    vehicleNotFoundMsg: 'Désolé, nous n\'avons pas trouvé le véhicule que vous recherchez.',
+    vehicleSold: 'Ce véhicule a été vendu',
+    callForPrice: 'Appelez pour le prix',
+    keyInformation: 'Informations clés',
+    year: 'Année',
+    mileage: 'Kilométrage',
+    bodyType: 'Type de carrosserie',
+    color: 'Couleur',
+    custom: 'Personnalisé',
+    fuelType: 'Type de carburant',
+    transmission: 'Transmission',
+    engineSize: 'Taille du moteur',
+    cylinders: 'Cylindres',
+    vin: 'NIV',
+    notAvailable: 'N/A'
+  },
+  en: {
+    backToInventory: 'Back to Inventory',
+    vehicleNotFound: 'Vehicle Not Found',
+    vehicleNotFoundMsg: 'Sorry, we couldn\'t find the vehicle you\'re looking for.',
+    vehicleSold: 'This Vehicle Has Been Sold',
+    callForPrice: 'Call for Price',
+    keyInformation: 'Key Information',
+    year: 'Year',
+    mileage: 'Mileage',
+    bodyType: 'Body Type',
+    color: 'Color',
+    custom: 'Custom',
+    fuelType: 'Fuel Type',
+    transmission: 'Transmission',
+    engineSize: 'Engine Size',
+    cylinders: 'Cylinders',
+    vin: 'VIN',
+    notAvailable: 'N/A'
+  },
+  es: {
+    backToInventory: 'Volver al inventario',
+    vehicleNotFound: 'Vehículo no encontrado',
+    vehicleNotFoundMsg: 'Lo sentimos, no pudimos encontrar el vehículo que busca.',
+    vehicleSold: 'Este vehículo ha sido vendido',
+    callForPrice: 'Llamar para precio',
+    keyInformation: 'Información clave',
+    year: 'Año',
+    mileage: 'Kilometraje',
+    bodyType: 'Tipo de carrocería',
+    color: 'Color',
+    custom: 'Personalizado',
+    fuelType: 'Tipo de combustible',
+    transmission: 'Transmisión',
+    engineSize: 'Tamaño del motor',
+    cylinders: 'Cilindros',
+    vin: 'VIN',
+    notAvailable: 'N/A'
+  }
+};
+
 export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
@@ -25,6 +85,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
   
   // Get current language
   const [currentLang, setCurrentLang] = useState<'en' | 'fr' | 'es'>('fr');
+  const t = translations[currentLang];
   const [isMobile, setIsMobile] = useState(false);
   
   // Touch gesture detection
@@ -57,14 +118,32 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
     touchEndX.current = null;
   };
   
-  // Detect mobile device based on screen width
+  // Detect mobile device based on screen width - optimized to prevent scroll jumping
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // Mobile if width < 768px
+      const isMobileView = window.innerWidth < 768;
+      setIsMobile(prev => {
+        // Only update if changed to prevent unnecessary re-renders
+        if (prev !== isMobileView) return isMobileView;
+        return prev;
+      });
     };
+    
+    // Initial check
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    
+    // Debounce resize events to prevent scroll jumping
+    let resizeTimer: NodeJS.Timeout;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(checkMobile, 150);
+    };
+    
+    window.addEventListener('resize', debouncedResize);
+    return () => {
+      window.removeEventListener('resize', debouncedResize);
+      clearTimeout(resizeTimer);
+    };
   }, []);
   
   useEffect(() => {
@@ -101,10 +180,10 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center">
         <Car className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Vehicle Not Found</h1>
-        <p className="text-gray-600 mb-8">Sorry, we couldn&apos;t find the vehicle you&apos;re looking for.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t.vehicleNotFound}</h1>
+        <p className="text-gray-600 mb-8">{t.vehicleNotFoundMsg}</p>
         <Link href="/vehicles" className="text-blue-600 hover:text-blue-800">
-          ← Back to Inventory
+          ← {t.backToInventory}
         </Link>
       </div>
     );
@@ -146,7 +225,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
       <div className="flex justify-between items-center mb-6">
         <Link href="/vehicles" className="inline-flex items-center text-gray-600 hover:text-gray-900">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Inventory
+          {t.backToInventory}
         </Link>
         
         <div className="flex items-center space-x-4">
@@ -254,7 +333,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
           
           {vehicle.isSold === 1 && (
             <div className="mt-4 bg-red-100 text-red-800 px-4 py-3 rounded-lg text-center font-semibold">
-              This Vehicle Has Been Sold
+              {t.vehicleSold}
             </div>
           )}
         </div>
@@ -268,7 +347,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
             </h1>
             <div className="flex items-baseline space-x-4">
               <p className="text-4xl font-bold" style={{ color: themeColors.primary }}>
-                ${vehicle.price ? vehicle.price.toLocaleString() : 'Call for Price'}
+                ${vehicle.price ? vehicle.price.toLocaleString() : t.callForPrice}
               </p>
               {vehicle.originalPrice && vehicle.originalPrice > vehicle.price && (
                 <p className="text-xl text-gray-500 line-through">
@@ -282,14 +361,14 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
           <div className="bg-gray-50 rounded-xl p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
               <Info className="h-5 w-5 mr-2" style={{ color: themeColors.primary }} />
-              Key Information
+              {t.keyInformation}
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-lg p-4">
                 <div className="flex items-center space-x-3">
                   <Calendar className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Year</p>
+                    <p className="text-sm text-gray-600">{t.year}</p>
                     <p className="font-semibold text-lg">{vehicle.year}</p>
                   </div>
                 </div>
@@ -299,9 +378,9 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                 <div className="flex items-center space-x-3">
                   <Gauge className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Mileage</p>
+                    <p className="text-sm text-gray-600">{t.mileage}</p>
                     <p className="font-semibold text-lg">
-                      {vehicle.odometer ? `${vehicle.odometer.toLocaleString()} km` : 'N/A'}
+                      {vehicle.odometer ? `${vehicle.odometer.toLocaleString()} km` : t.notAvailable}
                     </p>
                   </div>
                 </div>
@@ -311,8 +390,8 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                 <div className="flex items-center space-x-3">
                   <Car className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Body Type</p>
-                    <p className="font-semibold text-lg">{vehicle.bodyType || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">{t.bodyType}</p>
+                    <p className="font-semibold text-lg">{vehicle.bodyType || t.notAvailable}</p>
                   </div>
                 </div>
               </div>
@@ -321,7 +400,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                 <div className="flex items-center space-x-3">
                   <Palette className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Color</p>
+                    <p className="text-sm text-gray-600">{t.color}</p>
                     <div className="flex items-center space-x-2">
                       {vehicle.color?.startsWith('#') ? (
                         <>
@@ -329,10 +408,10 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                             className="w-6 h-6 rounded border border-gray-300" 
                             style={{ backgroundColor: vehicle.color }}
                           />
-                          <span className="font-semibold text-lg">Custom</span>
+                          <span className="font-semibold text-lg">{t.custom}</span>
                         </>
                       ) : (
-                        <span className="font-semibold text-lg">{vehicle.color || 'N/A'}</span>
+                        <span className="font-semibold text-lg">{vehicle.color || t.notAvailable}</span>
                       )}
                     </div>
                   </div>
@@ -343,8 +422,8 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                 <div className="flex items-center space-x-3">
                   <Fuel className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Fuel Type</p>
-                    <p className="font-semibold text-lg">{vehicle.fuelType || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">{t.fuelType}</p>
+                    <p className="font-semibold text-lg">{vehicle.fuelType || t.notAvailable}</p>
                   </div>
                 </div>
               </div>
@@ -353,8 +432,8 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                 <div className="flex items-center space-x-3">
                   <Settings className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Transmission</p>
-                    <p className="font-semibold text-lg">{vehicle.transmission || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">{t.transmission}</p>
+                    <p className="font-semibold text-lg">{vehicle.transmission || t.notAvailable}</p>
                   </div>
                 </div>
               </div>
@@ -365,7 +444,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                   <div className="flex items-center space-x-3">
                     <Gauge className="h-5 w-5 text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">Engine Size</p>
+                      <p className="text-sm text-gray-600">{t.engineSize}</p>
                       <p className="font-semibold text-lg">{vehicle.engineSize}</p>
                     </div>
                   </div>
@@ -378,7 +457,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                   <div className="flex items-center space-x-3">
                     <Settings className="h-5 w-5 text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">Cylinders</p>
+                      <p className="text-sm text-gray-600">{t.cylinders}</p>
                       <p className="font-semibold text-lg">{vehicle.cylinders}</p>
                     </div>
                   </div>
@@ -391,7 +470,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
                   <div className="flex items-center space-x-3">
                     <Hash className="h-5 w-5 text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">VIN</p>
+                      <p className="text-sm text-gray-600">{t.vin}</p>
                       <p className="font-semibold text-lg font-mono">{vehicle.vin}</p>
                     </div>
                   </div>
