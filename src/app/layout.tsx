@@ -19,6 +19,11 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Auto Dealership",
   description: "Your trusted vehicle dealership",
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
   other: {
     'color-scheme': 'light only',
   },
@@ -32,8 +37,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Preconnect to external domains for faster loading */}
-        <link rel="preconnect" href="https://imagedelivery.net" />
+        {/* DNS Prefetch and Preconnect for faster loading */}
+        <link rel="dns-prefetch" href="https://imagedelivery.net" />
+        <link rel="preconnect" href="https://imagedelivery.net" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://vehicle-dealership-analytics.nick-damato0011527.workers.dev" />
         <link rel="preconnect" href="https://vehicle-dealership-analytics.nick-damato0011527.workers.dev" />
       </head>
       <body
