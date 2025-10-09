@@ -16,6 +16,10 @@ export default function CloudflareImagesManagement() {
       const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev';
       const response = await fetch(`${apiUrl}/api/admin/images/delete-all`, {
         method: 'DELETE',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       const data = await response.json();
