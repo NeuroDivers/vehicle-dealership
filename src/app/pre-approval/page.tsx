@@ -162,7 +162,7 @@ export default function PreApprovalPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 px-4" style={{ background: 'linear-gradient(to bottom, #f0f9ff, white)' }}>
+    <div className="min-h-screen py-12 px-4" style={{ background: 'linear-gradient(to bottom, #effff0, white)' }}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
