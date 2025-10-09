@@ -1,23 +1,71 @@
-# Cache static assets for 30 days
-/_next/static/*
-  Cache-Control: public, max-age=2592000, immutable
+# Global Headers - Applied to all routes
+/*
+  # Security Headers
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  
+  # Remove Cloudflare branding
+  X-Powered-By: 
+  Server: 
+  
+  # HTML - Short cache with revalidation
+  Cache-Control: public, max-age=3600, must-revalidate
 
-# Cache JavaScript chunks for 30 days
-/_next/static/chunks/*
-  Cache-Control: public, max-age=2592000, immutable
+# JavaScript Files - Long cache (1 year) with immutable
+/_next/static/chunks/*.js
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: application/javascript; charset=utf-8
 
-# Cache CSS for 30 days
-/_next/static/css/*
-  Cache-Control: public, max-age=2592000, immutable
+/_next/static/chunks/pages/*.js
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: application/javascript; charset=utf-8
 
-# Cache fonts for 1 year
+/_next/static/*.js
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: application/javascript; charset=utf-8
+
+# CSS Files - Long cache (1 year) with immutable
+/_next/static/css/*.css
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: text/css; charset=utf-8
+
+/_next/static/*.css
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: text/css; charset=utf-8
+
+# Fonts - Very long cache (1 year)
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
 
-# Cache images for 30 days
+# Images - Medium cache (30 days)
 /images/*
-  Cache-Control: public, max-age=2592000
+  Cache-Control: public, max-age=2592000, immutable
 
-# HTML pages - revalidate after 1 hour
-/*
-  Cache-Control: public, max-age=3600, must-revalidate
+/*.jpg
+  Cache-Control: public, max-age=2592000, immutable
+  Content-Type: image/jpeg
+
+/*.png
+  Cache-Control: public, max-age=2592000, immutable
+  Content-Type: image/png
+
+/*.webp
+  Cache-Control: public, max-age=2592000, immutable
+  Content-Type: image/webp
+
+/*.svg
+  Cache-Control: public, max-age=2592000, immutable
+  Content-Type: image/svg+xml
+
+# JSON API responses - Short cache (5 minutes)
+/api/*
+  Cache-Control: public, max-age=300, s-maxage=300
+  Content-Type: application/json; charset=utf-8
+
+# Static assets from _next/static - Maximum cache
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

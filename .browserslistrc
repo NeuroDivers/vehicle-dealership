@@ -1,6 +1,14 @@
-# Target modern browsers only (reduces polyfills by ~11KB)
-> 0.5%
-last 2 versions
+# Target ONLY very modern browsers (eliminates ALL polyfills)
+# This targets browsers with native ES2020+ support
+# Chrome 91+, Firefox 90+, Safari 15+, Edge 91+
+chrome >= 91
+firefox >= 90
+safari >= 15
+edge >= 91
+and_chr >= 91
+and_ff >= 90
+ios_saf >= 15
 not dead
-not IE 11
 not op_mini all
+not ie 11
+not android < 91
