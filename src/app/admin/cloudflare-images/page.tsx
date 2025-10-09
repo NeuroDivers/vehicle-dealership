@@ -22,7 +22,9 @@ export default function CloudflareImagesManagement() {
       setResult(data);
       
       if (data.success) {
-        alert(`✓ Successfully deleted ${data.deletedCount} images!`);
+        const timeStr = data.timeSeconds ? ` in ${data.timeSeconds}s` : '';
+        const rateStr = data.rate ? ` (${data.rate} images/sec)` : '';
+        alert(`✓ Successfully deleted ${data.deletedCount} images${timeStr}${rateStr}!`);
       } else {
         alert(`✗ Error: ${data.error}`);
       }
@@ -88,7 +90,7 @@ export default function CloudflareImagesManagement() {
                     disabled={isDeleting}
                     className="px-4 py-2 bg-red-600 text-white rounded font-semibold hover:bg-red-700 transition disabled:opacity-50"
                   >
-                    {isDeleting ? 'Deleting...' : 'Yes, Delete Everything'}
+                    {isDeleting ? '⚡ Deleting (batched for speed)...' : 'Yes, Delete Everything'}
                   </button>
                   <button
                     onClick={() => setShowConfirm(false)}
@@ -112,10 +114,16 @@ export default function CloudflareImagesManagement() {
               {result.message || result.error}
             </p>
             {result.success && (
-              <div className="mt-4 text-sm text-green-700">
-                <p>• Total found: {result.totalFound}</p>
-                <p>• Successfully deleted: {result.deletedCount}</p>
-                {result.failedCount > 0 && <p>• Failed: {result.failedCount}</p>}
+              <div className="mt-4 text-sm text-green-700 space-y-1">
+                <p>• <strong>Total found:</strong> {result.totalFound?.toLocaleString()}</p>
+                <p>• <strong>Successfully deleted:</strong> {result.deletedCount?.toLocaleString()}</p>
+                {result.failedCount > 0 && <p>• <strong>Failed:</strong> {result.failedCount}</p>}
+                {result.timeSeconds && (
+                  <p>• <strong>Time:</strong> {result.timeSeconds}s</p>
+                )}
+                {result.rate && (
+                  <p>• <strong>Speed:</strong> {result.rate} images/sec ⚡</p>
+                )}
               </div>
             )}
           </div>

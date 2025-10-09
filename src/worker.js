@@ -1571,29 +1571,45 @@ export default {
     console.log('🗑️  Fetching all Cloudflare Images...');
     
     try {
-      // List all images
-      const listResponse = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2?per_page=1000`,
-        {
-          headers: {
-            'Authorization': `Bearer ${apiToken}`
-          }
-        }
-      );
+      // Fetch all images (handle pagination if needed)
+      let allImages = [];
+      let page = 1;
+      let hasMore = true;
+      const perPage = 1000; // Cloudflare max
       
-      if (!listResponse.ok) {
-        return {
-          success: false,
-          error: `Failed to list images: ${listResponse.status}`
-        };
+      while (hasMore) {
+        const listResponse = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2?per_page=${perPage}&page=${page}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${apiToken}`
+            }
+          }
+        );
+        
+        if (!listResponse.ok) {
+          return {
+            success: false,
+            error: `Failed to list images: ${listResponse.status}`
+          };
+        }
+        
+        const listData = await listResponse.json();
+        const images = listData.result?.images || [];
+        allImages = allImages.concat(images);
+        
+        // Check if there are more pages
+        hasMore = images.length === perPage;
+        page++;
+        
+        if (images.length > 0) {
+          console.log(`📦 Fetched page ${page - 1}: ${images.length} images (total: ${allImages.length})`);
+        }
       }
       
-      const listData = await listResponse.json();
-      const images = listData.result?.images || [];
+      console.log(`📊 Total images to delete: ${allImages.length}`);
       
-      console.log(`Found ${images.length} images to delete`);
-      
-      if (images.length === 0) {
+      if (allImages.length === 0) {
         return {
           success: true,
           deletedCount: 0,
@@ -1601,42 +1617,85 @@ export default {
         };
       }
       
-      // Delete all images
-      const deletePromises = images.map(image => {
-        return fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${image.id}`,
-          {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${apiToken}`
+      // ⚡ OPTIMIZED: Process deletions in batches for speed + rate limit handling
+      const BATCH_SIZE = 100; // Process 100 images at a time
+      const batches = [];
+      
+      for (let i = 0; i < allImages.length; i += BATCH_SIZE) {
+        batches.push(allImages.slice(i, i + BATCH_SIZE));
+      }
+      
+      console.log(`🚀 Processing ${batches.length} batches of ${BATCH_SIZE} images each...`);
+      
+      let totalDeleted = 0;
+      let totalFailed = 0;
+      const startTime = Date.now();
+      
+      // Process batches sequentially to avoid overwhelming the API
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        const batchStartTime = Date.now();
+        
+        // Within each batch, delete in parallel
+        const batchPromises = batch.map(image => 
+          fetch(
+            `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${image.id}`,
+            {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${apiToken}`
+              }
             }
-          }
-        ).then(response => {
-          if (response.ok) {
-            console.log(`✓ Deleted: ${image.id}`);
-            return { success: true, id: image.id };
-          } else {
-            console.log(`✗ Failed to delete ${image.id}: ${response.status}`);
-            return { success: false, id: image.id };
-          }
-        }).catch(error => {
-          console.error(`Error deleting ${image.id}:`, error);
-          return { success: false, id: image.id, error: error.message };
-        });
-      });
+          )
+          .then(response => ({
+            success: response.ok,
+            id: image.id,
+            status: response.status
+          }))
+          .catch(error => ({
+            success: false,
+            id: image.id,
+            error: error.message
+          }))
+        );
+        
+        const batchResults = await Promise.all(batchPromises);
+        const batchDeleted = batchResults.filter(r => r.success).length;
+        const batchFailed = batchResults.filter(r => !r.success).length;
+        
+        totalDeleted += batchDeleted;
+        totalFailed += batchFailed;
+        
+        const batchTime = Date.now() - batchStartTime;
+        const progress = ((batchIndex + 1) / batches.length * 100).toFixed(1);
+        
+        console.log(
+          `📦 Batch ${batchIndex + 1}/${batches.length} (${progress}%): ` +
+          `✓ ${batchDeleted} deleted, ✗ ${batchFailed} failed (${batchTime}ms)`
+        );
+        
+        // Small delay between batches to be nice to the API (optional)
+        if (batchIndex < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
       
-      const results = await Promise.all(deletePromises);
-      const deletedCount = results.filter(r => r.success).length;
-      const failedCount = results.filter(r => !r.success).length;
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      const rate = (totalDeleted / (totalTime || 1)).toFixed(1);
       
-      console.log(`✓ Deleted ${deletedCount} images, ${failedCount} failed`);
+      console.log(
+        `🏁 Complete! Deleted ${totalDeleted}/${allImages.length} images ` +
+        `in ${totalTime}s (${rate} images/sec), ${totalFailed} failed`
+      );
       
       return {
         success: true,
-        deletedCount,
-        failedCount,
-        totalFound: images.length,
-        message: `Deleted ${deletedCount} out of ${images.length} images`
+        deletedCount: totalDeleted,
+        failedCount: totalFailed,
+        totalFound: allImages.length,
+        timeSeconds: parseFloat(totalTime),
+        rate: parseFloat(rate),
+        message: `Deleted ${totalDeleted} out of ${allImages.length} images in ${totalTime}s`
       };
     } catch (error) {
       console.error('Error in deleteAllCloudflareImages:', error);
