@@ -20,12 +20,17 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
     // Remove React properties in production
     reactRemoveProperties: process.env.NODE_ENV === 'production',
+    // Target modern browsers only (ES2020+)
+    styledComponents: false,
+    emotion: false,
   },
   
   // Experimental features for better performance
   experimental: {
     // Use modern module output (reduces bundle size)
     optimizePackageImports: ['lucide-react'],
+    // Modern output targets
+    modern: true,
   },
   
   // Production optimizations
