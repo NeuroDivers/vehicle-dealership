@@ -175,7 +175,7 @@ export default function NavigationMobile() {
               
               {/* CTA Buttons */}
               <Link
-                href="/contact?type=preapproval"
+                href="/pre-approval"
                 className="flex items-center space-x-2 px-4 py-2.5 rounded-lg font-semibold text-white transition-all hover:shadow-lg hover:scale-105"
                 style={{ backgroundColor: themeColors.accent }}
               >
@@ -273,7 +273,7 @@ export default function NavigationMobile() {
               <div className="border-t pt-3 mt-3 space-y-2">
                 {/* Get Pre-Approved CTA Button */}
                 <Link
-                  href="/contact?type=preapproval"
+                  href="/pre-approval"
                   className="block text-center px-4 py-3 rounded-lg font-semibold text-white transition-all shadow-md hover:shadow-lg"
                   style={{ backgroundColor: themeColors.accent }}
                   onClick={() => setMobileMenuOpen(false)}

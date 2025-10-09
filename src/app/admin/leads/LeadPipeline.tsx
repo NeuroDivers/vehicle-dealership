@@ -42,6 +42,7 @@ interface Lead {
   assigned_to?: string;
   follow_up_date?: string;
   notes?: string;
+  financial_data?: string; // JSON string with financial info for pre-approval leads
 }
 
 interface Staff {
@@ -585,6 +586,88 @@ export default function LeadPipeline() {
                     </div>
                   </div>
                 )}
+
+                {/* Financial Data for Pre-Approval Leads */}
+                {selectedLead.inquiry_type === 'pre-approval' && selectedLead.financial_data && (() => {
+                  try {
+                    const financialInfo = JSON.parse(selectedLead.financial_data);
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                          <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                          Financial Information
+                        </h3>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            {financialInfo.employment_status && (
+                              <div>
+                                <span className="text-gray-600">Employment:</span>
+                                <p className="font-medium capitalize">{financialInfo.employment_status}</p>
+                              </div>
+                            )}
+                            {financialInfo.employer_name && (
+                              <div>
+                                <span className="text-gray-600">Employer:</span>
+                                <p className="font-medium">{financialInfo.employer_name}</p>
+                              </div>
+                            )}
+                            {financialInfo.job_title && (
+                              <div>
+                                <span className="text-gray-600">Job Title:</span>
+                                <p className="font-medium">{financialInfo.job_title}</p>
+                              </div>
+                            )}
+                            {financialInfo.years_employed && (
+                              <div>
+                                <span className="text-gray-600">Years Employed:</span>
+                                <p className="font-medium">{financialInfo.years_employed}</p>
+                              </div>
+                            )}
+                            {financialInfo.annual_income && (
+                              <div>
+                                <span className="text-gray-600">Annual Income:</span>
+                                <p className="font-medium text-green-700">${Number(financialInfo.annual_income).toLocaleString()}</p>
+                              </div>
+                            )}
+                            {financialInfo.down_payment && (
+                              <div>
+                                <span className="text-gray-600">Down Payment:</span>
+                                <p className="font-medium">${Number(financialInfo.down_payment).toLocaleString()}</p>
+                              </div>
+                            )}
+                            {financialInfo.monthly_budget && (
+                              <div>
+                                <span className="text-gray-600">Monthly Budget:</span>
+                                <p className="font-medium">${Number(financialInfo.monthly_budget).toLocaleString()}/mo</p>
+                              </div>
+                            )}
+                            {financialInfo.credit_rating && (
+                              <div>
+                                <span className="text-gray-600">Credit Rating:</span>
+                                <p className="font-medium capitalize">{financialInfo.credit_rating}</p>
+                              </div>
+                            )}
+                            {financialInfo.vehicle_interest && (
+                              <div className="col-span-2">
+                                <span className="text-gray-600">Vehicle Interest:</span>
+                                <p className="font-medium">{financialInfo.vehicle_interest}</p>
+                              </div>
+                            )}
+                            {financialInfo.trade_in === 'yes' && financialInfo.trade_in_details && (
+                              <div className="col-span-2">
+                                <span className="text-gray-600">Trade-In:</span>
+                                <p className="font-medium">{financialInfo.trade_in_details}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } catch (e) {
+                    console.error('Error parsing financial data:', e);
+                    return null;
+                  }
+                })()}
 
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Notes</h3>

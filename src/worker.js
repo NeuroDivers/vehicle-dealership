@@ -1264,15 +1264,15 @@ export default {
           INSERT INTO leads (
             id, vehicle_id, vehicle_make, vehicle_model, vehicle_year, vehicle_price,
             customer_name, customer_email, customer_phone, message,
-            inquiry_type, preferred_contact, lead_score, status, source, timestamp
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            inquiry_type, preferred_contact, lead_score, status, source, timestamp, financial_data
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           leadId,
-          leadData.vehicle_id,
-          leadData.vehicle_make,
-          leadData.vehicle_model,
-          leadData.vehicle_year,
-          leadData.vehicle_price,
+          leadData.vehicle_id || null,
+          leadData.vehicle_make || null,
+          leadData.vehicle_model || null,
+          leadData.vehicle_year || null,
+          leadData.vehicle_price || null,
           leadData.customer_name,
           leadData.customer_email,
           leadData.customer_phone,
@@ -1282,7 +1282,8 @@ export default {
           leadScore,
           'new',
           leadData.source || 'website',
-          leadData.timestamp || new Date().toISOString()
+          leadData.timestamp || new Date().toISOString(),
+          leadData.financial_data || null
         ).run();
         
         return new Response(JSON.stringify({
