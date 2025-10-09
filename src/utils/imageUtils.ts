@@ -53,8 +53,8 @@ export function getOptimalVariant(isMobile: boolean, useCase: 'card' | 'detail' 
   
   // For card images on homepage/listing
   // Mobile: use 'mobile' variant (optimized for 380x285)
-  // Desktop: use 'public' variant (full quality)
-  return isMobile ? 'mobile' : 'public';
+  // Desktop: use 'px300' variant (optimized for 300px width - faster than 'public')
+  return isMobile ? 'mobile' : 'px300';
 }
 
 /**
