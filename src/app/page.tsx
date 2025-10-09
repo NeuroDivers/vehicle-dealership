@@ -315,6 +315,7 @@ export default function Home() {
               onClick={handleSearch}
               className="px-6 py-3 rounded-md font-semibold transition flex items-center justify-center space-x-2 whitespace-nowrap"
               style={{ backgroundColor: themeColors.primary, color: 'white' }}
+              aria-label={t.searchButton}
             >
               <Search className="h-5 w-5" />
               <span className="hidden sm:inline">{t.searchButton}</span>
