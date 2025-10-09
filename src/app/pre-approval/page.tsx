@@ -138,8 +138,8 @@ export default function PreApprovalPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-12 px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <CheckCircle2 className="h-20 w-20 text-green-600 mx-auto mb-6" />
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <CheckCircle2 className="h-20 w-20 mx-auto mb-6" style={{ color: themeColors.accent }} />
+          <h1 className="text-4xl font-bold mb-4" style={{ color: themeColors.primary }}>
             {t('Application Submitted!', 'Demande soumise!', '¡Solicitud enviada!')}
           </h1>
           <p className="text-xl text-gray-600 mb-8">
@@ -151,7 +151,8 @@ export default function PreApprovalPage() {
           </p>
           <button
             onClick={() => setShowSuccess(false)}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
+            className="px-6 py-3 text-white rounded-lg font-semibold transition hover:opacity-90"
+            style={{ backgroundColor: themeColors.accent }}
           >
             {t('Submit Another Application', 'Soumettre une autre demande', 'Enviar otra solicitud')}
           </button>
@@ -161,14 +162,14 @@ export default function PreApprovalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
+    <div className="min-h-screen py-12 px-4" style={{ background: 'linear-gradient(to bottom, #f0f9ff, white)' }}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold mb-4" style={{ color: themeColors.primary }}>
             {t('Get Pre-Approved', 'Préapprobation de financement', 'Obtener pre-aprobación')}
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl max-w-2xl mx-auto text-gray-600">
             {t(
               'Complete this form to get pre-approved for financing. This helps us find the best financing options for your budget.',
               'Remplissez ce formulaire pour obtenir une préapprobation de financement. Cela nous aide à trouver les meilleures options de financement pour votre budget.',
@@ -198,7 +199,10 @@ export default function PreApprovalPage() {
                   value={formData.customer_name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 />
               </div>
               <div>
@@ -211,7 +215,10 @@ export default function PreApprovalPage() {
                   value={formData.customer_email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 />
               </div>
               <div>
@@ -224,7 +231,10 @@ export default function PreApprovalPage() {
                   value={formData.customer_phone}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 />
               </div>
             </div>
@@ -248,7 +258,10 @@ export default function PreApprovalPage() {
                   value={formData.employment_status}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 >
                   <option value="employed">{t('Employed', 'Employé', 'Empleado')}</option>
                   <option value="self-employed">{t('Self-Employed', 'Travailleur autonome', 'Autónomo')}</option>
@@ -265,7 +278,10 @@ export default function PreApprovalPage() {
                   name="employer_name"
                   value={formData.employer_name}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 />
               </div>
               <div>
@@ -277,7 +293,10 @@ export default function PreApprovalPage() {
                   name="job_title"
                   value={formData.job_title}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 />
               </div>
               <div>
@@ -291,7 +310,10 @@ export default function PreApprovalPage() {
                   onChange={handleChange}
                   min="0"
                   step="0.5"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 />
               </div>
             </div>
@@ -318,7 +340,10 @@ export default function PreApprovalPage() {
                   required
                   min="0"
                   step="1000"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                   placeholder="$"
                 />
               </div>
@@ -333,7 +358,10 @@ export default function PreApprovalPage() {
                   onChange={handleChange}
                   min="0"
                   step="500"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                   placeholder="$"
                 />
               </div>
@@ -349,7 +377,10 @@ export default function PreApprovalPage() {
                   required
                   min="0"
                   step="50"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                   placeholder="$"
                 />
               </div>
@@ -362,7 +393,10 @@ export default function PreApprovalPage() {
                   value={formData.credit_rating}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 >
                   <option value="excellent">{t('Excellent (750+)', 'Excellent (750+)', 'Excelente (750+)')}</option>
                   <option value="good">{t('Good (700-749)', 'Bon (700-749)', 'Bueno (700-749)')}</option>
@@ -394,7 +428,10 @@ export default function PreApprovalPage() {
                   name="vehicle_interest"
                   value={formData.vehicle_interest}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                   placeholder={t('e.g., SUV, Sedan, Truck', 'ex: VUS, Berline, Camion', 'ej: SUV, Sedán, Camioneta')}
                 />
               </div>
@@ -407,7 +444,10 @@ export default function PreApprovalPage() {
                   name="trade_in"
                   value={formData.trade_in}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 >
                   <option value="no">{t('No', 'Non', 'No')}</option>
                   <option value="yes">{t('Yes', 'Oui', 'Sí')}</option>
@@ -424,7 +464,10 @@ export default function PreApprovalPage() {
                     name="trade_in_details"
                     value={formData.trade_in_details}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    style={{ outlineColor: themeColors.primary }}
+                    onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                     placeholder={t('Year, Make, Model, KM', 'Année, Marque, Modèle, KM', 'Año, Marca, Modelo, KM')}
                   />
                 </div>
@@ -439,14 +482,17 @@ export default function PreApprovalPage() {
                   value={formData.message}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: themeColors.primary }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.primary}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                 />
               </div>
             </div>
           </div>
 
           {/* Privacy Notice */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="rounded-lg p-4" style={{ backgroundColor: `${themeColors.primary}10`, borderColor: `${themeColors.primary}40`, borderWidth: '1px' }}>
             <p className="text-sm text-gray-700">
               {t(
                 '🔒 Your information is secure and will only be used to process your pre-approval application. We do not share your personal information with third parties.',
@@ -461,7 +507,8 @@ export default function PreApprovalPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-4 text-white text-lg font-semibold rounded-lg shadow-lg transition-all hover:shadow-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.accent})` }}
             >
               {isSubmitting
                 ? t('Submitting...', 'Envoi en cours...', 'Enviando...')
