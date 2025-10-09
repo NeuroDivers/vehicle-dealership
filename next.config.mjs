@@ -11,6 +11,17 @@ const nextConfig = {
     ignoreDuringBuilds: true
   },
   
+  // Inline CSS for better performance (CSS is small ~47KB)
+  // This eliminates render-blocking CSS requests
+  experimental: {
+    // Use modern module output (reduces bundle size)
+    optimizePackageImports: ['lucide-react'],
+    // Modern output targets
+    modern: true,
+    // Optimize CSS loading
+    optimizeCss: false, // Let PostCSS handle it
+  },
+  
   // Enable SWC minification (faster, modern)
   swcMinify: true,
   
@@ -23,14 +34,6 @@ const nextConfig = {
     // Target modern browsers only (ES2020+)
     styledComponents: false,
     emotion: false,
-  },
-  
-  // Experimental features for better performance
-  experimental: {
-    // Use modern module output (reduces bundle size)
-    optimizePackageImports: ['lucide-react'],
-    // Modern output targets
-    modern: true,
   },
   
   // Production optimizations

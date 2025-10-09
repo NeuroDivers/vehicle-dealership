@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/inline-css.js",
+    "build:no-inline": "next build",
     "start": "next start",
     "lint": "next lint",
     "deploy:analytics": "wrangler deploy",
@@ -32,6 +33,7 @@
     "cssnano": "^7.1.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.33",
+    "glob": "^11.0.3",
     "postcss": "^8",
     "prisma": "^6.16.2",
     "tailwindcss": "^3.4.1",
