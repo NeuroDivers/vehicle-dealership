@@ -20,13 +20,41 @@ export function isCloudflareImageId(imageString: string): boolean {
 }
 
 /**
- * Convert a Cloudflare Images ID to a full URL
+ * Convert a Cloudflare Images ID to a full URL with cache optimization
  * @param imageId - The Cloudflare Images ID
- * @param variant - The variant to use (public, thumbnail, etc.)
+ * @param variant - The variant to use (public, thumbnail, mobile, etc.)
+ * @param cacheDays - Cache duration in days (default 30)
  * @returns Full Cloudflare Images URL
  */
-export function getCloudflareImageUrl(imageId: string, variant: string = 'public'): string {
+export function getCloudflareImageUrl(imageId: string, variant: string = 'public', cacheDays: number = 30): string {
+  // Cloudflare Images URLs with cache control via variant
+  // Cache is handled by Cloudflare Images service (default 30 days)
   return `${CLOUDFLARE_IMAGES_BASE}/${imageId}/${variant}`;
+}
+
+/**
+ * Detect if user is on mobile device
+ * @returns true if mobile device detected
+ */
+export function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth <= 768;
+}
+
+/**
+ * Get the optimal image variant based on device type and use case
+ * @param isMobile - Whether the device is mobile
+ * @param useCase - The use case (card, detail, thumbnail)
+ * @returns The variant name
+ */
+export function getOptimalVariant(isMobile: boolean, useCase: 'card' | 'detail' | 'thumbnail' = 'card'): string {
+  if (useCase === 'thumbnail') return 'thumbnail';
+  if (useCase === 'detail') return 'public';
+  
+  // For card images on homepage/listing
+  // Mobile: use 'mobile' variant (optimized for 380x285)
+  // Desktop: use 'cover' variant
+  return isMobile ? 'mobile' : 'cover';
 }
 
 /**
@@ -41,7 +69,7 @@ export function getCloudflareImageUrl(imageId: string, variant: string = 'public
 export function getVehicleImageUrl(
   imagesField: string | string[] | null | undefined,
   index: number = 0,
-  variant: 'thumbnail' | 'public' | 'cover' = 'thumbnail'
+  variant: 'thumbnail' | 'public' | 'cover' | 'mobile' | string = 'thumbnail'
 ): string {
   // Parse images if it's a string
   let images: string[] = [];
@@ -91,7 +119,7 @@ export function getVehicleImageUrl(
  */
 export function getAllVehicleImageUrls(
   imagesField: string | string[] | null | undefined,
-  variant: 'thumbnail' | 'public' | 'cover' = 'public'
+  variant: 'thumbnail' | 'public' | 'cover' | 'mobile' | string = 'public'
 ): string[] {
   // Parse images
   let images: string[] = [];

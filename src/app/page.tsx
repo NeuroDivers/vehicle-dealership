@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { Search, Phone, MapPin, Clock, ChevronRight, Star, Shield, Award, Car } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getVehicleImageUrl } from '@/utils/imageUtils';
+import { getVehicleImageUrl, isMobileDevice, getOptimalVariant } from '@/utils/imageUtils';
 
 interface Vehicle {
   id: string;
@@ -151,6 +151,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [language, setLanguage] = useState<'fr' | 'en' | 'es'>('fr'); // French by default
+  const [isMobile, setIsMobile] = useState(false);
   const [featuredVehicles, setFeaturedVehicles] = useState<Vehicle[]>([]);
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [carouselVehicles, setCarouselVehicles] = useState<{[key: string]: Vehicle[]}>({
@@ -168,6 +169,12 @@ export default function Home() {
     loadTestimonials();
     loadCarouselVehicles();
     
+    // Detect mobile device
+    const checkMobile = () => {
+      setIsMobile(isMobileDevice());
+    };
+    checkMobile();
+    
     // Get initial language from localStorage (set by header)
     const storedLang = localStorage.getItem('language') as 'fr' | 'en' | 'es';
     if (storedLang) {
@@ -182,8 +189,21 @@ export default function Home() {
       }
     };
     
+    // Optimize resize handling for mobile detection
+    let resizeTimer: NodeJS.Timeout;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(checkMobile, 200);
+    };
+    
     window.addEventListener('languageChange', handleLanguageChange);
-    return () => window.removeEventListener('languageChange', handleLanguageChange);
+    window.addEventListener('resize', debouncedResize);
+    
+    return () => {
+      window.removeEventListener('languageChange', handleLanguageChange);
+      window.removeEventListener('resize', debouncedResize);
+      clearTimeout(resizeTimer);
+    };
   }, []);
 
   const loadTestimonials = async () => {
@@ -325,8 +345,9 @@ export default function Home() {
               </div>
             )}
             {featuredVehicles.map((vehicle) => {
-              // Use utility function to get proper image URL (handles both vendor URLs and Cloudflare IDs)
-              const firstImage = getVehicleImageUrl(vehicle.images, 0, 'public');
+              // Use mobile-optimized variant for better performance (380x285 on mobile)
+              const optimalVariant = getOptimalVariant(isMobile, 'card');
+              const firstImage = getVehicleImageUrl(vehicle.images, 0, optimalVariant);
               
               return (
               <div key={vehicle.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
@@ -421,8 +442,9 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {carouselVehicles[activeCategory].length > 0 ? (
               carouselVehicles[activeCategory].map((vehicle) => {
-                // Use utility function to get proper image URL (handles both vendor URLs and Cloudflare IDs)
-                const firstImage = getVehicleImageUrl(vehicle.images, 0, 'public');
+                // Use mobile-optimized variant for better performance (380x285 on mobile)
+                const optimalVariant = getOptimalVariant(isMobile, 'card');
+                const firstImage = getVehicleImageUrl(vehicle.images, 0, optimalVariant);
                 
                 return (
                   <Link
