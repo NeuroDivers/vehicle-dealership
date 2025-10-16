@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getVehicleEndpoint } from '@/lib/api-config';
 import { constructImageUrl } from '@/lib/image-utils';
 import Link from 'next/link';
-import { ArrowLeft, Upload, X, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, X, Save, Loader2, DollarSign, Percent } from 'lucide-react';
 
 interface Vehicle {
   id: string;
@@ -78,6 +78,8 @@ export default function EditVehicle() {
     vin: '',
     vendor_id: 'internal',
     vendor_name: 'Internal Inventory',
+    price_markup_type: 'vendor_default',
+    price_markup_value: 0,
     vendor_stock_number: '',
     imagesList: [] as string[],
     originalImages: null as any,
@@ -574,6 +576,109 @@ export default function EditVehicle() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g., 25000"
               />
+            </div>
+
+            {/* Price Markup Section */}
+            <div className="md:col-span-2 bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-3">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <h3 className="text-sm font-semibold text-green-900">Price Markup Settings</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Markup Type
+                  </label>
+                  <select
+                    name="price_markup_type"
+                    value={formData.price_markup_type}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="vendor_default">Use Vendor Default</option>
+                    <option value="none">No Markup</option>
+                    <option value="amount">Fixed Amount ($)</option>
+                    <option value="percentage">Percentage (%)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.price_markup_type === 'vendor_default' 
+                      ? 'Uses default markup from vendor settings'
+                      : formData.price_markup_type === 'none'
+                      ? 'Display original price only'
+                      : 'Override vendor default with custom markup'}
+                  </p>
+                </div>
+
+                {formData.price_markup_type !== 'none' && formData.price_markup_type !== 'vendor_default' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Markup Value
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        {formData.price_markup_type === 'amount' ? (
+                          <DollarSign className="h-5 w-5 text-gray-400" />
+                        ) : (
+                          <Percent className="h-5 w-5 text-gray-400" />
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        name="price_markup_value"
+                        value={formData.price_markup_value}
+                        onChange={handleChange}
+                        min="0"
+                        step={formData.price_markup_type === 'amount' ? '100' : '0.5'}
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder={formData.price_markup_type === 'amount' ? '1000' : '10'}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formData.price_markup_type === 'amount'
+                        ? 'Dollar amount to add to base price'
+                        : 'Percentage to add to base price'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Display Price Preview */}
+              {formData.price > 0 && (
+                <div className="mt-4 pt-4 border-t border-green-300">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Base Price:</span>
+                    <span className="font-medium">${formData.price.toLocaleString()}</span>
+                  </div>
+                  {formData.price_markup_type !== 'none' && formData.price_markup_type !== 'vendor_default' && formData.price_markup_value > 0 && (
+                    <>
+                      <div className="flex items-center justify-between text-sm mt-1">
+                        <span className="text-gray-600">Markup:</span>
+                        <span className="font-medium text-green-600">
+                          {formData.price_markup_type === 'amount'
+                            ? `+$${formData.price_markup_value.toLocaleString()}`
+                            : `+${formData.price_markup_value}%`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-base font-bold mt-2 pt-2 border-t border-green-300">
+                        <span className="text-green-900">Display Price:</span>
+                        <span className="text-lg text-green-900">
+                          ${(
+                            formData.price_markup_type === 'amount'
+                              ? formData.price + formData.price_markup_value
+                              : formData.price + (formData.price * (formData.price_markup_value / 100))
+                          ).toLocaleString()}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  {formData.price_markup_type === 'vendor_default' && (
+                    <div className="text-xs text-gray-500 mt-2">
+                      💡 Display price will be calculated using {formData.vendor_name || 'vendor'} default markup
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
