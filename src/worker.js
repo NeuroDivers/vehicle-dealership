@@ -5,6 +5,21 @@
 
 import bcrypt from 'bcryptjs';
 
+// Helper function to calculate display price with markup
+function calculateDisplayPrice(basePrice, markupType, markupValue) {
+  if (!markupType || markupType === 'none' || !markupValue) {
+    return basePrice;
+  }
+  
+  if (markupType === 'amount') {
+    return basePrice + markupValue;
+  } else if (markupType === 'percentage') {
+    return basePrice + (basePrice * (markupValue / 100));
+  }
+  
+  return basePrice;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -550,18 +565,41 @@ export default {
         // Generate ID if not provided
         const id = vehicle.id || `VEH-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
+        // Calculate display price based on markup settings
+        const markupType = vehicle.price_markup_type || 'vendor_default';
+        let displayPrice = vehicle.price;
+        
+        if (markupType === 'vendor_default') {
+          // Get vendor markup settings
+          try {
+            const vendorSettings = await env.DB.prepare(`
+              SELECT markup_type, markup_value FROM vendor_settings WHERE vendor_id = ?
+            `).bind(vehicle.vendor_id || 'internal').first();
+            
+            if (vendorSettings) {
+              displayPrice = calculateDisplayPrice(vehicle.price, vendorSettings.markup_type, vendorSettings.markup_value);
+            }
+          } catch (e) {
+            console.log('vendor_settings not available, using base price');
+          }
+        } else if (markupType !== 'none') {
+          displayPrice = calculateDisplayPrice(vehicle.price, markupType, vehicle.price_markup_value || 0);
+        }
+        
         await env.DB.prepare(`
           INSERT INTO vehicles (
             id, make, model, year, price, odometer, bodyType, fuelType,
             transmission, drivetrain, color, vin, stockNumber,
             description, images, isSold,
             vendor_id, vendor_name, vendor_status, is_published,
+            price_markup_type, price_markup_value, display_price,
             created_at, updated_at
           ) VALUES (
             ?, ?, ?, ?, ?, ?, ?, ?,
             ?, ?, ?, ?, ?,
             ?, ?, ?,
             ?, ?, ?, ?,
+            ?, ?, ?,
             datetime('now'), datetime('now')
           )
         `).bind(
@@ -584,7 +622,10 @@ export default {
           vehicle.vendor_id || 'internal',
           vehicle.vendor_name || 'Internal Inventory',
           vehicle.vendor_status || 'active',
-          vehicle.is_published !== false ? 1 : 0
+          vehicle.is_published !== false ? 1 : 0,
+          vehicle.price_markup_type || 'vendor_default',
+          vehicle.price_markup_value || 0,
+          displayPrice
         ).run();
         
         return new Response(JSON.stringify({ success: true, id }), {
@@ -656,6 +697,40 @@ export default {
           updateFieldsMap.set('listing_status', finalListingStatus);
           if (soldAtValue) {
             updateFieldsMap.set('sold_at', soldAtValue);
+          }
+          
+          // Recalculate display_price if price or markup fields changed
+          if (updates.price !== undefined || updates.price_markup_type !== undefined || updates.price_markup_value !== undefined) {
+            // Get current vehicle data to fill in missing values
+            const fullVehicle = await env.DB.prepare('SELECT * FROM vehicles WHERE id = ?')
+              .bind(vehicleId)
+              .first();
+            
+            const basePrice = updates.price !== undefined ? updates.price : fullVehicle.price;
+            const markupType = updates.price_markup_type !== undefined ? updates.price_markup_type : (fullVehicle.price_markup_type || 'vendor_default');
+            const markupValue = updates.price_markup_value !== undefined ? updates.price_markup_value : (fullVehicle.price_markup_value || 0);
+            const vendorId = updates.vendor_id !== undefined ? updates.vendor_id : fullVehicle.vendor_id;
+            
+            let displayPrice = basePrice;
+            
+            if (markupType === 'vendor_default') {
+              // Get vendor markup settings
+              try {
+                const vendorSettings = await env.DB.prepare(`
+                  SELECT markup_type, markup_value FROM vendor_settings WHERE vendor_id = ?
+                `).bind(vendorId || 'internal').first();
+                
+                if (vendorSettings) {
+                  displayPrice = calculateDisplayPrice(basePrice, vendorSettings.markup_type, vendorSettings.markup_value);
+                }
+              } catch (e) {
+                console.log('vendor_settings not available, using base price');
+              }
+            } else if (markupType !== 'none') {
+              displayPrice = calculateDisplayPrice(basePrice, markupType, markupValue);
+            }
+            
+            updateFieldsMap.set('display_price', displayPrice);
           }
           
           // Build SQL
@@ -1209,6 +1284,61 @@ export default {
         } catch (error) {
           console.log('vendor_sync_logs table not available:', error.message);
           return new Response(JSON.stringify([]), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // GET /api/vendor-settings - Get all vendor settings including markup
+      if (url.pathname === '/api/vendor-settings' && request.method === 'GET') {
+        try {
+          const { results } = await env.DB.prepare(`
+            SELECT * FROM vendor_settings ORDER BY vendor_name
+          `).all();
+          
+          return new Response(JSON.stringify(results || []), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.log('vendor_settings table not available:', error.message);
+          // Return default vendors if table doesn't exist
+          return new Response(JSON.stringify([
+            { vendor_id: 'lambert', vendor_name: 'Lambert Auto', markup_type: 'none', markup_value: 0 },
+            { vendor_id: 'naniauto', vendor_name: 'NaniAuto', markup_type: 'none', markup_value: 0 },
+            { vendor_id: 'sltautos', vendor_name: 'SLT Autos', markup_type: 'none', markup_value: 0 },
+            { vendor_id: 'internal', vendor_name: 'Internal Inventory', markup_type: 'none', markup_value: 0 }
+          ]), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // PUT /api/vendor-settings/:vendorId - Update vendor settings (markup config)
+      if (url.pathname.match(/^\/api\/vendor-settings\/[\w-]+$/) && request.method === 'PUT') {
+        try {
+          const vendorId = url.pathname.split('/')[3];
+          const { markup_type, markup_value } = await request.json();
+          
+          await env.DB.prepare(`
+            INSERT INTO vendor_settings (vendor_id, vendor_name, markup_type, markup_value, updated_at)
+            VALUES (?, ?, ?, ?, datetime('now'))
+            ON CONFLICT(vendor_id) DO UPDATE SET
+              markup_type = excluded.markup_type,
+              markup_value = excluded.markup_value,
+              updated_at = datetime('now')
+          `).bind(
+            vendorId,
+            vendorId.charAt(0).toUpperCase() + vendorId.slice(1),
+            markup_type || 'none',
+            markup_value || 0
+          ).run();
+          
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }

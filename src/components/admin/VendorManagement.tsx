@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { 
   Package, RefreshCw, AlertCircle, CheckCircle, 
   Clock, TrendingUp, TrendingDown, Eye, EyeOff,
-  Truck, Settings, Calendar, BarChart3
+  Truck, Settings, Calendar, BarChart3, DollarSign
 } from 'lucide-react';
+import VendorMarkupSettings from './VendorMarkupSettings';
 
 interface Vendor {
   vendor_id: string;
@@ -45,6 +46,7 @@ export default function VendorManagement() {
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState<string | null>(null);
+  const [showMarkupModal, setShowMarkupModal] = useState<{vendorId: string, vendorName: string} | null>(null);
 
   useEffect(() => {
     loadVendors();
@@ -335,6 +337,13 @@ Vehicles have been saved to the database. Image processing is running in the bac
                   </>
                 )}
               </button>
+              <button
+                onClick={() => setShowMarkupModal({ vendorId: vendor.vendor_id, vendorName: vendor.vendor_name })}
+                className="w-full mt-2 py-2 px-4 rounded-lg font-medium transition flex items-center justify-center bg-green-600 text-white hover:bg-green-700"
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Price Markup
+              </button>
             </div>
           </div>
         ))}
@@ -445,6 +454,19 @@ Vehicles have been saved to the database. Image processing is running in the bac
           </table>
         </div>
       </div>
+
+      {/* Markup Settings Modal */}
+      {showMarkupModal && (
+        <VendorMarkupSettings
+          vendorId={showMarkupModal.vendorId}
+          vendorName={showMarkupModal.vendorName}
+          onClose={() => setShowMarkupModal(null)}
+          onSave={() => {
+            setShowMarkupModal(null);
+            loadVendors();
+          }}
+        />
+      )}
     </div>
   );
 }
