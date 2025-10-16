@@ -349,11 +349,6 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
               <p className="text-4xl font-bold" style={{ color: themeColors.primary }}>
                 ${vehicle.price ? (vehicle.display_price || vehicle.price).toLocaleString() : t.callForPrice}
               </p>
-              {vehicle.display_price && vehicle.display_price > vehicle.price && (
-                <p className="text-xl text-gray-500 line-through">
-                  ${vehicle.price.toLocaleString()}
-                </p>
-              )}
             </div>
           </div>
           
