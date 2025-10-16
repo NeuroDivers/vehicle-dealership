@@ -187,7 +187,7 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: any }) {
           </h1>
           
           <p className="text-3xl font-bold text-green-600 mb-6">
-            ${vehicle.price.toLocaleString()}
+            ${(vehicle.display_price || vehicle.price).toLocaleString()}
           </p>
 
           {/* Specifications */}

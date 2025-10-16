@@ -16,6 +16,7 @@ interface Vehicle {
   model: string;
   year: number;
   price: number;
+  display_price?: number; // Price with markup applied
   odometer: number;
   bodyType: string;
   fuelType?: string;
@@ -270,9 +271,10 @@ export default function VehiclesPage() {
       // Fuel type filter (case-insensitive)
       if (filters.fuelType && vehicle.fuelType?.toLowerCase() !== filters.fuelType.toLowerCase()) return false;
 
-      // Price filters
-      if (filters.minPrice && vehicle.price < parseInt(filters.minPrice)) return false;
-      if (filters.maxPrice && vehicle.price > parseInt(filters.maxPrice)) return false;
+      // Price filters (use display_price if available, otherwise base price)
+      const effectivePrice = vehicle.display_price || vehicle.price;
+      if (filters.minPrice && effectivePrice < parseInt(filters.minPrice)) return false;
+      if (filters.maxPrice && effectivePrice > parseInt(filters.maxPrice)) return false;
 
       // Year filters
       if (filters.minYear && vehicle.year < parseInt(filters.minYear)) return false;
@@ -285,9 +287,9 @@ export default function VehiclesPage() {
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'price-asc':
-          return a.price - b.price;
+          return (a.display_price || a.price) - (b.display_price || b.price);
         case 'price-desc':
-          return b.price - a.price;
+          return (b.display_price || b.price) - (a.display_price || a.price);
         case 'year-desc':
           return b.year - a.year;
         case 'year-asc':
@@ -733,7 +735,7 @@ export default function VehiclesPage() {
                       <div>
                         <p className="text-xs text-gray-500 font-medium mb-1">{t.price}</p>
                         <p className="text-3xl font-bold" style={{ color: themeColors.primary }}>
-                          ${vehicle.price.toLocaleString()}
+                          ${(vehicle.display_price || vehicle.price).toLocaleString()}
                         </p>
                       </div>
                       <div 

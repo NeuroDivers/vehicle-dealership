@@ -206,7 +206,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
     if (navigator.share) {
       navigator.share({
         title: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
-        text: `Check out this ${vehicle.year} ${vehicle.make} ${vehicle.model} for $${vehicle.price?.toLocaleString()}`,
+        text: `Check out this ${vehicle.year} ${vehicle.make} ${vehicle.model} for $${(vehicle.display_price || vehicle.price)?.toLocaleString()}`,
         url: window.location.href,
       });
     } else {
@@ -347,11 +347,11 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
             </h1>
             <div className="flex items-baseline space-x-4">
               <p className="text-4xl font-bold" style={{ color: themeColors.primary }}>
-                ${vehicle.price ? vehicle.price.toLocaleString() : t.callForPrice}
+                ${vehicle.price ? (vehicle.display_price || vehicle.price).toLocaleString() : t.callForPrice}
               </p>
-              {vehicle.originalPrice && vehicle.originalPrice > vehicle.price && (
+              {vehicle.display_price && vehicle.display_price > vehicle.price && (
                 <p className="text-xl text-gray-500 line-through">
-                  ${vehicle.originalPrice.toLocaleString()}
+                  ${vehicle.price.toLocaleString()}
                 </p>
               )}
             </div>
@@ -556,7 +556,7 @@ export default function VehicleDetailImproved({ vehicle }: { vehicle: any }) {
           make: vehicle.make,
           model: vehicle.model,
           year: vehicle.year,
-          price: vehicle.price
+          price: vehicle.display_price || vehicle.price
         }}
         language={currentLang}
       />

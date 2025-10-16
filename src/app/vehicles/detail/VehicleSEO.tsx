@@ -9,6 +9,7 @@ interface Vehicle {
   model: string;
   year: number;
   price: number;
+  display_price?: number;
   odometer: number;
   bodyType: string;
   color: string;
@@ -23,7 +24,8 @@ interface VehicleSEOProps {
 
 export default function VehicleSEO({ vehicle, images }: VehicleSEOProps) {
   const title = `${vehicle.year} ${vehicle.make} ${vehicle.model} - Auto Dealership`;
-  const description = `${vehicle.year} ${vehicle.make} ${vehicle.model} in ${vehicle.color}. ${vehicle.bodyType} with ${vehicle.odometer.toLocaleString()} km. Priced at $${vehicle.price.toLocaleString()}. ${vehicle.description || 'Contact us for more details.'}`.substring(0, 160);
+  const effectivePrice = vehicle.display_price || vehicle.price;
+  const description = `${vehicle.year} ${vehicle.make} ${vehicle.model} in ${vehicle.color}. ${vehicle.bodyType} with ${vehicle.odometer.toLocaleString()} km. Priced at $${effectivePrice.toLocaleString()}. ${vehicle.description || 'Contact us for more details.'}`.substring(0, 160);
   const imageUrl = images.length > 0 ? images[0] : '/default-car.jpg';
   const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/vehicles/detail?id=${vehicle.id}`;
 
@@ -56,7 +58,7 @@ export default function VehicleSEO({ vehicle, images }: VehicleSEOProps) {
     updateOrCreateMetaTag('og:image', imageUrl);
     updateOrCreateMetaTag('og:url', url);
     updateOrCreateMetaTag('og:type', 'product');
-    updateOrCreateMetaTag('product:price:amount', vehicle.price.toString());
+    updateOrCreateMetaTag('product:price:amount', effectivePrice.toString());
     updateOrCreateMetaTag('product:price:currency', 'USD');
 
     // Update Twitter Card tags
@@ -105,7 +107,7 @@ export default function VehicleSEO({ vehicle, images }: VehicleSEOProps) {
       },
       "offers": {
         "@type": "Offer",
-        "price": vehicle.price,
+        "price": effectivePrice,
         "priceCurrency": "USD",
         "availability": "https://schema.org/InStock"
       },
