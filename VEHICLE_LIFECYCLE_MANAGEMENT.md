@@ -64,13 +64,13 @@ await env.DB.prepare(`
 
 ## Scheduled Execution
 
-The vendor-sync-worker runs on a schedule to perform lifecycle management:
+The vendor-sync-worker runs on a daily schedule to perform lifecycle management:
 
 ```
-schedule: 0 2 */3 * *  # At 2:00 AM, every 3 days
+schedule: 0 3 * * *  # At 3:00 AM, every day
 ```
 
-This ensures that vehicles are properly marked as unlisted and deleted according to the rules.
+This ensures that vehicles are properly marked as unlisted and deleted according to the rules on a daily basis, keeping your inventory up-to-date.
 
 ## Benefits
 
