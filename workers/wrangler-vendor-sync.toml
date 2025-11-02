@@ -32,10 +32,14 @@ service = "generic-dealer-scraper"
 ENVIRONMENT = "production"
 CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
 
-# Scheduled automatic syncing - Every day at 3 AM UTC
-# Runs daily to handle vehicle lifecycle management
+# Scheduled automatic syncing - Each vendor runs at a different time
+# This prevents overloading the system and allows better monitoring
 [triggers]
-crons = ["0 3 * * *"]
+crons = [
+  "0 1 * * *",  # Lambert Auto lifecycle at 1 AM UTC
+  "0 2 * * *",  # NaniAuto lifecycle at 2 AM UTC
+  "0 3 * * *"   # SLT Autos lifecycle at 3 AM UTC
+]
 
 # To set the Cloudflare Images API token, run:
 # npx wrangler secret put CLOUDFLARE_IMAGES_TOKEN --config workers/wrangler-vendor-sync.toml
