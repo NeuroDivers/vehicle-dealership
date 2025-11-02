@@ -268,15 +268,12 @@ export default {
         }
       }
       
-      // Mark vehicles not in current sync as unlisted (with grace period)
+      // Mark vehicles not in current sync as unlisted IMMEDIATELY
       if (vehicles.length > 0) {
         const currentVINs = vehicles.map(v => v.vin);
         const placeholders = currentVINs.map(() => '?').join(',');
         
-        // Grace period: 3 days (configurable per vendor in future)
-        const gracePeriodDays = 3;
-        
-        // Mark as unlisted only if grace period has passed since last seen
+        // Mark as unlisted immediately when missing from vendor feed
         await env.DB.prepare(`
           UPDATE vehicles 
           SET 
@@ -287,11 +284,21 @@ export default {
             AND vendor_status = 'active'
             AND isSold = 0
             AND vin NOT IN (${placeholders})
-            AND (
-              last_seen_from_vendor IS NULL 
-              OR datetime(last_seen_from_vendor, '+${gracePeriodDays} days') <= datetime('now')
-            )
         `).bind(...currentVINs).run();
+        
+        // Delete vehicles after 14-day grace period (unless sold internally)
+        const deletionGracePeriodDays = 14;
+        
+        // Delete vehicles that have been unlisted for more than 14 days
+        await env.DB.prepare(`
+          DELETE FROM vehicles
+          WHERE 
+            vendor_id = 'lambert' 
+            AND vendor_status = 'unlisted'
+            AND isSold = 0
+            AND last_seen_from_vendor IS NOT NULL
+            AND datetime(last_seen_from_vendor, '+${deletionGracePeriodDays} days') <= datetime('now')
+        `).run();
       }
       
       // Log sync results
@@ -743,15 +750,12 @@ export default {
         }
       }
       
-      // Mark vehicles not in current sync as unlisted (with grace period)
+      // Mark vehicles not in current sync as unlisted IMMEDIATELY
       if (vehicles.length > 0) {
         const currentVINs = vehicles.map(v => v.vin);
         const placeholders = currentVINs.map(() => '?').join(',');
         
-        // Grace period: 3 days (configurable per vendor in future)
-        const gracePeriodDays = 3;
-        
-        // Mark as unlisted only if grace period has passed since last seen
+        // Mark as unlisted immediately when missing from vendor feed
         await env.DB.prepare(`
           UPDATE vehicles 
           SET 
@@ -762,11 +766,21 @@ export default {
             AND vendor_status = 'active'
             AND isSold = 0
             AND vin NOT IN (${placeholders})
-            AND (
-              last_seen_from_vendor IS NULL 
-              OR datetime(last_seen_from_vendor, '+${gracePeriodDays} days') <= datetime('now')
-            )
         `).bind(...currentVINs).run();
+        
+        // Delete vehicles after 14-day grace period (unless sold internally)
+        const deletionGracePeriodDays = 14;
+        
+        // Delete vehicles that have been unlisted for more than 14 days
+        await env.DB.prepare(`
+          DELETE FROM vehicles
+          WHERE 
+            vendor_id = 'naniauto' 
+            AND vendor_status = 'unlisted'
+            AND isSold = 0
+            AND last_seen_from_vendor IS NOT NULL
+            AND datetime(last_seen_from_vendor, '+${deletionGracePeriodDays} days') <= datetime('now')
+        `).run();
       }
       
       const duration = Math.round((Date.now() - startTime) / 1000);
@@ -825,13 +839,12 @@ export default {
       // This worker ONLY handles vehicle lifecycle (marking as unlisted/removed)
       // when vehicles disappear from vendor feeds.
       
-      // Handle vehicle lifecycle - mark vehicles as unlisted if not seen recently
-      const gracePeriodDays = 3;
-      const autoRemoveDays = 7;
-      const gracePeriodDate = new Date(Date.now() - gracePeriodDays * 24 * 60 * 60 * 1000).toISOString();
-      const autoRemoveDate = new Date(Date.now() - autoRemoveDays * 24 * 60 * 60 * 1000).toISOString();
+      // Handle vehicle lifecycle - mark vehicles as unlisted IMMEDIATELY when missing from vendor feed
+      const deletionGracePeriodDays = 14;
+      const currentDate = new Date().toISOString();
+      const deletionDate = new Date(Date.now() - deletionGracePeriodDays * 24 * 60 * 60 * 1000).toISOString();
       
-      // Mark vehicles as unlisted if not seen in grace period (and not sold by us)
+      // Mark vehicles as unlisted IMMEDIATELY if not seen in current sync (and not sold by us)
       const unlistedResult = await env.DB.prepare(`
         UPDATE vehicles
         SET vendor_status = 'unlisted',
@@ -841,24 +854,21 @@ export default {
           AND vendor_status = 'active'
           AND isSold = 0
           AND (last_seen_from_vendor IS NULL OR last_seen_from_vendor < ?)
-      `).bind(gracePeriodDate).run();
+      `).bind(currentDate).run();
       
-      // Mark as removed if past auto-remove period
-      const removedResult = await env.DB.prepare(`
-        UPDATE vehicles
-        SET vendor_status = 'removed',
-            is_published = 0,
-            updatedAt = datetime('now')
+      // DELETE vehicles if they've been unlisted for more than 14 days
+      const deletedResult = await env.DB.prepare(`
+        DELETE FROM vehicles
         WHERE vendor_id = 'sltautos'
           AND vendor_status = 'unlisted'
           AND isSold = 0
           AND (last_seen_from_vendor IS NULL OR last_seen_from_vendor < ?)
-      `).bind(autoRemoveDate).run();
+      `).bind(deletionDate).run();
       
       const unlistedCount = unlistedResult.meta?.changes || 0;
-      const removedCount = removedResult.meta?.changes || 0;
+      const deletedCount = deletedResult.meta?.changes || 0;
       
-      console.log(`Lifecycle management: ${unlistedCount} unlisted, ${removedCount} removed`);
+      console.log(`Lifecycle management: ${unlistedCount} unlisted, ${deletedCount} deleted`);
       
       // Get active vehicle count
       const activeCount = await env.DB.prepare(`
@@ -873,7 +883,7 @@ export default {
         await env.DB.prepare(`
           INSERT INTO vendor_sync_logs (
             vendor_id, vendor_name, sync_date,
-            vehicles_found, unlisted_vehicles, removed_vehicles,
+            vehicles_found, unlisted_vehicles, deleted_vehicles,
             status, sync_duration_seconds
           ) VALUES (?, ?, datetime('now'), ?, ?, ?, ?, ?)
         `).bind(
@@ -881,7 +891,7 @@ export default {
           'SLT Autos',
           activeCount?.count || 0,
           unlistedCount,
-          removedCount,
+          deletedCount,
           'success',
           duration
         ).run();
@@ -895,7 +905,7 @@ export default {
         action: 'lifecycle_management',
         activeVehicles: activeCount?.count || 0,
         unlistedVehicles: unlistedCount,
-        removedVehicles: removedCount,
+        deletedVehicles: deletedCount,
         duration: `${duration}s`,
         message: 'Lifecycle management complete. Use scraper directly for adding/updating vehicles.'
       }), {
