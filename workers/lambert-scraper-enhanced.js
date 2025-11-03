@@ -3,6 +3,21 @@
  * Based on the proven scraper with French/English parsing
  */
 
+// Helper function to calculate display price with markup
+function calculateDisplayPrice(basePrice, markupType, markupValue) {
+  if (!markupType || markupType === 'none' || !markupValue) {
+    return basePrice;
+  }
+  
+  if (markupType === 'amount') {
+    return basePrice + markupValue;
+  } else if (markupType === 'percentage') {
+    return basePrice + (basePrice * (markupValue / 100));
+  }
+  
+  return basePrice;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -157,6 +172,45 @@ export default {
               // Update existing vehicle (preserve Cloudflare IDs if they exist)
               const imagesToSave = hasCloudflareIds ? existing.images : JSON.stringify(vehicle.images || []);
               
+              // Get existing markup settings and recalculate display price
+              let existingMarkupType = 'vendor_default';
+              let existingMarkupValue = 0;
+              let displayPrice = vehicle.price;
+              
+              try {
+                // Get existing markup settings
+                const markupSettings = await env.DB.prepare(`
+                  SELECT price_markup_type, price_markup_value FROM vehicles
+                  WHERE id = ?
+                `).bind(existing.id).first();
+                
+                if (markupSettings) {
+                  existingMarkupType = markupSettings.price_markup_type || 'vendor_default';
+                  existingMarkupValue = markupSettings.price_markup_value || 0;
+                  
+                  if (existingMarkupType === 'vendor_default') {
+                    // Get vendor markup settings
+                    const vendorSettings = await env.DB.prepare(`
+                      SELECT markup_type, markup_value FROM vendor_settings
+                      WHERE vendor_id = 'lambert'
+                    `).first();
+                    
+                    if (vendorSettings) {
+                      displayPrice = calculateDisplayPrice(vehicle.price, vendorSettings.markup_type, vendorSettings.markup_value);
+                      console.log(`Applied vendor markup: ${vendorSettings.markup_type} ${vendorSettings.markup_value} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+                    }
+                  } else if (existingMarkupType === 'amount' || existingMarkupType === 'percentage') {
+                    // Use vehicle-specific markup
+                    displayPrice = calculateDisplayPrice(vehicle.price, existingMarkupType, existingMarkupValue);
+                    console.log(`Applied vehicle-specific markup: ${existingMarkupType} ${existingMarkupValue} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+                  }
+                }
+              } catch (err) {
+                console.error('Error calculating display price:', err);
+              }
+              
+              console.log(`Updating vehicle with preserved markup: type=${existingMarkupType}, value=${existingMarkupValue}, display_price=${displayPrice}`);
+              
               await env.DB.prepare(`
                 UPDATE vehicles SET
                   make = ?, model = ?, year = ?, price = ?, odometer = ?,
@@ -165,13 +219,19 @@ export default {
                   fuelType = ?, transmission = ?, drivetrain = ?, engineSize = ?,
                   vendor_id = 'lambert', vendor_name = 'Lambert Auto',
                   last_seen_from_vendor = datetime('now'),
-                  vendor_status = 'active'
+                  vendor_status = 'active',
+                  price_markup_type = ?,
+                  price_markup_value = ?,
+                  display_price = ?
                 WHERE id = ?
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
                 vehicle.description || '', imagesToSave,
                 vehicle.fuelType || null, vehicle.transmission || null, vehicle.drivetrain || null, vehicle.engineSize || null,
+                existingMarkupType,
+                existingMarkupValue,
+                displayPrice,
                 existing.id
               ).run();
               
@@ -181,20 +241,39 @@ export default {
               }
               updatedCount++;
             } else {
-              // Insert new vehicle with vendor tracking
+              // Get vendor markup settings for display price calculation
+              let displayPrice = vehicle.price;
+              
+              try {
+                const vendorSettings = await env.DB.prepare(`
+                  SELECT markup_type, markup_value FROM vendor_settings
+                  WHERE vendor_id = 'lambert'
+                `).first();
+                
+                if (vendorSettings) {
+                  displayPrice = calculateDisplayPrice(vehicle.price, vendorSettings.markup_type, vendorSettings.markup_value);
+                  console.log(`Applied vendor markup to new vehicle: ${vendorSettings.markup_type} ${vendorSettings.markup_value} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+                }
+              } catch (err) {
+                console.error('Error getting vendor markup settings:', err);
+              }
+              
+              // Insert new vehicle with vendor tracking and markup settings
               const result = await env.DB.prepare(`
                 INSERT INTO vehicles (
                   make, model, year, price, odometer, bodyType, color, vin, stockNumber,
                   description, images, isSold,
                   fuelType, transmission, drivetrain, engineSize,
                   vendor_id, vendor_name,
-                  last_seen_from_vendor, vendor_status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'lambert', 'Lambert Auto', datetime('now'), 'active')
+                  last_seen_from_vendor, vendor_status,
+                  price_markup_type, price_markup_value, display_price
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'lambert', 'Lambert Auto', datetime('now'), 'active', 'vendor_default', 0, ?)
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
                 vehicle.description || '', JSON.stringify(vehicle.images || []),
-                vehicle.fuelType || null, vehicle.transmission || null, vehicle.drivetrain || null, vehicle.engineSize || null
+                vehicle.fuelType || null, vehicle.transmission || null, vehicle.drivetrain || null, vehicle.engineSize || null,
+                displayPrice
               ).run();
               
               if (result.meta.last_row_id) {
