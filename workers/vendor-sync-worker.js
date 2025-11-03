@@ -210,6 +210,8 @@ export default {
           if (isExisting) {
             // Get existing markup settings and recalculate display price
             let displayPrice = vehicle.price;
+            let existingMarkupType = 'vendor_default';
+            let existingMarkupValue = 0;
             
             try {
               // Get existing vehicle markup settings
@@ -219,7 +221,10 @@ export default {
               `).bind(vehicle.vin, vehicle.stockNumber).first();
               
               if (existingVehicle) {
-                const markupType = existingVehicle.price_markup_type;
+                // Preserve existing markup settings
+                existingMarkupType = existingVehicle.price_markup_type || 'vendor_default';
+                existingMarkupValue = existingVehicle.price_markup_value || 0;
+                const markupType = existingMarkupType;
                 
                 if (markupType === 'vendor_default') {
                   // Get vendor markup settings
@@ -244,6 +249,8 @@ export default {
             
             // Update existing vehicle - include all fields and recalculated display price
             console.log(`Updating ${vehicle.make} ${vehicle.model}: fuel=${vehicle.fuelType}, trans=${vehicle.transmission}, engine=${vehicle.engineSize}`);
+            console.log(`Preserving markup settings: type=${existingMarkupType}, value=${existingMarkupValue}, display_price=${displayPrice}`);
+            
             await env.DB.prepare(`
               UPDATE vehicles 
               SET 
@@ -257,6 +264,8 @@ export default {
                 images = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
+                price_markup_type = ?,
+                price_markup_value = ?,
                 display_price = ?,
                 updatedAt = datetime('now')
               WHERE (vin = ? OR stockNumber = ?) AND vendor_id = 'lambert'
@@ -269,6 +278,8 @@ export default {
               vehicle.engineSize,
               vehicle.cylinders,
               JSON.stringify(vehicle.images),
+              existingMarkupType,
+              existingMarkupValue,
               displayPrice,
               vehicle.vin,
               vehicle.stockNumber
@@ -748,8 +759,49 @@ export default {
           const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
           
           if (isExisting) {
-            // Update existing vehicle
+            // Get existing markup settings and recalculate display price
+            let displayPrice = vehicle.price;
+            let existingMarkupType = 'vendor_default';
+            let existingMarkupValue = 0;
+            
+            try {
+              // Get existing vehicle markup settings
+              const existingVehicle = await env.DB.prepare(`
+                SELECT id, price_markup_type, price_markup_value FROM vehicles
+                WHERE (vin = ? OR stockNumber = ?) AND vendor_id = 'naniauto'
+              `).bind(vehicle.vin, vehicle.stockNumber).first();
+              
+              if (existingVehicle) {
+                // Preserve existing markup settings
+                existingMarkupType = existingVehicle.price_markup_type || 'vendor_default';
+                existingMarkupValue = existingVehicle.price_markup_value || 0;
+                const markupType = existingMarkupType;
+                
+                if (markupType === 'vendor_default') {
+                  // Get vendor markup settings
+                  const vendorSettings = await env.DB.prepare(`
+                    SELECT markup_type, markup_value FROM vendor_settings
+                    WHERE vendor_id = 'naniauto'
+                  `).first();
+                  
+                  if (vendorSettings) {
+                    displayPrice = calculateDisplayPrice(vehicle.price, vendorSettings.markup_type, vendorSettings.markup_value);
+                    console.log(`Applied vendor markup: ${vendorSettings.markup_type} ${vendorSettings.markup_value} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+                  }
+                } else if (markupType === 'amount' || markupType === 'percentage') {
+                  // Use vehicle-specific markup
+                  displayPrice = calculateDisplayPrice(vehicle.price, markupType, existingVehicle.price_markup_value);
+                  console.log(`Applied vehicle-specific markup: ${markupType} ${existingVehicle.price_markup_value} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+                }
+              }
+            } catch (err) {
+              console.error('Error calculating display price:', err);
+            }
+            
+            // Update existing vehicle - include all fields and recalculated display price
             console.log(`Updating ${vehicle.make} ${vehicle.model}: fuel=${vehicle.fuelType}, trans=${vehicle.transmission}, engine=${vehicle.engineSize}`);
+            console.log(`Preserving markup settings: type=${existingMarkupType}, value=${existingMarkupValue}, display_price=${displayPrice}`);
+            
             await env.DB.prepare(`
               UPDATE vehicles 
               SET 
@@ -763,6 +815,9 @@ export default {
                 images = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
+                price_markup_type = ?,
+                price_markup_value = ?,
+                display_price = ?,
                 updatedAt = datetime('now')
               WHERE (vin = ? OR stockNumber = ?) AND vendor_id = ?
             `).bind(
@@ -774,6 +829,9 @@ export default {
               vehicle.engineSize,
               vehicle.cylinders,
               JSON.stringify(vehicle.images),
+              existingMarkupType,
+              existingMarkupValue,
+              displayPrice,
               vehicle.vin,
               vehicle.stockNumber,
               'naniauto'
@@ -781,20 +839,43 @@ export default {
             
             updatedCount++;
           } else {
-            // Insert new vehicle
+            // Get vendor markup settings for display price calculation
+            let markupType = 'none';
+            let markupValue = 0;
+            let displayPrice = vehicle.price;
+            
+            try {
+              const vendorSettings = await env.DB.prepare(`
+                SELECT markup_type, markup_value FROM vendor_settings
+                WHERE vendor_id = 'naniauto'
+              `).first();
+              
+              if (vendorSettings) {
+                markupType = vendorSettings.markup_type;
+                markupValue = vendorSettings.markup_value;
+                displayPrice = calculateDisplayPrice(vehicle.price, markupType, markupValue);
+                console.log(`Applied vendor markup: ${markupType} ${markupValue} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+              }
+            } catch (err) {
+              console.error('Error getting vendor markup settings:', err);
+            }
+            
+            // Insert new vehicle - including all fields and markup
             await env.DB.prepare(`
               INSERT INTO vehicles (
                 make, model, year, price, odometer, bodyType, color,
                 fuelType, transmission, drivetrain, engineSize, cylinders,
                 vin, stockNumber, description, images, isSold,
                 vendor_id, vendor_name, vendor_stock_number,
-                last_seen_from_vendor, vendor_status, is_published
+                last_seen_from_vendor, vendor_status, is_published,
+                price_markup_type, price_markup_value, display_price
               ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, 0,
                 ?, ?, ?,
-                datetime('now'), 'active', 1
+                datetime('now'), 'active', 1,
+                'vendor_default', 0, ?
               )
             `).bind(
               vehicle.make,
@@ -815,7 +896,8 @@ export default {
               JSON.stringify(vehicle.images || []),
               'naniauto',
               'NaniAuto',
-              vehicle.stockNumber
+              vehicle.stockNumber,
+              displayPrice
             ).run();
             
             newCount++;
