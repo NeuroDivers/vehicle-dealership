@@ -1,7 +1,22 @@
-/**
+ /**
  * Unified Vendor Sync Worker
  * Handles all vendor syncing including Lambert scraping and database persistence
  */
+
+// Helper function to calculate display price with markup
+function calculateDisplayPrice(basePrice, markupType, markupValue) {
+  if (!markupType || markupType === 'none' || !markupValue) {
+    return basePrice;
+  }
+  
+  if (markupType === 'amount') {
+    return basePrice + markupValue;
+  } else if (markupType === 'percentage') {
+    return basePrice + (basePrice * (markupValue / 100));
+  }
+  
+  return basePrice;
+}
 
 export default {
   async fetch(request, env) {
@@ -193,7 +208,41 @@ export default {
           const isExisting = existingVINs.has(vehicle.vin) || existingStockNumbers.has(vehicle.stockNumber);
           
           if (isExisting) {
-            // Update existing vehicle - include all fields
+            // Get existing markup settings and recalculate display price
+            let displayPrice = vehicle.price;
+            
+            try {
+              // Get existing vehicle markup settings
+              const existingVehicle = await env.DB.prepare(`
+                SELECT id, price_markup_type, price_markup_value FROM vehicles
+                WHERE (vin = ? OR stockNumber = ?) AND vendor_id = 'lambert'
+              `).bind(vehicle.vin, vehicle.stockNumber).first();
+              
+              if (existingVehicle) {
+                const markupType = existingVehicle.price_markup_type;
+                
+                if (markupType === 'vendor_default') {
+                  // Get vendor markup settings
+                  const vendorSettings = await env.DB.prepare(`
+                    SELECT markup_type, markup_value FROM vendor_settings
+                    WHERE vendor_id = 'lambert'
+                  `).first();
+                  
+                  if (vendorSettings) {
+                    displayPrice = calculateDisplayPrice(vehicle.price, vendorSettings.markup_type, vendorSettings.markup_value);
+                    console.log(`Applied vendor markup: ${vendorSettings.markup_type} ${vendorSettings.markup_value} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+                  }
+                } else if (markupType === 'amount' || markupType === 'percentage') {
+                  // Use vehicle-specific markup
+                  displayPrice = calculateDisplayPrice(vehicle.price, markupType, existingVehicle.price_markup_value);
+                  console.log(`Applied vehicle-specific markup: ${markupType} ${existingVehicle.price_markup_value} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+                }
+              }
+            } catch (err) {
+              console.error('Error calculating display price:', err);
+            }
+            
+            // Update existing vehicle - include all fields and recalculated display price
             console.log(`Updating ${vehicle.make} ${vehicle.model}: fuel=${vehicle.fuelType}, trans=${vehicle.transmission}, engine=${vehicle.engineSize}`);
             await env.DB.prepare(`
               UPDATE vehicles 
@@ -208,6 +257,7 @@ export default {
                 images = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
+                display_price = ?,
                 updatedAt = datetime('now')
               WHERE (vin = ? OR stockNumber = ?) AND vendor_id = 'lambert'
             `).bind(
@@ -219,26 +269,50 @@ export default {
               vehicle.engineSize,
               vehicle.cylinders,
               JSON.stringify(vehicle.images),
+              displayPrice,
               vehicle.vin,
               vehicle.stockNumber
             ).run();
             
             updatedCount++;
           } else {
-            // Insert new vehicle - including all fields
+            // Get vendor markup settings for display price calculation
+            let markupType = 'none';
+            let markupValue = 0;
+            let displayPrice = vehicle.price;
+            
+            try {
+              const vendorSettings = await env.DB.prepare(`
+                SELECT markup_type, markup_value FROM vendor_settings
+                WHERE vendor_id = 'lambert'
+              `).first();
+              
+              if (vendorSettings) {
+                markupType = vendorSettings.markup_type;
+                markupValue = vendorSettings.markup_value;
+                displayPrice = calculateDisplayPrice(vehicle.price, markupType, markupValue);
+                console.log(`Applied vendor markup: ${markupType} ${markupValue} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+              }
+            } catch (err) {
+              console.error('Error getting vendor markup settings:', err);
+            }
+            
+            // Insert new vehicle - including all fields and markup
             await env.DB.prepare(`
               INSERT INTO vehicles (
                 make, model, year, price, odometer, bodyType, color,
                 fuelType, transmission, drivetrain, engineSize, cylinders,
                 vin, stockNumber, description, images, isSold,
                 vendor_id, vendor_name, vendor_stock_number,
-                last_seen_from_vendor, vendor_status, is_published
+                last_seen_from_vendor, vendor_status, is_published,
+                price_markup_type, price_markup_value, display_price
               ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, 0,
                 'lambert', 'Lambert Auto', ?,
-                datetime('now'), 'active', 1
+                datetime('now'), 'active', 1,
+                'vendor_default', 0, ?
               )
             `).bind(
               vehicle.make,
@@ -257,7 +331,8 @@ export default {
               vehicle.stockNumber,
               vehicle.description || '',
               JSON.stringify(vehicle.images || []),
-              vehicle.stockNumber
+              vehicle.stockNumber,
+              displayPrice
             ).run();
             
             newCount++;
