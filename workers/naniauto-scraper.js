@@ -449,15 +449,24 @@ export default {
         console.log('Title match failed');
       }
       
-      // Extract price - look for TX which is near the price
-      const priceMatch = html.match(/\$\s*([\d,\s]+)\s*<\/h1>\s*<h3[^>]*>\+\s*TX/i) || 
+      // Extract price - using the actual HTML structure
+      const priceMatch = html.match(/class="b-detail__head-price-num">([\d,\s]+)\s*\$/i) ||
                          html.match(/Price:\s*([\d,\s]+)\s*\$/i) ||
-                         html.match(/\$\s*([\d,\s]+)/i);
+                         html.match(/\$\s*([\d,\s]+)/i) ||
+                         html.match(/([\d,\s]+)\s*\$/i);
+      
       if (priceMatch) {
         vehicle.price = parseInt(priceMatch[1].replace(/[,\s]/g, ''));
         console.log(`Extracted price: ${vehicle.price}`);
       } else {
-        console.log('Price match failed');
+        console.log('Price match failed, HTML snippet around price area:');
+        // Log a snippet of HTML around where the price might be to help debug
+        const priceSnippet = html.match(/b-detail__head-price[\s\S]{1,200}/i);
+        if (priceSnippet) {
+          console.log(priceSnippet[0]);
+        } else {
+          console.log('Could not find price section in HTML');
+        }
       }
       
       // Extract odometer (kilometers)
