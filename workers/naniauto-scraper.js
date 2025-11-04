@@ -45,9 +45,25 @@ export default {
         
         // Fetch vehicle data from NaniAuto website
         try {
-          // Simulate scraping - in production, this would be actual web scraping
-          vehicles = await this.generateSampleVehicles();
-          console.log(`Generated ${vehicles.length} sample vehicles`);
+          // Perform actual web scraping
+          vehicles = await this.scrapeNaniAutoInventory();
+          console.log(`Scraped ${vehicles.length} vehicles from NaniAuto`);
+          
+          // Upload images to Cloudflare if token is available
+          if (env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN) {
+            console.log('📤 Uploading images to Cloudflare Images...');
+            for (const vehicle of vehicles) {
+              if (vehicle.images && vehicle.images.length > 0) {
+                console.log(`Uploading ${vehicle.images.length} images for ${vehicle.make} ${vehicle.model}...`);
+                const uploadedImages = await this.uploadImagesToCloudflare(
+                  vehicle.images,
+                  vehicle.vin || `${vehicle.year}-${vehicle.make}-${vehicle.model}`.replace(/\s+/g, '-'),
+                  env
+                );
+                vehicle.images = uploadedImages;
+              }
+            }
+          }
         } catch (error) {
           console.error('Error fetching vehicles:', error);
           return new Response(JSON.stringify({ error: error.message }), {
@@ -298,63 +314,426 @@ export default {
     return new Response('Not found', { status: 404 });
   },
   
-  async generateSampleVehicles() {
-    // Generate sample vehicles for testing
-    return [
-      {
-        make: 'Toyota',
-        model: 'Camry',
-        year: 2023,
-        price: 28500,
-        vin: 'NANI1234567890123',
-        stockNumber: 'NA1001',
-        bodyType: 'Sedan',
-        color: 'Silver',
-        odometer: 5000,
-        fuelType: 'Gasoline',
-        transmission: 'Automatic',
-        drivetrain: 'FWD',
-        engineSize: '2.5L',
-        cylinders: 4,
-        description: '2023 Toyota Camry - Low miles, great condition',
-        images: ['https://naniauto.example.com/images/camry1.jpg', 'https://naniauto.example.com/images/camry2.jpg']
-      },
-      {
-        make: 'Honda',
-        model: 'CR-V',
-        year: 2022,
-        price: 32000,
-        vin: 'NANI2345678901234',
-        stockNumber: 'NA1002',
-        bodyType: 'SUV',
-        color: 'Blue',
-        odometer: 12000,
-        fuelType: 'Gasoline',
-        transmission: 'Automatic',
-        drivetrain: 'AWD',
-        engineSize: '1.5L',
-        cylinders: 4,
-        description: '2022 Honda CR-V - AWD, great for all seasons',
-        images: ['https://naniauto.example.com/images/crv1.jpg', 'https://naniauto.example.com/images/crv2.jpg']
-      },
-      {
-        make: 'Ford',
-        model: 'F-150',
-        year: 2021,
-        price: 42000,
-        vin: 'NANI3456789012345',
-        stockNumber: 'NA1003',
-        bodyType: 'Truck',
-        color: 'Red',
-        odometer: 18000,
-        fuelType: 'Gasoline',
-        transmission: 'Automatic',
-        drivetrain: '4WD',
-        engineSize: '5.0L',
-        cylinders: 8,
-        description: '2021 Ford F-150 - Powerful V8, 4WD',
-        images: ['https://naniauto.example.com/images/f150-1.jpg', 'https://naniauto.example.com/images/f150-2.jpg']
+  async scrapeNaniAutoInventory() {
+    const vehicles = [];
+    const baseUrl = 'https://naniauto.com';
+    const allVehicleUrls = new Set();
+    
+    try {
+      // Scrape multiple pages (pagination)
+      // NaniAuto has both French and English pages, we'll check both
+      const languages = ['fr', 'en'];
+      const maxPages = 10; // Safety limit
+      
+      for (const lang of languages) {
+        console.log(`Checking ${lang} pages...`);
+        
+        // Manually check pages 1, 2, and 3 since we know they exist
+        for (let page = 1; page <= 3; page++) {
+          console.log(`Fetching NaniAuto inventory page ${page} (${lang})...`);
+          
+          // Construct URL based on page number and language
+          const pageUrl = page === 1 
+            ? `${baseUrl}/${lang}/inventory/` 
+            : `${baseUrl}/${lang}/inventory/p/${page}/`;
+          
+          try {
+            const response = await fetch(pageUrl);
+            
+            if (!response.ok) {
+              console.log(`Page ${page} (${lang}) returned ${response.status}, skipping`);
+              continue;
+            }
+            
+            const html = await response.text();
+            console.log(`Successfully fetched page ${page} (${lang}), HTML length: ${html.length}`);
+            
+            // Extract vehicle URLs from this page
+            const vehicleUrls = this.extractVehicleUrls(html, baseUrl);
+            console.log(`Found ${vehicleUrls.length} vehicles on page ${page} (${lang})`);
+            
+            // Add new URLs to our set
+            vehicleUrls.forEach(url => allVehicleUrls.add(url));
+          } catch (error) {
+            console.error(`Error fetching page ${page} (${lang}):`, error);
+          }
+          
+          // Add a small delay between requests
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
+      
+      console.log(`Total unique vehicle URLs found: ${allVehicleUrls.size}`);
+      
+      // Scrape details for each vehicle (limit to 50 for performance)
+      const urlsToScrape = Array.from(allVehicleUrls).slice(0, 50);
+      
+      for (const url of urlsToScrape) {
+        try {
+          console.log(`Scraping details from ${url}`);
+          const vehicle = await this.scrapeVehicleDetails(url);
+          if (vehicle) {
+            vehicles.push(vehicle);
+          }
+          // Add a small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (error) {
+          console.error(`Error scraping ${url}:`, error);
+        }
+      }
+      
+      return vehicles;
+    } catch (error) {
+      console.error('Error scraping NaniAuto inventory:', error);
+      throw error;
+    }
+  },
+  
+  extractVehicleUrls(html, baseUrl) {
+    const urls = [];
+    // Match both French and English detail URLs
+    const regexPatterns = [
+      // French URLs
+      /href="(\/fr\/details\/p\/\d+\/[^"]+)"/g,
+      // English URLs
+      /href="(\/en\/details\/p\/\d+\/[^"]+)"/g,
+      // Backup pattern for any details URLs
+      /href="(\/[^\/]+\/details\/p\/\d+\/[^"]+)"/g
     ];
+    
+    for (const regex of regexPatterns) {
+      let match;
+      while ((match = regex.exec(html)) !== null) {
+        const url = baseUrl + match[1];
+        if (!urls.includes(url)) {
+          urls.push(url);
+        }
+      }
+    }
+    
+    if (urls.length > 0) {
+      console.log('Found URLs:', urls);
+    }
+    return urls;
+  },
+  
+  async scrapeVehicleDetails(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error(`Failed to fetch ${url}: ${response.status}`);
+        return null;
+      }
+      
+      const html = await response.text();
+      console.log(`Fetched HTML content for ${url}, length: ${html.length}`);
+      
+      const vehicle = {
+        make: '',
+        model: '',
+        year: 0,
+        price: 0,
+        odometer: 0,
+        images: []
+      };
+      
+      // Extract make, model, year from title
+      // Format: "2024 Honda Civic Automatique"
+      const titleMatch = html.match(/<h1[^>]*>([\d]{4})\s+([^\s]+)\s+([^<]+)<\/h1>/i);
+      if (titleMatch) {
+        vehicle.year = parseInt(titleMatch[1]);
+        vehicle.make = titleMatch[2];
+        vehicle.model = titleMatch[3].split(' ')[0]; // Take first word as model
+        console.log(`Extracted from title: Year=${vehicle.year}, Make=${vehicle.make}, Model=${vehicle.model}`);
+      } else {
+        console.log('Title match failed');
+      }
+      
+      // Extract price - look for TX which is near the price
+      const priceMatch = html.match(/\$\s*([\d,\s]+)\s*<\/h1>\s*<h3[^>]*>\+\s*TX/i) || 
+                         html.match(/Price:\s*([\d,\s]+)\s*\$/i) ||
+                         html.match(/\$\s*([\d,\s]+)/i);
+      if (priceMatch) {
+        vehicle.price = parseInt(priceMatch[1].replace(/[,\s]/g, ''));
+        console.log(`Extracted price: ${vehicle.price}`);
+      } else {
+        console.log('Price match failed');
+      }
+      
+      // Extract odometer (kilometers)
+      const kmMatch = html.match(/Kilometres<\/h4>\s*<h4[^>]*>([0-9,\s]+)/i) ||
+                     html.match(/Kilometres\s*([0-9,\s]+)/i) ||
+                     html.match(/Odomètre:\s*([0-9,\s]+)/i);
+      if (kmMatch) {
+        vehicle.odometer = parseInt(kmMatch[1].replace(/[,\s]/g, ''));
+        console.log(`Extracted odometer: ${vehicle.odometer}`);
+      } else {
+        console.log('Odometer match failed');
+      }
+      
+      // Extract body type
+      const bodyMatch = html.match(/Body Type<\/h4>\s*<h4[^>]*>([^<]+)/i) ||
+                       html.match(/Body Type\s*([^<\n]+)/i) ||
+                       html.match(/Berline|SUV|Fourgonnette|Coupe|Hatchback|Wagon|Truck/i);
+      if (bodyMatch) {
+        vehicle.bodyType = this.normalizeBodyType(bodyMatch[1] ? bodyMatch[1].trim() : bodyMatch[0].trim());
+        console.log(`Extracted body type: ${vehicle.bodyType}`);
+      } else {
+        console.log('Body type match failed');
+      }
+      
+      // Extract engine/fuel type
+      const fuelMatch = html.match(/Engine<\/h4>\s*<h4[^>]*>([^<]+)/i) ||
+                       html.match(/Engine\s*([^<\n]+)/i) ||
+                       html.match(/Moteur\s*:\s*([^<\n]+)/i);
+      if (fuelMatch) {
+        vehicle.fuelType = this.normalizeFuelType(fuelMatch[1] ? fuelMatch[1].trim() : fuelMatch[0].trim());
+        console.log(`Extracted fuel type: ${vehicle.fuelType}`);
+      } else {
+        // Default to gasoline if not found
+        vehicle.fuelType = 'Gasoline';
+        console.log('Fuel type match failed, defaulting to Gasoline');
+      }
+      
+      // Extract transmission
+      const transMatch = html.match(/Transmission<\/h4>\s*<h4[^>]*>([^<]+)/i) ||
+                        html.match(/Transmission\s*([^<\n]+)/i) ||
+                        html.match(/Automatique|Manuelle/i);
+      if (transMatch) {
+        vehicle.transmission = this.normalizeTransmission(transMatch[1] ? transMatch[1].trim() : transMatch[0].trim());
+        console.log(`Extracted transmission: ${vehicle.transmission}`);
+      } else {
+        console.log('Transmission match failed');
+      }
+      
+      // Extract color
+      const colorMatch = html.match(/Exterior Color<\/h4>\s*<h4[^>]*>([^<]+)/i) ||
+                        html.match(/Exterior Color\s*([^<\n]+)/i) ||
+                        html.match(/Couleur\s*ext[éeè]rieure\s*:\s*([^<\n]+)/i);
+      if (colorMatch) {
+        vehicle.color = this.normalizeColor(colorMatch[1] ? colorMatch[1].trim() : colorMatch[0].trim());
+        console.log(`Extracted color: ${vehicle.color}`);
+      } else {
+        console.log('Color match failed');
+      }
+      
+      // Extract VIN
+      const vinMatch = html.match(/Vin<\/h4>\s*<h4[^>]*>([A-Z0-9]{17})/i) ||
+                      html.match(/Vin\s*([A-Z0-9]{17})/i) ||
+                      html.match(/VIN\s*:?\s*([A-Z0-9]{17})/i);
+      if (vinMatch) {
+        vehicle.vin = vinMatch[1].trim();
+        console.log(`Extracted VIN: ${vehicle.vin}`);
+      } else {
+        console.log('VIN match failed');
+      }
+      
+      // Extract images
+      vehicle.images = this.extractImages(html);
+      
+      // Generate description
+      vehicle.description = `${vehicle.year} ${vehicle.make} ${vehicle.model}`.trim();
+      
+      // Set stock number from URL ID
+      const stockMatch = url.match(/\/p\/(\d+)\//); 
+      if (stockMatch) {
+        vehicle.stockNumber = `NANI-${stockMatch[1]}`;
+        vehicle.vendor_stock_number = stockMatch[1];
+      }
+      
+      console.log(`✓ Scraped: ${vehicle.year} ${vehicle.make} ${vehicle.model} - $${vehicle.price}`);
+      return vehicle;
+    } catch (error) {
+      console.error(`Error scraping vehicle details from ${url}:`, error);
+      return null;
+    }
+  },
+  
+  extractImages(html) {
+    const images = [];
+    const seen = new Set();
+    
+    // Match image URLs - focus on large images that are likely to be vehicle photos
+    const patterns = [
+      // Look for gallery images
+      /<img[^>]+src="([^"]+)"[^>]+class="[^"]*gallery-image[^"]*"/g,
+      // Look for large images
+      /<img[^>]+src="([^"]+)"[^>]+width="[5-9][0-9]{2,}"/g,
+      /<img[^>]+width="[5-9][0-9]{2,}"[^>]+src="([^"]+)"/g,
+      // Look for any image with vehicle in URL
+      /<img[^>]+src="([^"]*vehicle[^"]*)"/g,
+      // Look for any image with car in URL
+      /<img[^>]+src="([^"]*car[^"]*)"/g,
+      // Look for any image with auto in URL
+      /<img[^>]+src="([^"]*auto[^"]*)"/g,
+      // Fallback to any image
+      /<img[^>]+src="([^"]+)"/g,
+      // Try data attributes
+      /data-src="([^"]+)"/g,
+      /data-lazy-src="([^"]+)"/g
+    ];
+    
+    console.log('Extracting images from HTML...');
+    
+    patterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(html)) !== null) {
+        let url = match[1];
+        
+        // Skip unwanted images
+        const unwantedPatterns = [
+          'logo', 'icon', 'badge', 'placeholder', 'button', 'banner',
+          '/wp-content/themes/', '/wp-content/plugins/',
+          'facebook', 'twitter', 'instagram', 'social',
+          'favicon', 'header', 'footer', 'menu', 'nav'
+        ];
+        
+        const isUnwanted = unwantedPatterns.some(pattern =>
+          url.toLowerCase().includes(pattern.toLowerCase())
+        );
+        
+        if (isUnwanted) continue;
+        
+        // Make URL absolute
+        if (!url.startsWith('http')) {
+          url = url.startsWith('/')
+            ? `https://naniauto.com${url}`
+            : `https://naniauto.com/${url}`;
+        }
+        
+        // Only add if it's a new URL and we haven't reached the limit
+        if (!seen.has(url) && images.length < 15) {
+          seen.add(url);
+          images.push(url);
+          console.log(`Found image: ${url}`);
+        }
+      }
+    });
+    
+    console.log(`Total images found: ${images.length}`);
+    
+    // If we didn't find any images, use a placeholder
+    if (images.length === 0) {
+      const placeholder = 'https://naniauto.com/wp-content/uploads/2023/06/naniauto-logo.png';
+      images.push(placeholder);
+      console.log(`No images found, using placeholder: ${placeholder}`);
+    }
+    
+    return images;
+  },
+  
+  normalizeBodyType(bodyType) {
+    const lower = bodyType.toLowerCase();
+    if (lower.includes('fourgon') || lower.includes('van')) return 'Van';
+    if (lower.includes('suv')) return 'SUV';
+    if (lower.includes('sedan') || lower.includes('berline')) return 'Sedan';
+    if (lower.includes('truck') || lower.includes('camion')) return 'Truck';
+    if (lower.includes('coupe') || lower.includes('coupé')) return 'Coupe';
+    if (lower.includes('hatch')) return 'Hatchback';
+    if (lower.includes('wagon')) return 'Wagon';
+    return bodyType;
+  },
+  
+  normalizeFuelType(fuel) {
+    const lower = fuel.toLowerCase();
+    if (lower.includes('essence') || lower.includes('gas')) return 'Gasoline';
+    if (lower.includes('diesel')) return 'Diesel';
+    if (lower.includes('electric') || lower.includes('électrique')) return 'Electric';
+    if (lower.includes('hybrid') || lower.includes('hybride')) return 'Hybrid';
+    return fuel;
+  },
+  
+  normalizeTransmission(trans) {
+    const lower = trans.toLowerCase();
+    if (lower.includes('auto')) return 'Automatic';
+    if (lower.includes('manual') || lower.includes('manuelle')) return 'Manual';
+    return trans;
+  },
+  
+  normalizeColor(color) {
+    const lower = color.toLowerCase();
+    if (lower.includes('white') || lower.includes('blanc')) return 'White';
+    if (lower.includes('black') || lower.includes('noir')) return 'Black';
+    if (lower.includes('gray') || lower.includes('grey') || lower.includes('gris')) return 'Gray';
+    if (lower.includes('silver') || lower.includes('argent')) return 'Silver';
+    if (lower.includes('red') || lower.includes('rouge')) return 'Red';
+    if (lower.includes('blue') || lower.includes('bleu')) return 'Blue';
+    return color;
+  },
+  
+  async uploadImagesToCloudflare(imageUrls, vehicleId, env) {
+    const uploadedImages = [];
+    const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = env.CF_IMAGES_TOKEN || env.CLOUDFLARE_IMAGES_TOKEN;
+    const accountHash = env.CLOUDFLARE_IMAGES_ACCOUNT_HASH;
+    
+    if (!apiToken || !accountId || !accountHash) {
+      console.log('⚠️  Missing Cloudflare Images credentials');
+      return imageUrls;
+    }
+    
+    for (let i = 0; i < Math.min(imageUrls.length, 15); i++) {
+      try {
+        const imageUrl = imageUrls[i];
+        
+        // Download image
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) {
+          console.error(`Failed to download: ${imageUrl}`);
+          uploadedImages.push(imageUrl);
+          continue;
+        }
+        
+        const imageBlob = await imageResponse.blob();
+        const imageId = `AutoPrets123-${vehicleId}-${i + 1}`.replace(/[^a-zA-Z0-9-]/g, '-');
+        
+        // Upload to Cloudflare Images
+        const formData = new FormData();
+        formData.append('file', imageBlob);
+        formData.append('id', imageId);
+        formData.append('metadata', JSON.stringify({
+          vehicleId: vehicleId,
+          source: 'naniauto',
+          originalUrl: imageUrl,
+          index: i + 1,
+          project: 'AutoPrets123',
+          projectId: 'vehicle-dealership',
+          projectUrl: 'https://autopret123.ca'
+        }));
+        
+        const uploadResponse = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiToken}`
+            },
+            body: formData
+          }
+        );
+        
+        if (uploadResponse.ok) {
+          const result = await uploadResponse.json();
+          if (result.success) {
+            const cfImageUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+            uploadedImages.push(cfImageUrl);
+            console.log(`✅ Uploaded: ${cfImageUrl}`);
+          } else {
+            console.error(`❌ Upload failed:`, JSON.stringify(result.errors));
+            uploadedImages.push(imageUrl);
+          }
+        } else {
+          console.error(`❌ Upload request failed: ${uploadResponse.status}`);
+          uploadedImages.push(imageUrl);
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (error) {
+        console.error(`Error uploading image ${i + 1}:`, error.message);
+        uploadedImages.push(imageUrls[i]);
+      }
+    }
+    
+    return uploadedImages.length > 0 ? uploadedImages : imageUrls;
   }
 };
