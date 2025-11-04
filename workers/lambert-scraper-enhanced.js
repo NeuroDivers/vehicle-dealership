@@ -244,6 +244,10 @@ export default {
               // Get vendor markup settings for display price calculation
               let displayPrice = vehicle.price;
               
+              // Get vendor markup settings
+              let markupType = 'vendor_default';
+              let markupValue = 0;
+              
               try {
                 const vendorSettings = await env.DB.prepare(`
                   SELECT markup_type, markup_value FROM vendor_settings
@@ -251,8 +255,12 @@ export default {
                 `).first();
                 
                 if (vendorSettings) {
-                  displayPrice = calculateDisplayPrice(vehicle.price, vendorSettings.markup_type, vendorSettings.markup_value);
-                  console.log(`Applied vendor markup to new vehicle: ${vendorSettings.markup_type} ${vendorSettings.markup_value} - Base: ${vehicle.price} → Display: ${displayPrice}`);
+                  // Store the actual vendor markup settings
+                  markupType = vendorSettings.markup_type || 'none';
+                  markupValue = vendorSettings.markup_value || 0;
+                  
+                  displayPrice = calculateDisplayPrice(vehicle.price, markupType, markupValue);
+                  console.log(`Applied vendor markup to new vehicle: ${markupType} ${markupValue} - Base: ${vehicle.price} → Display: ${displayPrice}`);
                 }
               } catch (err) {
                 console.error('Error getting vendor markup settings:', err);
@@ -267,13 +275,13 @@ export default {
                   vendor_id, vendor_name,
                   last_seen_from_vendor, vendor_status,
                   price_markup_type, price_markup_value, display_price
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'lambert', 'Lambert Auto', datetime('now'), 'active', 'vendor_default', 0, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'lambert', 'Lambert Auto', datetime('now'), 'active', ?, ?, ?)
               `).bind(
                 vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
                 vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
                 vehicle.description || '', JSON.stringify(vehicle.images || []),
                 vehicle.fuelType || null, vehicle.transmission || null, vehicle.drivetrain || null, vehicle.engineSize || null,
-                displayPrice
+                markupType, markupValue, displayPrice
               ).run();
               
               if (result.meta.last_row_id) {
