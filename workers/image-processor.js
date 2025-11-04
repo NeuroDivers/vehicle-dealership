@@ -421,8 +421,16 @@ export default {
           throw new Error(`Image too large: ${Math.round(imageBlob.size / 1024 / 1024)}MB`);
         }
         
-        // Sanitize image ID
-        const sanitizedId = imageId.replace(/[^a-zA-Z0-9-]/g, '-').substring(0, 100);
+        // Sanitize image ID and add AutoPrets123 prefix
+        let sanitizedId = imageId.replace(/[^a-zA-Z0-9-]/g, '-');
+        
+        // Add AutoPrets123 prefix if not already present
+        if (!sanitizedId.startsWith('AutoPrets123-')) {
+          sanitizedId = `AutoPrets123-${sanitizedId}`;
+        }
+        
+        // Ensure it doesn't exceed Cloudflare's limit (truncate if needed)
+        sanitizedId = sanitizedId.substring(0, 100);
         
         // Upload to Cloudflare
         const formData = new FormData();
@@ -431,7 +439,10 @@ export default {
         formData.append('metadata', JSON.stringify({
           source: 'vendor',
           originalUrl: imageUrl,
-          uploadedAt: new Date().toISOString()
+          uploadedAt: new Date().toISOString(),
+          project: 'AutoPrets123',
+          projectId: 'vehicle-dealership',
+          projectUrl: 'https://autopret123.ca'
         }));
         
         const uploadResponse = await fetch(

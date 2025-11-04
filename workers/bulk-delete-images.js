@@ -23,9 +23,18 @@ export default {
       try {
         const images = await this.listAllImages(env);
         
+        // Count images by project
+        const projectCounts = {};
+        images.forEach(image => {
+          const project = image.project || 'unknown';
+          projectCounts[project] = (projectCounts[project] || 0) + 1;
+        });
+        
         return new Response(JSON.stringify({
           success: true,
           count: images.length,
+          projectCounts: projectCounts,
+          autoprets123Count: projectCounts['AutoPrets123'] || 0,
           images: images
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -41,15 +50,15 @@ export default {
       }
     }
 
-    // Delete all images endpoint
-    if (url.pathname === '/api/delete-all-images' && request.method === 'POST') {
+    // Delete project images endpoint
+    if ((url.pathname === '/api/delete-all-images' || url.pathname === '/api/delete-autoprets123-images') && request.method === 'POST') {
       try {
         const { confirm } = await request.json();
         
-        if (confirm !== 'DELETE_ALL_IMAGES') {
+        if (confirm !== 'DELETE_AUTOPRETS123_IMAGES') {
           return new Response(JSON.stringify({
             success: false,
-            error: 'Confirmation required. Send {"confirm": "DELETE_ALL_IMAGES"}'
+            error: 'Confirmation required. Send {"confirm": "DELETE_AUTOPRETS123_IMAGES"}'
           }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -127,6 +136,55 @@ export default {
     }
 
     console.log(`Total images found: ${allImages.length}`);
+    
+    // Count AutoPrets123 images
+    const autoprets123Images = allImages.filter(image => {
+      // Check if image ID has AutoPrets123 prefix
+      if (image.id.startsWith('AutoPrets123-')) {
+        return true;
+      }
+      
+      // Check metadata if available
+      if (image.metadata) {
+        try {
+          const metadata = typeof image.metadata === 'string' 
+            ? JSON.parse(image.metadata) 
+            : image.metadata;
+            
+          return metadata.project === 'AutoPrets123' || 
+                 metadata.projectId === 'vehicle-dealership' ||
+                 metadata.projectUrl === 'https://autopret123.ca';
+        } catch (e) {
+          return false;
+        }
+      }
+      
+      return false;
+    });
+    
+    console.log(`AutoPrets123 images: ${autoprets123Images.length} out of ${allImages.length}`);
+    
+    // Add project information to the response
+    allImages.forEach(image => {
+      if (image.id.startsWith('AutoPrets123-')) {
+        image.project = 'AutoPrets123';
+      } else if (image.metadata) {
+        try {
+          const metadata = typeof image.metadata === 'string' 
+            ? JSON.parse(image.metadata) 
+            : image.metadata;
+            
+          if (metadata.project === 'AutoPrets123' || 
+              metadata.projectId === 'vehicle-dealership' ||
+              metadata.projectUrl === 'https://autopret123.ca') {
+            image.project = 'AutoPrets123';
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+    });
+    
     return allImages;
   },
 
@@ -138,21 +196,57 @@ export default {
       throw new Error('Missing Cloudflare credentials');
     }
 
-    console.log('🚨 Starting bulk delete operation...');
+    console.log('🚨 Starting bulk delete operation for AutoPrets123 project images only...');
     
     // Get all images
-    const images = await this.listAllImages(env);
+    const allImages = await this.listAllImages(env);
     
-    if (images.length === 0) {
+    if (allImages.length === 0) {
       return {
-        message: 'No images to delete',
+        message: 'No images found',
         deleted: 0,
         failed: 0,
         total: 0
       };
     }
 
-    console.log(`Found ${images.length} images to delete`);
+    // Filter images to only include those from AutoPrets123 project
+    const images = allImages.filter(image => {
+      // Check if image ID has AutoPrets123 prefix
+      if (image.id.startsWith('AutoPrets123-')) {
+        return true;
+      }
+      
+      // Check metadata if available
+      if (image.metadata) {
+        try {
+          const metadata = typeof image.metadata === 'string' 
+            ? JSON.parse(image.metadata) 
+            : image.metadata;
+            
+          return metadata.project === 'AutoPrets123' || 
+                 metadata.projectId === 'vehicle-dealership' ||
+                 metadata.projectUrl === 'https://autopret123.ca';
+        } catch (e) {
+          // If metadata parsing fails, don't include this image
+          return false;
+        }
+      }
+      
+      // If no identifying information, don't include this image
+      return false;
+    });
+    
+    console.log(`Found ${images.length} AutoPrets123 images out of ${allImages.length} total images`);
+    
+    if (images.length === 0) {
+      return {
+        message: 'No AutoPrets123 images to delete',
+        deleted: 0,
+        failed: 0,
+        total: 0
+      };
+    }
     
     let deleted = 0;
     let failed = 0;
