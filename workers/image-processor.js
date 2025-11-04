@@ -330,7 +330,7 @@ export default {
       const uploadPromises = vendorUrls.map((url, index) => 
         this.uploadSingleImage(
           url, 
-          `${vehicle.vin || vehicle.id}-${Date.now()}-${index}`,
+          `AutoPrets123-${vehicle.vin || vehicle.id}-${Date.now()}-${index}`,
           env,
           3 // max retries
         )

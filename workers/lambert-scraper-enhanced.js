@@ -808,7 +808,7 @@ export default {
         }
         
         const imageBlob = await imageResponse.blob();
-        const imageId = `${vehicleId}-${i + 1}`.replace(/[^a-zA-Z0-9-]/g, '-');
+        const imageId = `AutoPrets123-${vehicleId}-${i + 1}`.replace(/[^a-zA-Z0-9-]/g, '-');
         
         // Upload to Cloudflare Images
         const formData = new FormData();
@@ -818,7 +818,10 @@ export default {
           vehicleId: vehicleId,
           source: 'lambert',
           originalUrl: imageUrl,
-          index: i + 1
+          index: i + 1,
+          project: 'AutoPrets123',
+          projectId: 'vehicle-dealership',
+          projectUrl: 'https://autopret123.ca'
         }));
         
         const uploadResponse = await fetch(
