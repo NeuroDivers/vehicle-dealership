@@ -7,7 +7,7 @@ const CLOUDFLARE_IMAGES_BASE = `https://imagedelivery.net/${CLOUDFLARE_ACCOUNT_H
 
 /**
  * Check if a string is a Cloudflare Images ID
- * Format: "VIN-timestamp-index" or similar alphanumeric-timestamp-number pattern
+ * Format: "VIN-timestamp-index" or "AutoPrets123-VIN-timestamp-index" or similar alphanumeric-timestamp-number pattern
  */
 export function isCloudflareImageId(imageString: string): boolean {
   if (!imageString || imageString.startsWith('http') || imageString.startsWith('/')) {
@@ -15,7 +15,15 @@ export function isCloudflareImageId(imageString: string): boolean {
   }
   
   // Cloudflare IDs contain hyphens and alphanumeric chars, no dots or slashes
-  // Example: "3VV4B7AXXJM208189-1759728536395-0"
+  // Old format example: "3VV4B7AXXJM208189-1759728536395-0"
+  // New format example: "AutoPrets123-3VV4B7AXXJM208189-1759728536395-0"
+  
+  // Check for the new format with AutoPrets123 prefix
+  if (imageString.startsWith('AutoPrets123-')) {
+    return /^AutoPrets123-[A-Za-z0-9]+-\d+-\d+$/.test(imageString);
+  }
+  
+  // Check for the old format
   return /^[A-Za-z0-9]+-\d+-\d+$/.test(imageString);
 }
 
