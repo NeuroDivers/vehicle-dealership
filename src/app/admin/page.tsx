@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AIFeatureManager from '@/components/AIFeatureManager';
 import SiteInfoManager from '@/components/SiteInfoManager';
-import VendorManagement from '@/components/admin/VendorManagement';
 import FeedManagement from '@/components/admin/FeedManagement';
 
 interface Stats {
@@ -16,7 +15,6 @@ interface Stats {
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'financing' | 'analytics' | 'staff' | 'settings' | 'ai' | 'site' | 'vendors'>('overview');
-  const [vendorSubTab, setVendorSubTab] = useState<'feeds' | 'legacy'>('feeds');
   const [stats, setStats] = useState<Stats>({
     totalVehicles: 0,
     soldVehicles: 0,
@@ -280,60 +278,15 @@ export default function AdminDashboard() {
 
       {/* Vendors Tab */}
       {activeTab === 'vendors' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-6">Vendor & Feed Management</h2>
-            
-            {/* Sub-tabs for Vendor Management */}
-            <div className="flex gap-4 mb-6 border-b">
-              <button
-                onClick={() => setVendorSubTab('feeds')}
-                className={`pb-3 px-4 font-medium transition ${
-                  vendorSubTab === 'feeds'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Feed Management (New)
-              </button>
-              <button
-                onClick={() => setVendorSubTab('legacy')}
-                className={`pb-3 px-4 font-medium transition ${
-                  vendorSubTab === 'legacy'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Legacy Vendor Management
-              </button>
-            </div>
-
-            {/* Feed Management Tab */}
-            {vendorSubTab === 'feeds' && (
-              <div>
-                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <strong>New Feed-Based System:</strong> Manage vendor XML/JSON feeds with 35x faster syncing. 
-                    Add vendors in 30 seconds without code changes!
-                  </p>
-                </div>
-                <FeedManagement />
-              </div>
-            )}
-
-            {/* Legacy Vendor Management Tab */}
-            {vendorSubTab === 'legacy' && (
-              <div>
-                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Legacy System:</strong> Old web scraper-based vendor management. 
-                    Consider migrating to the new feed-based system for better performance.
-                  </p>
-                </div>
-                <VendorManagement />
-              </div>
-            )}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-2xl font-bold mb-6">Vendor Feed Management</h2>
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Feed-Based System:</strong> Manage vendor XML/JSON feeds with 35x faster syncing. 
+              Add vendors in 30 seconds without code changes!
+            </p>
           </div>
+          <FeedManagement />
         </div>
       )}
     </div>

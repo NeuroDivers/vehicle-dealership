@@ -249,8 +249,29 @@ export default {
       
       console.log(`📡 Fetching feed from: ${feedConfig.feed_url}`);
       
-      // Fetch the feed
-      const feedResponse = await fetch(feedConfig.feed_url);
+      // Fetch the feed - use service binding if it's from dealer-scraper
+      let feedResponse;
+      if (feedConfig.feed_url.includes('dealer-scraper') && env.DEALER_SCRAPER) {
+        // Use service binding for dealer-scraper worker
+        const feedUrl = new URL(feedConfig.feed_url);
+        feedResponse = await env.DEALER_SCRAPER.fetch(
+          new Request(feedConfig.feed_url, {
+            headers: {
+              'User-Agent': 'AutoPrets123-FeedScraper/1.0',
+              'Accept': 'application/xml, text/xml, */*'
+            }
+          })
+        );
+      } else {
+        // Use regular fetch for external URLs
+        feedResponse = await fetch(feedConfig.feed_url, {
+          headers: {
+            'User-Agent': 'AutoPrets123-FeedScraper/1.0',
+            'Accept': 'application/xml, text/xml, */*'
+          }
+        });
+      }
+      
       if (!feedResponse.ok) {
         throw new Error(`Feed fetch failed: ${feedResponse.status} ${feedResponse.statusText}`);
       }
@@ -340,8 +361,7 @@ export default {
                 vendor_id = ?, vendor_name = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
-                display_price = ?,
-                updated_at = datetime('now')
+                display_price = ?
               WHERE id = ?
             `).bind(
               vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
@@ -438,8 +458,7 @@ export default {
           last_sync_status = 'success',
           last_sync_message = ?,
           last_sync_count = ?,
-          total_syncs = total_syncs + 1,
-          updated_at = datetime('now')
+          total_syncs = total_syncs + 1
         WHERE vendor_id = ?
       `).bind(
         `Successfully imported ${savedCount} new and ${updatedCount} updated vehicles`,
@@ -469,8 +488,7 @@ export default {
           UPDATE vendor_feeds SET
             last_sync_at = datetime('now'),
             last_sync_status = 'error',
-            last_sync_message = ?,
-            updated_at = datetime('now')
+            last_sync_message = ?
           WHERE vendor_id = ?
         `).bind(error.message, vendorId).run();
       } catch (dbErr) {
