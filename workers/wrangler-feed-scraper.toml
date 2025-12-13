@@ -1,0 +1,23 @@
+name = "feed-scraper"
+main = "feed-scraper.js"
+compatibility_date = "2024-01-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vehicle-dealership-analytics"
+database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
+
+[[services]]
+binding = "IMAGE_PROCESSOR"
+service = "image-processor"
+
+[vars]
+ENVIRONMENT = "production"
+CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
+CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
+IMAGE_PROCESSOR_URL = "https://image-processor.nick-damato0011527.workers.dev"
+CF_IMAGES_TOKEN = "hxqfnYpHcT8FrQYyiRiOiOmkPtGkTuhdf6aCfYVT"
+
+# Universal feed scraper - supports XML/JSON feeds from vendor_feeds table
+# Replaces individual scrapers (lambert, naniauto, sltautos) with unified approach

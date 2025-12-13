@@ -1,4 +1,4 @@
-name = "vehicle-dealership-analytics"
+name = "auto-pret-123-analytics"
 main = "src/worker.js"
 compatibility_date = "2023-12-01"
 compatibility_flags = ["nodejs_compat"]
@@ -7,7 +7,7 @@ account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 # D1 Database binding
 [[d1_databases]]
 binding = "DB"
-database_name = "vehicle-dealership-analytics"
+database_name = "auto-pret-123-analytics"
 database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
 
 # Cloudflare Images configuration

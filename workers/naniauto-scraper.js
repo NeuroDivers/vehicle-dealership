@@ -706,7 +706,7 @@ export default {
           originalUrl: imageUrl,
           index: i + 1,
           project: 'AutoPrets123',
-          projectId: 'vehicle-dealership',
+          projectId: 'auto-pret-123',
           projectUrl: 'https://autopret123.ca'
         }));
         

@@ -1,5 +1,5 @@
 {
-  "name": "vehicle-dealership",
+  "name": "auto-pret-123",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,9 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "deploy:analytics": "wrangler deploy",
-    "db:create": "wrangler d1 create vehicle-dealership-analytics",
-    "db:init": "wrangler d1 execute vehicle-dealership-analytics --file=./schema.sql",
-    "db:query": "wrangler d1 execute vehicle-dealership-analytics --command"
+    "db:create": "wrangler d1 create auto-pret-123-analytics",
+    "db:init": "wrangler d1 execute auto-pret-123-analytics --file=./schema.sql",
+    "db:query": "wrangler d1 execute auto-pret-123-analytics --command"
   },
   "dependencies": {
     "@google-cloud/translate": "^9.2.0",
