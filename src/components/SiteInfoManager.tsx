@@ -146,15 +146,30 @@ export default function SiteInfoManager() {
       const response = await fetch(`${apiUrl}/api/admin/settings`);
       if (response.ok) {
         const data = await response.json();
-        if (data.settings && data.settings.siteInfo) {
+        console.log('API response:', data);
+        
+        // Handle different response formats
+        let settingsData = null;
+        if (data.settings?.siteInfo) {
+          settingsData = data.settings.siteInfo;
+        } else if (data.settings) {
+          settingsData = data.settings;
+        } else if (data.siteInfo) {
+          settingsData = data.siteInfo;
+        }
+        
+        if (settingsData) {
           // Apply same migration logic
-          if (!data.settings.siteInfo.themeColors) {
-            data.settings.siteInfo.themeColors = defaultSiteInfo.themeColors;
+          if (!settingsData.themeColors) {
+            settingsData.themeColors = defaultSiteInfo.themeColors;
           }
-          setSiteInfo(data.settings.siteInfo);
-          setLogoPreview(data.settings.siteInfo.logo || '');
+          console.log('Setting site info to:', settingsData);
+          setSiteInfo(settingsData);
+          setLogoPreview(settingsData.logo || '');
           // Save to localStorage
-          localStorage.setItem('siteInfo', JSON.stringify(data.settings.siteInfo));
+          localStorage.setItem('siteInfo', JSON.stringify(settingsData));
+        } else {
+          console.log('No settings data found in API response');
         }
       }
     } catch (error) {
