@@ -80,8 +80,10 @@ export default function StaffManagement() {
       
       if (response.ok) {
         const data = await response.json();
+        // Handle both old format (array) and new format (object with staff property)
+        const staffList = Array.isArray(data) ? data : (data.staff || []);
         // Map the data to match our interface
-        const mappedStaff = data.map((member: any) => ({
+        const mappedStaff = staffList.map((member: any) => ({
           id: member.id,
           name: member.name,
           email: member.email,

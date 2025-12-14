@@ -114,9 +114,11 @@ export default function LeadPipeline() {
       );
       if (response.ok) {
         const data = await response.json();
-        // Ensure data is an array
+        // Handle multiple response formats
         if (Array.isArray(data)) {
           setLeads(data);
+        } else if (data && Array.isArray(data.leads)) {
+          setLeads(data.leads);
         } else if (data && Array.isArray(data.results)) {
           setLeads(data.results);
         } else {

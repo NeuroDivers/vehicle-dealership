@@ -87,7 +87,9 @@ export default function EnhancedVehicleManager() {
     fetch(adminEndpoint)
       .then(res => res.json())
       .then(data => {
-        setVehicles(Array.isArray(data) ? data : []);
+        // Handle both old format (array) and new format (object with vehicles property)
+        const vehicleList = Array.isArray(data) ? data : (data.vehicles || []);
+        setVehicles(vehicleList);
         setLoading(false);
       })
       .catch(err => {
