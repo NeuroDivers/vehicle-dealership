@@ -743,17 +743,30 @@ export default {
   async handleGetSettings(env, corsHeaders) {
     try {
       const row = await env.DB.prepare(`
-        SELECT settings FROM site_settings LIMIT 1
+        SELECT settings_json FROM site_settings WHERE id = 'global'
       `).first();
+      
+      console.log('Raw row from database:', row);
       
       // Parse the JSON settings column
       let parsedSettings = {};
-      if (row && row.settings) {
-        try {
-          parsedSettings = JSON.parse(row.settings);
-        } catch (e) {
-          console.error('Failed to parse settings JSON:', e);
+      if (row && row.settings_json) {
+        // Check if it's already an object (D1 auto-parsed) or a string
+        if (typeof row.settings_json === 'string') {
+          try {
+            parsedSettings = JSON.parse(row.settings_json);
+            console.log('Parsed settings from string:', parsedSettings);
+          } catch (e) {
+            console.error('Failed to parse settings JSON:', e);
+            console.error('Settings value:', row.settings_json);
+          }
+        } else if (typeof row.settings_json === 'object') {
+          // Already parsed by D1
+          parsedSettings = row.settings_json;
+          console.log('Settings already parsed by D1:', parsedSettings);
         }
+      } else {
+        console.log('No settings found in database');
       }
       
       return new Response(JSON.stringify({
@@ -782,8 +795,8 @@ export default {
       
       // Try to update existing settings
       await env.DB.prepare(`
-        INSERT OR REPLACE INTO site_settings (id, settings, updated_at)
-        VALUES (1, ?, datetime('now'))
+        INSERT OR REPLACE INTO site_settings (id, settings_json, updated_at)
+        VALUES ('global', ?, datetime('now'))
       `).bind(JSON.stringify(settings)).run();
       
       return new Response(JSON.stringify({
