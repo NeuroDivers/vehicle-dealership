@@ -106,43 +106,19 @@ const SiteSettingsContext = createContext<{
 export const useSiteSettings = () => useContext(SiteSettingsContext);
 
 export function SiteSettingsProvider({ children }: { children: ReactNode }) {
-  // Initialize with localStorage if available, otherwise use defaults
-  const [settings, setSettings] = useState<SiteSettings>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('siteInfo');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          // Apply CSS variables immediately on initial load
-          if (parsed.themeColors) {
-            document.documentElement.style.setProperty('--color-primary', parsed.themeColors.primary);
-            document.documentElement.style.setProperty('--color-secondary', parsed.themeColors.secondary);
-            document.documentElement.style.setProperty('--color-accent', parsed.themeColors.accent);
-            if (parsed.themeColors.headerText) {
-              document.documentElement.style.setProperty('--color-header-text', parsed.themeColors.headerText);
-            }
-          }
-          return parsed;
-        } catch (e) {
-          console.error('Failed to parse stored settings:', e);
-        }
-      }
-    }
-    return defaultSettings;
-  });
+  // Initialize with default settings, API will load real settings
+  const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
 
   useEffect(() => {
-    // Try to load settings from API (for updates)
+    // Load settings from API only
     const loadSettings = async () => {
       try {
-        // Try to fetch from the admin API which has the settings
         const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
                       'https://autopret-api.nick-damato0011527.workers.dev';
         const response = await fetch(`${apiUrl}/api/admin/settings`);
         
         if (response.ok) {
           const data = await response.json();
-          // Handle nested format from API
           const apiSettings = data.settings?.siteInfo || data.settings || data;
           
           if (apiSettings && (apiSettings.themeColors || apiSettings.siteName)) {
@@ -157,64 +133,21 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
             }
             
             setSettings(apiSettings);
-            // Cache in localStorage for offline use
-            localStorage.setItem('siteInfo', JSON.stringify(apiSettings));
-            return;
           }
         }
       } catch (error) {
-        console.log('Could not load settings from API, falling back to localStorage');
-      }
-      
-      // Fallback to localStorage if API fails
-      const stored = localStorage.getItem('siteInfo');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          // Migrate old format to new format if needed
-          if (!parsed.themeColors && parsed.themeColor) {
-            // Old format had themeColor as a string
-            const colorMap: any = {
-              blue: { primary: '#2563eb', secondary: '#1e3a8a', accent: '#3b82f6' },
-              red: { primary: '#dc2626', secondary: '#991b1b', accent: '#ef4444' },
-              green: { primary: '#16a34a', secondary: '#15803d', accent: '#22c55e' },
-              purple: { primary: '#9333ea', secondary: '#6b21a8', accent: '#a855f7' }
-            };
-            parsed.themeColors = colorMap[parsed.themeColor] || colorMap.blue;
-            delete parsed.themeColor;
-          } else if (!parsed.themeColors) {
-            // No theme colors at all, use green defaults
-            parsed.themeColors = {
-              primary: '#10b981',
-              secondary: '#059669',
-              accent: '#34d399'
-            };
-          }
-          
-          // Set CSS variables immediately to prevent flash
-          if (typeof document !== 'undefined') {
-            document.documentElement.style.setProperty('--color-primary', parsed.themeColors.primary);
-            document.documentElement.style.setProperty('--color-secondary', parsed.themeColors.secondary);
-            document.documentElement.style.setProperty('--color-accent', parsed.themeColors.accent);
-          }
-          
-          setSettings(parsed);
-          // Save migrated version back to localStorage
-          localStorage.setItem('siteInfo', JSON.stringify(parsed));
-        } catch (e) {
-          console.error('Failed to parse site settings:', e);
-        }
+        console.error('Failed to load settings from API:', error);
+        // Use default settings if API fails
+        setSettings(defaultSettings);
       }
     };
     
     loadSettings();
   }, []);
-
   const updateSettings = async (newSettings: SiteSettings) => {
     setSettings(newSettings);
-    localStorage.setItem('siteInfo', JSON.stringify(newSettings));
     
-    // Also save to API so other devices can access
+    // Save to API
     try {
       const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
                     'https://autopret-api.nick-damato0011527.workers.dev';

@@ -116,32 +116,7 @@ export default function SiteInfoManager() {
 
   const loadSiteInfo = async () => {
     try {
-      // Load from localStorage first
-      const localInfo = localStorage.getItem('siteInfo');
-      if (localInfo) {
-        const parsed = JSON.parse(localInfo);
-        // Migrate old format to new format if needed
-        if (!parsed.themeColors && parsed.themeColor) {
-          // Old format had themeColor as a string
-          const colorMap: any = {
-            blue: { primary: '#2563eb', secondary: '#1e3a8a', accent: '#3b82f6' },
-            red: { primary: '#dc2626', secondary: '#991b1b', accent: '#ef4444' },
-            green: { primary: '#16a34a', secondary: '#15803d', accent: '#22c55e' },
-            purple: { primary: '#9333ea', secondary: '#6b21a8', accent: '#a855f7' }
-          };
-          parsed.themeColors = colorMap[parsed.themeColor] || colorMap.blue;
-          delete parsed.themeColor;
-          // Save migrated version
-          localStorage.setItem('siteInfo', JSON.stringify(parsed));
-        } else if (!parsed.themeColors) {
-          // No theme colors at all, use defaults
-          parsed.themeColors = defaultSiteInfo.themeColors;
-        }
-        setSiteInfo(parsed);
-        setLogoPreview(parsed.logo || '');
-      }
-
-      // Try to load from API
+      // Load from API only
       const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const response = await fetch(`${apiUrl}/api/admin/settings`);
       if (response.ok) {
@@ -159,43 +134,30 @@ export default function SiteInfoManager() {
         }
         
         if (settingsData) {
-          // Apply same migration logic
+          // Ensure theme colors exist
           if (!settingsData.themeColors) {
             settingsData.themeColors = defaultSiteInfo.themeColors;
           }
           console.log('Setting site info to:', settingsData);
           setSiteInfo(settingsData);
           setLogoPreview(settingsData.logo || '');
-          // Save to localStorage
-          localStorage.setItem('siteInfo', JSON.stringify(settingsData));
         } else {
           console.log('No settings data found in API response');
         }
       }
     } catch (error) {
       console.error('Failed to load site info:', error);
-      // Use localStorage if available
-      const localInfo = localStorage.getItem('siteInfo');
-      if (localInfo) {
-        const parsed = JSON.parse(localInfo);
-        if (!parsed.themeColors) {
-          parsed.themeColors = defaultSiteInfo.themeColors;
-        }
-        setSiteInfo(parsed);
-        setLogoPreview(parsed.logo || '');
-      }
+      // Use default settings if API fails
+      setSiteInfo(defaultSiteInfo);
     }
   };
   const saveSiteInfo = async () => {
     setLoading(true);
     try {
-      // Always save to localStorage
-      localStorage.setItem('siteInfo', JSON.stringify(siteInfo));
-      
       // Update the context to trigger re-renders
       updateSettings(siteInfo as any);
       
-      // Try to save to API
+      // Save to API
       const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const response = await fetch(`${apiUrl}/api/admin/settings`, {
         method: 'POST',
@@ -203,13 +165,15 @@ export default function SiteInfoManager() {
         body: JSON.stringify({ siteInfo })
       });
 
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      if (response.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        throw new Error('Failed to save settings');
+      }
     } catch (error) {
       console.error('Failed to save site info to API:', error);
-      // Still show success since localStorage worked
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      alert('Failed to save settings. Please try again.');
     } finally {
       setLoading(false);
     }
