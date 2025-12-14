@@ -111,12 +111,26 @@ export default {
       }
 
       // ============================================
-      // VIN DECODER ROUTES (from vin-decoder)
+      // VIN DECODER ROUTES
       // ============================================
       
       // POST /api/decode-vin - Decode VIN
       if (url.pathname === '/api/decode-vin' && request.method === 'POST') {
         return await this.handleDecodeVIN(request, env, corsHeaders);
+      }
+
+      // ============================================
+      // ADMIN/SETTINGS ROUTES
+      // ============================================
+      
+      // GET /api/admin/settings - Get site settings
+      if (url.pathname === '/api/admin/settings' && request.method === 'GET') {
+        return await this.handleGetSettings(env, corsHeaders);
+      }
+
+      // POST /api/admin/settings - Update site settings
+      if (url.pathname === '/api/admin/settings' && request.method === 'POST') {
+        return await this.handleUpdateSettings(request, env, corsHeaders);
       }
 
       // ============================================
@@ -552,5 +566,59 @@ export default {
       plantCountry: getValue(75),
       vehicleType: getValue(39)
     };
+  },
+
+  // ============================================
+  // SETTINGS HANDLERS
+  // ============================================
+  
+  async handleGetSettings(env, corsHeaders) {
+    try {
+      const settings = await env.DB.prepare(`
+        SELECT * FROM site_settings LIMIT 1
+      `).first();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        settings: settings || {}
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      // If table doesn't exist, return empty settings
+      return new Response(JSON.stringify({
+        success: true,
+        settings: {}
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  },
+
+  async handleUpdateSettings(request, env, corsHeaders) {
+    const settings = await request.json();
+    
+    try {
+      // Try to update existing settings
+      await env.DB.prepare(`
+        INSERT OR REPLACE INTO site_settings (id, settings, updated_at)
+        VALUES (1, ?, datetime('now'))
+      `).bind(JSON.stringify(settings)).run();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Settings updated successfully'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
   }
 };
