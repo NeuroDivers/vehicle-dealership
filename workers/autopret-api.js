@@ -140,6 +140,82 @@ export default {
         return await this.handleUpdateSettings(request, env, corsHeaders);
       }
 
+      // GET /api/admin/vehicles - Get all vehicles (admin view)
+      if (url.pathname === '/api/admin/vehicles' && request.method === 'GET') {
+        return await this.handleGetVehicles(request, env, corsHeaders);
+      }
+
+      // POST /api/admin/vehicles/:id/sync-from-vendor - Sync vehicle from vendor
+      if (url.pathname.match(/^\/api\/admin\/vehicles\/\d+\/sync-from-vendor$/) && request.method === 'POST') {
+        const id = url.pathname.split('/')[4];
+        return await this.handleSyncVehicleFromVendor(id, env, corsHeaders);
+      }
+
+      // ============================================
+      // STAFF ROUTES
+      // ============================================
+
+      // GET /api/staff - Get all staff
+      if (url.pathname === '/api/staff' && request.method === 'GET') {
+        return await this.handleGetStaff(env, corsHeaders);
+      }
+
+      // POST /api/staff - Create staff
+      if (url.pathname === '/api/staff' && request.method === 'POST') {
+        return await this.handleCreateStaff(request, env, corsHeaders);
+      }
+
+      // PUT /api/staff/:id - Update staff
+      if (url.pathname.match(/^\/api\/staff\/[^\/]+$/) && request.method === 'PUT') {
+        const id = url.pathname.split('/').pop();
+        return await this.handleUpdateStaff(id, request, env, corsHeaders);
+      }
+
+      // DELETE /api/staff/:id - Delete staff
+      if (url.pathname.match(/^\/api\/staff\/[^\/]+$/) && request.method === 'DELETE') {
+        const id = url.pathname.split('/').pop();
+        return await this.handleDeleteStaff(id, env, corsHeaders);
+      }
+
+      // ============================================
+      // LEADS ROUTES
+      // ============================================
+
+      // GET /api/leads - Get all leads
+      if (url.pathname === '/api/leads' && request.method === 'GET') {
+        return await this.handleGetLeads(env, corsHeaders);
+      }
+
+      // GET /api/leads/:id - Get single lead
+      if (url.pathname.match(/^\/api\/leads\/[^\/]+$/) && request.method === 'GET') {
+        const id = url.pathname.split('/').pop();
+        return await this.handleGetLead(id, env, corsHeaders);
+      }
+
+      // PUT /api/leads/:id - Update lead
+      if (url.pathname.match(/^\/api\/leads\/\d+$/) && request.method === 'PUT') {
+        const id = url.pathname.split('/').pop();
+        return await this.handleUpdateLead(id, request, env, corsHeaders);
+      }
+
+      // GET /api/leads/:id/activity - Get lead activity
+      if (url.pathname.match(/^\/api\/leads\/\d+\/activity$/) && request.method === 'GET') {
+        const id = url.pathname.split('/')[3];
+        return await this.handleGetLeadActivity(id, env, corsHeaders);
+      }
+
+      // POST /api/leads/:id/calls - Add call to lead
+      if (url.pathname.match(/^\/api\/leads\/\d+\/calls$/) && request.method === 'POST') {
+        const id = url.pathname.split('/')[3];
+        return await this.handleAddLeadCall(id, request, env, corsHeaders);
+      }
+
+      // POST /api/leads/:id/notes - Add note to lead
+      if (url.pathname.match(/^\/api\/leads\/\d+\/notes$/) && request.method === 'POST') {
+        const id = url.pathname.split('/')[3];
+        return await this.handleAddLeadNote(id, request, env, corsHeaders);
+      }
+
       // ============================================
       // 404 - Route not found
       // ============================================
@@ -667,5 +743,259 @@ export default {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+  },
+
+  // ============================================
+  // STAFF HANDLERS
+  // ============================================
+
+  async handleGetStaff(env, corsHeaders) {
+    const staff = await env.DB.prepare(`
+      SELECT id, email, name, role, is_active, last_login, created_at
+      FROM staff
+      ORDER BY created_at DESC
+    `).all();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      staff: staff.results || []
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleCreateStaff(request, env, corsHeaders) {
+    const { email, password, name, role } = await request.json();
+    
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    const result = await env.DB.prepare(`
+      INSERT INTO staff (id, email, password_hash, name, role, is_active, created_at)
+      VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
+    `).bind(
+      crypto.randomUUID(),
+      email,
+      passwordHash,
+      name,
+      role || 'staff'
+    ).run();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Staff created successfully'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleUpdateStaff(id, request, env, corsHeaders) {
+    const data = await request.json();
+    const fields = [];
+    const values = [];
+    
+    if (data.name) {
+      fields.push('name = ?');
+      values.push(data.name);
+    }
+    if (data.email) {
+      fields.push('email = ?');
+      values.push(data.email);
+    }
+    if (data.role) {
+      fields.push('role = ?');
+      values.push(data.role);
+    }
+    if (data.is_active !== undefined) {
+      fields.push('is_active = ?');
+      values.push(data.is_active ? 1 : 0);
+    }
+    if (data.password) {
+      const passwordHash = await bcrypt.hash(data.password, 10);
+      fields.push('password_hash = ?');
+      values.push(passwordHash);
+    }
+    
+    if (fields.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'No fields to update'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    values.push(id);
+    
+    await env.DB.prepare(`
+      UPDATE staff SET ${fields.join(', ')} WHERE id = ?
+    `).bind(...values).run();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Staff updated successfully'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleDeleteStaff(id, env, corsHeaders) {
+    await env.DB.prepare(`DELETE FROM staff WHERE id = ?`).bind(id).run();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Staff deleted successfully'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  // ============================================
+  // LEADS HANDLERS
+  // ============================================
+
+  async handleGetLeads(env, corsHeaders) {
+    const leads = await env.DB.prepare(`
+      SELECT * FROM leads ORDER BY created_at DESC
+    `).all();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      leads: leads.results || []
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleGetLead(id, env, corsHeaders) {
+    const lead = await env.DB.prepare(`
+      SELECT * FROM leads WHERE id = ?
+    `).bind(id).first();
+    
+    if (!lead) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Lead not found'
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    return new Response(JSON.stringify({
+      success: true,
+      lead
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleUpdateLead(id, request, env, corsHeaders) {
+    const data = await request.json();
+    const fields = [];
+    const values = [];
+    
+    if (data.status) {
+      fields.push('status = ?');
+      values.push(data.status);
+    }
+    if (data.assigned_to) {
+      fields.push('assigned_to = ?');
+      values.push(data.assigned_to);
+    }
+    if (data.notes) {
+      fields.push('notes = ?');
+      values.push(data.notes);
+    }
+    
+    if (fields.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'No fields to update'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    fields.push('updated_at = datetime("now")');
+    values.push(id);
+    
+    await env.DB.prepare(`
+      UPDATE leads SET ${fields.join(', ')} WHERE id = ?
+    `).bind(...values).run();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Lead updated successfully'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleGetLeadActivity(id, env, corsHeaders) {
+    const activity = await env.DB.prepare(`
+      SELECT * FROM lead_activity WHERE lead_id = ? ORDER BY created_at DESC
+    `).bind(id).all();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      activity: activity.results || []
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleAddLeadCall(id, request, env, corsHeaders) {
+    const data = await request.json();
+    
+    await env.DB.prepare(`
+      INSERT INTO lead_activity (id, lead_id, type, notes, created_at, created_by)
+      VALUES (?, ?, 'call', ?, datetime('now'), ?)
+    `).bind(
+      crypto.randomUUID(),
+      id,
+      data.notes || '',
+      data.created_by || 'system'
+    ).run();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Call logged successfully'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleAddLeadNote(id, request, env, corsHeaders) {
+    const data = await request.json();
+    
+    await env.DB.prepare(`
+      INSERT INTO lead_activity (id, lead_id, type, notes, created_at, created_by)
+      VALUES (?, ?, 'note', ?, datetime('now'), ?)
+    `).bind(
+      crypto.randomUUID(),
+      id,
+      data.notes || '',
+      data.created_by || 'system'
+    ).run();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Note added successfully'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleSyncVehicleFromVendor(id, env, corsHeaders) {
+    // This is a placeholder - actual implementation would call vendor API
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Vehicle sync initiated'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 };
