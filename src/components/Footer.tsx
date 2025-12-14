@@ -85,10 +85,10 @@ export default function Footer() {
                'Business Hours'}
             </h3>
             <div className="space-y-1 text-sm text-gray-200">
-              {Object.entries(settings.businessHours).map(([day, hours]) => (
+              {settings.businessHours && Object.entries(settings.businessHours).map(([day, hours]: [string, any]) => (
                 <div key={day} className="flex justify-between">
                   <span className="capitalize">{day}:</span>
-                  <span>{hours[currentLang]}</span>
+                  <span>{hours?.[currentLang] || 'Closed'}</span>
                 </div>
               ))}
             </div>
@@ -102,31 +102,31 @@ export default function Footer() {
                'Follow Us'}
             </h3>
             <div className="flex space-x-4 mb-6">
-              {settings.socialMedia.facebook && (
+              {settings.socialMedia?.facebook && (
                 <a href={settings.socialMedia.facebook} target="_blank" rel="noopener noreferrer" 
                    className="hover:opacity-75 transition">
                   <Facebook className="h-6 w-6" />
                 </a>
               )}
-              {settings.socialMedia.instagram && (
+              {settings.socialMedia?.instagram && (
                 <a href={settings.socialMedia.instagram} target="_blank" rel="noopener noreferrer"
                    className="hover:opacity-75 transition">
                   <Instagram className="h-6 w-6" />
                 </a>
               )}
-              {settings.socialMedia.twitter && (
+              {settings.socialMedia?.twitter && (
                 <a href={settings.socialMedia.twitter} target="_blank" rel="noopener noreferrer"
                    className="hover:opacity-75 transition">
                   <Twitter className="h-6 w-6" />
                 </a>
               )}
-              {settings.socialMedia.youtube && (
+              {settings.socialMedia?.youtube && (
                 <a href={settings.socialMedia.youtube} target="_blank" rel="noopener noreferrer"
                    className="hover:opacity-75 transition">
                   <Youtube className="h-6 w-6" />
                 </a>
               )}
-              {settings.socialMedia.linkedin && (
+              {settings.socialMedia?.linkedin && (
                 <a href={settings.socialMedia.linkedin} target="_blank" rel="noopener noreferrer"
                    className="hover:opacity-75 transition">
                   <Linkedin className="h-6 w-6" />
