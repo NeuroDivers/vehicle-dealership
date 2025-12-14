@@ -30,7 +30,7 @@ export default function AdminDashboard() {
     setIsDevUser(userEmail === 'nick@neurodivers.ca');
     
     // Use Cloudflare Worker API in production
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
     fetch(`${apiUrl}/api/vehicles`)
       .then(res => res.json())
       .then(data => {

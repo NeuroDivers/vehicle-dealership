@@ -243,7 +243,7 @@ export default function EnhancedVehicleManager() {
     setSyncingId(vehicle.id);
     try {
       // Use direct API URL for admin endpoints (getVehicleEndpoint adds /api/vehicles prefix)
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const res = await fetch(`${apiUrl}/api/admin/vehicles/${vehicle.id}/sync-from-vendor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

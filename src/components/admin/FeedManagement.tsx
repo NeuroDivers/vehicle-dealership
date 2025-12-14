@@ -48,7 +48,7 @@ export default function FeedManagement() {
   });
 
   const FEED_MANAGEMENT_API = process.env.NEXT_PUBLIC_FEED_MANAGEMENT_API || 
-    'https://feed-management-api.nick-damato0011527.workers.dev';
+    'https://autopret-api.nick-damato0011527.workers.dev';
   const FEED_SCRAPER_API = process.env.NEXT_PUBLIC_FEED_SCRAPER_API || 
     'https://feed-scraper.nick-damato0011527.workers.dev';
 

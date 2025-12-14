@@ -114,7 +114,7 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
       try {
         // Try to fetch from the admin API which has the settings
         const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
-                      'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+                      'https://autopret-api.nick-damato0011527.workers.dev';
         const response = await fetch(`${apiUrl}/api/admin/settings`);
         
         if (response.ok) {
@@ -181,7 +181,7 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     // Also save to API so other devices can access
     try {
       const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
-                    'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+                    'https://autopret-api.nick-damato0011527.workers.dev';
       await fetch(`${apiUrl}/api/admin/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

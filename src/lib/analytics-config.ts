@@ -6,7 +6,7 @@
 // Configuration for analytics API endpoints
 export const ANALYTICS_CONFIG = {
   // Always use the Cloudflare Worker API
-  API_BASE_URL: process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev',
+  API_BASE_URL: process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev',
 };
 
 /**

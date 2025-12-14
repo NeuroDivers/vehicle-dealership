@@ -35,7 +35,7 @@ export default function ReviewsManagement() {
 
   const loadReviews = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const response = await fetch(`${apiUrl}/api/reviews`);
       if (response.ok) {
         const data = await response.json();
@@ -52,7 +52,7 @@ export default function ReviewsManagement() {
     e.preventDefault();
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const url = editingReview 
         ? `${apiUrl}/api/reviews/${editingReview.id}`
         : `${apiUrl}/api/reviews`;
@@ -81,7 +81,7 @@ export default function ReviewsManagement() {
     if (!confirm('Are you sure you want to delete this review?')) return;
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const response = await fetch(`${apiUrl}/api/reviews/${id}`, {
         method: 'DELETE'
       });
@@ -113,7 +113,7 @@ export default function ReviewsManagement() {
 
   const toggleFeatured = async (review: Review) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const response = await fetch(`${apiUrl}/api/reviews/${review.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

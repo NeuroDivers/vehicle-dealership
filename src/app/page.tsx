@@ -208,7 +208,7 @@ export default function Home() {
 
   const loadTestimonials = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const response = await fetch(`${apiUrl}/api/reviews/featured`);
       if (response.ok) {
         const data = await response.json();
@@ -221,7 +221,7 @@ export default function Home() {
 
   const loadCarouselVehicles = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const response = await fetch(`${apiUrl}/api/vehicles`);
       if (response.ok) {
         const data = await response.json();
@@ -241,7 +241,7 @@ export default function Home() {
 
   const loadFeaturedVehicles = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
       const response = await fetch(`${apiUrl}/api/vehicles?limit=6`);
       if (response.ok) {
         const data = await response.json();
@@ -259,7 +259,7 @@ export default function Home() {
     
     if (query) {
       // Track search query (don't wait for it)
-      fetch(`${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/analytics/track-search`, {
+      fetch(`${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/analytics/track-search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

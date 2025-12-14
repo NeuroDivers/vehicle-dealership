@@ -205,7 +205,7 @@ export default function EditVehicle() {
 
     try {
       const response = await fetch(
-        'https://vin-decoder.nick-damato0011527.workers.dev/api/decode-vin',
+        'https://autopret-api.nick-damato0011527.workers.dev/api/decode-vin',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

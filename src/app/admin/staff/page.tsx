@@ -70,7 +70,7 @@ export default function StaffManagement() {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/staff`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -113,7 +113,7 @@ export default function StaffManagement() {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/staff`,
         {
           method: 'POST',
           headers: {
@@ -182,7 +182,7 @@ export default function StaffManagement() {
       }
       
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff/${selectedStaff.id}`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/staff/${selectedStaff.id}`,
         {
           method: 'PUT',
           headers: {
@@ -224,7 +224,7 @@ export default function StaffManagement() {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff/${id}`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/staff/${id}`,
         {
           method: 'DELETE',
           headers: {
@@ -250,7 +250,7 @@ export default function StaffManagement() {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff/${staffMember.id}`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/staff/${staffMember.id}`,
         {
           method: 'PUT',
           headers: {

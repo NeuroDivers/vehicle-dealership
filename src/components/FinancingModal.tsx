@@ -194,7 +194,7 @@ export default function FinancingModal({ isOpen, onClose, vehicle, language = 'f
       };
 
       const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
-                    'https://vehicle-dealership-api.nick-damato0011527.workers.dev';
+                    'https://autopret-api.nick-damato0011527.workers.dev';
       
       const response = await fetch(`${apiUrl}/api/leads`, {
         method: 'POST',

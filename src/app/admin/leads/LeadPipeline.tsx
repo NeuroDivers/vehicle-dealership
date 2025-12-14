@@ -90,7 +90,7 @@ export default function LeadPipeline() {
       const loadActivity = async () => {
         try {
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/activity`
+            `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/activity`
           );
           if (response.ok) {
             const activity = await response.json();
@@ -110,7 +110,7 @@ export default function LeadPipeline() {
   const fetchLeads = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads`
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/leads`
       );
       if (response.ok) {
         const data = await response.json();
@@ -137,7 +137,7 @@ export default function LeadPipeline() {
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/staff`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/staff`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -166,7 +166,7 @@ export default function LeadPipeline() {
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${leadId}`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/leads/${leadId}`,
         {
           method: 'PUT',
           headers: {
@@ -189,7 +189,7 @@ export default function LeadPipeline() {
   const assignLead = async (leadId: string, staffId: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${leadId}`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/leads/${leadId}`,
         {
           method: 'PUT',
           headers: {
@@ -219,7 +219,7 @@ export default function LeadPipeline() {
     
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -270,7 +270,7 @@ export default function LeadPipeline() {
     // Save to database
     try {
       await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/calls`,
+        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/calls`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -723,7 +723,7 @@ export default function LeadPipeline() {
                           // Save to database
                           try {
                             await fetch(
-                              `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/notes`,
+                              `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/notes`,
                               {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -758,7 +758,7 @@ export default function LeadPipeline() {
                           // Save to database
                           try {
                             await fetch(
-                              `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/notes`,
+                              `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/leads/${selectedLead.id}/notes`,
                               {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
