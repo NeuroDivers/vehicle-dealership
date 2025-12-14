@@ -15,11 +15,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     
-    // CORS headers
+    // CORS headers - Allow credentials for HttpOnly cookies
+    const origin = request.headers.get('Origin') || 'https://autopret123.ca';
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0'
@@ -43,6 +45,11 @@ export default {
       // GET /api/auth/verify - Verify auth token
       if (url.pathname === '/api/auth/verify' && request.method === 'GET') {
         return await this.handleVerifyToken(request, env, corsHeaders);
+      }
+
+      // POST /api/auth/logout - Logout and clear cookie
+      if (url.pathname === '/api/auth/logout' && request.method === 'POST') {
+        return await this.handleLogout(corsHeaders);
       }
 
       // ============================================
@@ -182,9 +189,13 @@ export default {
       
       const token = btoa(`${staff.id}:${Date.now()}`);
       
+      // Set HttpOnly cookie (expires in 7 days)
+      const cookieExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+      const cookieHeader = `auth_token=${token}; HttpOnly; Secure; SameSite=None; Path=/; Expires=${cookieExpiry}`;
+      
       return new Response(JSON.stringify({
         success: true,
-        token,
+        token, // Still return token for backward compatibility
         user: {
           id: staff.id,
           email: staff.email,
@@ -192,7 +203,11 @@ export default {
           role: staff.role
         }
       }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Set-Cookie': cookieHeader
+        }
       });
     }
     
@@ -206,9 +221,27 @@ export default {
   },
 
   async handleVerifyToken(request, env, corsHeaders) {
-    const authHeader = request.headers.get('Authorization');
+    // Try to get token from cookie first, then fall back to Authorization header
+    const cookieHeader = request.headers.get('Cookie');
+    let token = null;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      const authCookie = cookies.find(c => c.startsWith('auth_token='));
+      if (authCookie) {
+        token = authCookie.split('=')[1];
+      }
+    }
+    
+    // Fall back to Authorization header if no cookie
+    if (!token) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+    
+    if (!token) {
       return new Response(JSON.stringify({
         success: false,
         error: 'No token provided'
@@ -217,8 +250,6 @@ export default {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
-    const token = authHeader.substring(7);
     
     try {
       const decoded = atob(token);
@@ -246,6 +277,22 @@ export default {
     }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  },
+
+  async handleLogout(corsHeaders) {
+    // Clear the auth cookie by setting it to expire immediately
+    const cookieHeader = 'auth_token=; HttpOnly; Secure; SameSite=None; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Logged out successfully'
+    }), {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'Set-Cookie': cookieHeader
+      }
     });
   },
 

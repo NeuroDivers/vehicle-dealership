@@ -33,6 +33,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/auth/verify`,
         {
+          credentials: 'include', // Include cookies in request
           headers: {
             'Authorization': `Bearer ${token}`
           }
