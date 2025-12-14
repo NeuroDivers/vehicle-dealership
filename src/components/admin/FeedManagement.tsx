@@ -47,7 +47,9 @@ export default function FeedManagement() {
     sync_frequency: 'manual'
   });
 
-  const FEED_MANAGEMENT_API = process.env.NEXT_PUBLIC_FEED_MANAGEMENT_API || 
+  // Use unified autopret-api for feed management
+  const FEED_MANAGEMENT_API = process.env.NEXT_PUBLIC_AUTOPRET_API || 
+    process.env.NEXT_PUBLIC_ANALYTICS_API_URL ||
     'https://autopret-api.nick-damato0011527.workers.dev';
   const FEED_SCRAPER_API = process.env.NEXT_PUBLIC_FEED_SCRAPER_API || 
     'https://feed-scraper.nick-damato0011527.workers.dev';
