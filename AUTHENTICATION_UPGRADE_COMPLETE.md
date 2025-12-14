@@ -150,16 +150,20 @@ Cloudflare Pages auto-deploys from GitHub.
 
 ## Security Implementation
 
-**100% Cookie-Based Authentication:**
-- ✅ Token stored ONLY in HttpOnly cookie (never in localStorage)
-- ✅ Token never exposed to JavaScript
-- ✅ Only user info (name, role) stored in localStorage for UI display
-- ✅ Verify endpoint reads from cookie automatically
+**ZERO localStorage - Maximum Security:**
+- ✅ Token stored ONLY in HttpOnly cookie (never accessible to JavaScript)
+- ✅ User data stored ONLY in React state (memory)
+- ✅ NO persistent client-side storage whatsoever
+- ✅ All data cleared when browser closes
+- ✅ Single source of truth: API via HttpOnly cookies
+- ✅ AuthContext manages state centrally
 - ✅ Maximum security achieved
 
-**What's in localStorage:**
-- ✅ `user` - User info for UI display (name, email, role) - NOT sensitive
-- ❌ `auth_token` - REMOVED - Token is HttpOnly cookie only
+**What's stored where:**
+- 🔒 **HttpOnly Cookie:** `auth_token` (7-day expiry, secure, SameSite=None)
+- 💾 **React State (Memory):** User info (name, email, role) - cleared on browser close
+- ❌ **localStorage:** NOTHING - completely empty
+- ❌ **sessionStorage:** NOTHING - not used
 
 ---
 
@@ -170,9 +174,10 @@ Cloudflare Pages auto-deploys from GitHub.
 - `workers/wrangler-autopret-api.toml` - Added `nodejs_compat` flag
 
 ### Frontend
-- `src/app/admin/login/page.tsx` - Added credentials mode
-- `src/components/AuthGuard.tsx` - Added credentials mode, fixed response check
-- `src/app/admin/layout.tsx` - Added credentials mode to logout
+- `src/contexts/AuthContext.tsx` - **NEW** - Centralized auth state management
+- `src/app/admin/login/page.tsx` - Removed localStorage, credentials mode
+- `src/components/AuthGuard.tsx` - Simplified to use AuthContext
+- `src/app/admin/layout.tsx` - Uses AuthContext, wrapped in AuthProvider
 
 ---
 
