@@ -187,6 +187,15 @@ export default {
       }
 
       // ============================================
+      // REVIEWS ROUTES
+      // ============================================
+
+      // GET /api/reviews/featured - Get featured reviews
+      if (url.pathname === '/api/reviews/featured' && request.method === 'GET') {
+        return await this.handleGetFeaturedReviews(env, corsHeaders);
+      }
+
+      // ============================================
       // LEADS ROUTES
       // ============================================
 
@@ -1006,6 +1015,31 @@ export default {
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
+  },
+
+  // ============================================
+  // REVIEWS HANDLERS
+  // ============================================
+
+  async handleGetFeaturedReviews(env, corsHeaders) {
+    try {
+      const { results } = await env.DB.prepare(`
+        SELECT * FROM reviews 
+        WHERE is_featured = 1 AND is_approved = 1
+        ORDER BY date DESC
+        LIMIT 10
+      `).all();
+      
+      return new Response(JSON.stringify(results || []), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      // Return empty array if table doesn't exist
+      return new Response(JSON.stringify([]), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
   },
 
   // ============================================

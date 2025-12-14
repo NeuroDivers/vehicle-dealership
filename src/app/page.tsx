@@ -225,7 +225,9 @@ export default function Home() {
       const response = await fetch(`${apiUrl}/api/vehicles`);
       if (response.ok) {
         const data = await response.json();
-        const available = data.filter((v: Vehicle) => v.isSold === 0);
+        // Handle both old format (array) and new format (object with vehicles property)
+        const vehicleList = Array.isArray(data) ? data : (data.vehicles || []);
+        const available = vehicleList.filter((v: Vehicle) => v.isSold === 0);
         
         // Group by body type
         const suv = available.filter((v: Vehicle) => v.bodyType === 'SUV').slice(0, 6);
@@ -245,8 +247,10 @@ export default function Home() {
       const response = await fetch(`${apiUrl}/api/vehicles?limit=6`);
       if (response.ok) {
         const data = await response.json();
+        // Handle both old format (array) and new format (object with vehicles property)
+        const vehicleList = Array.isArray(data) ? data : (data.vehicles || []);
         // Filter out sold vehicles
-        const available = data.filter((v: Vehicle) => v.isSold === 0).slice(0, 3);
+        const available = vehicleList.filter((v: Vehicle) => v.isSold === 0).slice(0, 3);
         setFeaturedVehicles(available);
       }
     } catch (error) {
