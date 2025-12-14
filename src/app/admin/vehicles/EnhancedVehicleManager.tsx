@@ -738,7 +738,7 @@ export default function EnhancedVehicleManager() {
                     Vehicle
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Details
+                    Odometer
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Price
@@ -810,16 +810,13 @@ export default function EnhancedVehicleManager() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {vehicle.year} {vehicle.make} {vehicle.model}
+                            {vehicle.make} {vehicle.model}
                           </div>
-                          <div className="text-sm text-gray-500">ID: {vehicle.id}</div>
+                          <div className="text-sm text-gray-500">{vehicle.year}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {vehicle.color} • {vehicle.bodyType}
-                        </div>
-                        <div className="text-sm text-gray-500">
                           {vehicle.odometer.toLocaleString()} km
                         </div>
                       </td>
