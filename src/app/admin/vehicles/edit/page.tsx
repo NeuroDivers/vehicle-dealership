@@ -97,14 +97,17 @@ export default function EditVehicle() {
     fetch(getVehicleEndpoint(`/${vehicleId}`))
       .then(res => res.json())
       .then(data => {
-        if (data.error) {
+        // Handle both old format (vehicle object) and new format (object with vehicle property)
+        const vehicleData = data.vehicle || data;
+        
+        if (vehicleData.error || data.error) {
           alert('Vehicle not found');
           router.push('/admin/vehicles');
         } else {
           // Parse images and construct URLs
           let imageUrls: string[] = [];
-          if (data.images) {
-            const parsedImages = typeof data.images === 'string' ? JSON.parse(data.images) : data.images;
+          if (vehicleData.images) {
+            const parsedImages = typeof vehicleData.images === 'string' ? JSON.parse(vehicleData.images) : vehicleData.images;
             
             // Handle different image formats
             if (Array.isArray(parsedImages)) {
@@ -130,9 +133,9 @@ export default function EditVehicle() {
           }
           
           setFormData({
-            ...data,
+            ...vehicleData,
             imagesList: imageUrls,
-            originalImages: data.images || [],
+            originalImages: vehicleData.images || [],
             newImages: [],
             deletedImages: [],
           });
