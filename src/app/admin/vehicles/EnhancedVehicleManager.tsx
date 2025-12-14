@@ -22,8 +22,7 @@ import {
   Download,
   Upload,
   Grid,
-  LayoutGrid,
-  RefreshCw
+  LayoutGrid
 } from 'lucide-react';
 
 interface Vehicle {
@@ -51,7 +50,6 @@ export default function EnhancedVehicleManager() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [syncingId, setSyncingId] = useState<string | null>(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedVehicleForStatus, setSelectedVehicleForStatus] = useState<Vehicle | null>(null);
   
@@ -232,40 +230,6 @@ export default function EnhancedVehicleManager() {
     await fetchVehicles();
   };
 
-  const handleSyncFromVendor = async (vehicle: Vehicle) => {
-    if (!vehicle.vendor_id || vehicle.vendor_id === 'internal') {
-      alert('This vehicle has no vendor source and cannot be synced.');
-      return;
-    }
-
-    if (!confirm(`Sync ${vehicle.year} ${vehicle.make} ${vehicle.model} from ${vehicle.vendor_name}?\n\nNote: Individual sync is limited. For best results, use the full vendor sync in Vendor Management.`)) {
-      return;
-    }
-
-    setSyncingId(vehicle.id);
-    try {
-      // Use direct API URL for admin endpoints (getVehicleEndpoint adds /api/vehicles prefix)
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
-      const res = await fetch(`${apiUrl}/api/admin/vehicles/${vehicle.id}/sync-from-vendor`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert(data.message || 'Sync completed successfully!');
-        fetchVehicles(); // Refresh to show any updates
-      } else {
-        alert(data.error || 'Failed to sync vehicle from vendor');
-      }
-    } catch (error) {
-      console.error('Error syncing vehicle:', error);
-      alert('Failed to sync vehicle from vendor');
-    } finally {
-      setSyncingId(null);
-    }
-  };
 
   const handleBulkAction = async () => {
     if (selectedVehicles.size === 0) {
@@ -870,16 +834,6 @@ export default function EnhancedVehicleManager() {
                           >
                             <Edit className="h-4 w-4" />
                           </Link>
-                          {vehicle.vendor_id && vehicle.vendor_id !== 'internal' && (
-                            <button
-                              onClick={() => handleSyncFromVendor(vehicle)}
-                              disabled={syncingId === vehicle.id}
-                              className="text-green-600 hover:text-green-900 disabled:opacity-50"
-                              title="Sync from vendor"
-                            >
-                              <RefreshCw className={`h-4 w-4 ${syncingId === vehicle.id ? 'animate-spin' : ''}`} />
-                            </button>
-                          )}
                           <button
                             onClick={() => handleDelete(vehicle.id)}
                             disabled={deletingId === vehicle.id}
