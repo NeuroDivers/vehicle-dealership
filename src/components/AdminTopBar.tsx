@@ -9,9 +9,27 @@ export default function AdminTopBar() {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem('authToken');
-    setIsAdmin(!!token);
+    // Check if user is authenticated by verifying with the API
+    // This works with HttpOnly cookies
+    const checkAuth = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 
+                      'https://autopret-api.nick-damato0011527.workers.dev';
+        const response = await fetch(`${apiUrl}/api/auth/verify`, {
+          credentials: 'include', // Send HttpOnly cookies
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setIsAdmin(data.authenticated === true);
+        }
+      } catch (error) {
+        // Not authenticated
+        setIsAdmin(false);
+      }
+    };
+    
+    checkAuth();
   }, []);
 
   if (!isAdmin || !isVisible) {
