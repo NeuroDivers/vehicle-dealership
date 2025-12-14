@@ -4,6 +4,39 @@
 
 The feed import system allows you to automatically import vehicle inventory from XML/JSON feeds into your database. This replaces manual data entry and individual web scrapers with a unified, database-driven solution.
 
+### ✅ Cross-Worker Communication
+The system uses **worker-to-worker communication** via public HTTP endpoints, which works seamlessly in Cloudflare:
+
+```
+feed-scraper worker → dealer-scraper worker → returns XML → processes & saves to D1
+```
+
+**Why This Works:**
+- ✅ Public HTTP endpoints (no service bindings needed)
+- ✅ Same Cloudflare account (optimized routing)
+- ✅ CORS configured properly
+- ✅ No authentication required for public feeds
+- ✅ No rate limiting between same-account workers
+
+**Architecture Flow:**
+```
+Admin UI (Cloudflare Pages)
+    ↓ clicks "Sync"
+feed-scraper.workers.dev
+    ↓ fetches XML via HTTPS
+dealer-scraper.workers.dev/api/feeds/5/xml
+    ↓ returns vehicle data
+feed-scraper parses & saves
+    ↓ writes to
+autopret123 D1 database
+    ↓ triggers async
+image-processor.workers.dev
+    ↓ uploads to
+Cloudflare Images
+```
+
+This is the **ideal setup** - clean separation of concerns, scalable, and production-ready.
+
 ---
 
 ## 📋 How Feed Import Works
@@ -365,6 +398,23 @@ wrangler tail feed-management-api
 - ✅ Verify required fields (make, model, year, price) are present
 - ✅ Look for parsing errors in worker logs
 - ✅ Test with minimal XML example first
+
+### ✅ Non-Issues (Confirmed Working)
+
+**Worker-to-Worker Communication:**
+- ❌ **NOT an issue** - Workers can call each other via public HTTPS endpoints
+- ❌ **Service bindings NOT required** - Only needed for private/internal communication
+- ❌ **No authentication needed** - Public feeds work without auth
+- ❌ **No rate limiting** - Same-account workers have optimized routing
+- ❌ **No CORS issues** - Properly configured on all workers
+
+**Verified Working:**
+```bash
+# This works perfectly:
+feed-scraper → https://dealer-scraper.../api/feeds/5/xml → returns XML ✅
+```
+
+The system uses standard HTTP requests between workers, which is the recommended approach for public endpoints.
 
 ---
 
