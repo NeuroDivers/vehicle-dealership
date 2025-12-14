@@ -1081,49 +1081,110 @@ export default {
     try {
       const url = new URL(request.url);
       const timeRange = url.searchParams.get('timeRange') || '7d';
-      
-      // Calculate date range
       const days = parseInt(timeRange.replace('d', ''));
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
       
-      // Get basic stats
-      const totalVehicles = await env.DB.prepare(`
-        SELECT COUNT(*) as count FROM vehicles WHERE is_published = 1
-      `).first();
-      
+      // Get vehicle views stats
       const totalViews = await env.DB.prepare(`
         SELECT COUNT(*) as count FROM vehicle_views 
         WHERE viewed_at >= datetime('now', '-${days} days')
-      `).first();
+      `).first().catch(() => ({ count: 0 }));
       
+      const uniqueVehicles = await env.DB.prepare(`
+        SELECT COUNT(DISTINCT vehicle_id) as count FROM vehicle_views 
+        WHERE viewed_at >= datetime('now', '-${days} days')
+      `).first().catch(() => ({ count: 0 }));
+      
+      const uniqueVisitors = await env.DB.prepare(`
+        SELECT COUNT(DISTINCT visitor_id) as count FROM vehicle_views 
+        WHERE viewed_at >= datetime('now', '-${days} days')
+      `).first().catch(() => ({ count: 0 }));
+      
+      // Get lead stats
       const totalLeads = await env.DB.prepare(`
         SELECT COUNT(*) as count FROM leads 
         WHERE created_at >= datetime('now', '-${days} days')
-      `).first();
+      `).first().catch(() => ({ count: 0 }));
+      
+      const newLeads = await env.DB.prepare(`
+        SELECT COUNT(*) as count FROM leads 
+        WHERE status = 'new' AND created_at >= datetime('now', '-${days} days')
+      `).first().catch(() => ({ count: 0 }));
+      
+      const contactedLeads = await env.DB.prepare(`
+        SELECT COUNT(*) as count FROM leads 
+        WHERE status = 'contacted' AND created_at >= datetime('now', '-${days} days')
+      `).first().catch(() => ({ count: 0 }));
+      
+      const qualifiedLeads = await env.DB.prepare(`
+        SELECT COUNT(*) as count FROM leads 
+        WHERE status = 'qualified' AND created_at >= datetime('now', '-${days} days')
+      `).first().catch(() => ({ count: 0 }));
+      
+      const closedLeads = await env.DB.prepare(`
+        SELECT COUNT(*) as count FROM leads 
+        WHERE status = 'closed' AND created_at >= datetime('now', '-${days} days')
+      `).first().catch(() => ({ count: 0 }));
       
       return new Response(JSON.stringify({
         success: true,
-        stats: {
-          totalVehicles: totalVehicles?.count || 0,
-          totalViews: totalViews?.count || 0,
-          totalLeads: totalLeads?.count || 0,
-          timeRange
-        }
+        overview: {
+          vehicleViews: {
+            totalViews: totalViews?.count || 0,
+            uniqueVehicles: uniqueVehicles?.count || 0,
+            uniqueVisitors: uniqueVisitors?.count || 0
+          },
+          searchStats: {
+            totalSearches: 0,
+            uniqueQueries: 0,
+            avgResults: 0
+          },
+          leadStats: {
+            totalLeads: totalLeads?.count || 0,
+            newLeads: newLeads?.count || 0,
+            contactedLeads: contactedLeads?.count || 0,
+            qualifiedLeads: qualifiedLeads?.count || 0,
+            closedLeads: closedLeads?.count || 0,
+            avgLeadScore: 0
+          }
+        },
+        topVehicles: [],
+        popularSearches: [],
+        staffPerformance: [],
+        dailyTrends: [],
+        referrerStats: []
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     } catch (error) {
       console.error('Error fetching dashboard analytics:', error);
-      // Return default stats if tables don't exist
+      // Return default structure if tables don't exist
       return new Response(JSON.stringify({
         success: true,
-        stats: {
-          totalVehicles: 0,
-          totalViews: 0,
-          totalLeads: 0,
-          timeRange: '7d'
-        }
+        overview: {
+          vehicleViews: {
+            totalViews: 0,
+            uniqueVehicles: 0,
+            uniqueVisitors: 0
+          },
+          searchStats: {
+            totalSearches: 0,
+            uniqueQueries: 0,
+            avgResults: 0
+          },
+          leadStats: {
+            totalLeads: 0,
+            newLeads: 0,
+            contactedLeads: 0,
+            qualifiedLeads: 0,
+            closedLeads: 0,
+            avgLeadScore: 0
+          }
+        },
+        topVehicles: [],
+        popularSearches: [],
+        staffPerformance: [],
+        dailyTrends: [],
+        referrerStats: []
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
