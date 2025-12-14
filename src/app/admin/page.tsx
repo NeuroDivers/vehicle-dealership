@@ -37,10 +37,10 @@ export default function AdminDashboard() {
         // Handle both old format (array) and new format (object with vehicles property)
         const vehicles = Array.isArray(data) ? data : (data.vehicles || []);
         const total = vehicles.length;
-        const sold = vehicles.filter((v) => v.isSold === 1).length;
+        const sold = vehicles.filter((v: any) => v.isSold === 1).length;
         // Calculate total value only for available vehicles (not sold)
-        const availableVehicles = vehicles.filter((v) => v.isSold !== 1);
-        const totalValue = availableVehicles.reduce((sum, v) => sum + (v.price || 0), 0);
+        const availableVehicles = vehicles.filter((v: any) => v.isSold !== 1);
+        const totalValue = availableVehicles.reduce((sum: number, v: any) => sum + (v.price || 0), 0);
         const avgPrice = availableVehicles.length > 0 ? totalValue / availableVehicles.length : 0;
         
         setStats({
