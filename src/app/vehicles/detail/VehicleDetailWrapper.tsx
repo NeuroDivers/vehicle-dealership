@@ -20,7 +20,9 @@ export default function VehicleDetailWrapper() {
           if (data.error) {
             setError(true);
           } else {
-            setVehicle(data);
+            // Handle both old format (vehicle object) and new format (object with vehicle property)
+            const vehicleData = data.vehicle || data;
+            setVehicle(vehicleData);
           }
           setLoading(false);
         })

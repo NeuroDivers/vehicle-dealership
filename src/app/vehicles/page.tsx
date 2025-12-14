@@ -225,13 +225,16 @@ export default function VehiclesPage() {
     fetch(getVehicleEndpoint())
       .then(res => res.json())
       .then(data => {
+        // Handle both old format (array) and new format (object with vehicles property)
+        const vehicleList = Array.isArray(data) ? data : (data.vehicles || []);
+        
         // Show vehicles that are:
         // 1. Not sold, OR
         // 2. Sold within the last 14 days
         const now = new Date();
         const fourteenDaysAgo = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
         
-        const availableVehicles = data.filter((v: Vehicle) => {
+        const availableVehicles = vehicleList.filter((v: Vehicle) => {
           if (v.isSold !== 1) return true; // Not sold
           
           // If sold, check if within 14 days
