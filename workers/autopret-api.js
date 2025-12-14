@@ -465,45 +465,62 @@ export default {
   },
 
   async handleUpdateVehicle(id, request, env, corsHeaders) {
-    const updates = await request.json();
-    
-    const fields = [];
-    const values = [];
-    
-    const allowedFields = ['make', 'model', 'year', 'price', 'display_price', 'odometer', 
-                           'bodyType', 'color', 'vin', 'stockNumber', 'description', 
-                           'images', 'isSold', 'listing_status', 'fuelType', 'transmission', 
-                           'drivetrain', 'engineSize', 'cylinders', 'is_published'];
-    
-    for (const [key, value] of Object.entries(updates)) {
-      if (allowedFields.includes(key)) {
-        fields.push(`${key} = ?`);
-        values.push(value);
+    try {
+      const updates = await request.json();
+      
+      const fields = [];
+      const values = [];
+      
+      const allowedFields = ['make', 'model', 'year', 'price', 'display_price', 'odometer', 
+                             'bodyType', 'color', 'vin', 'stockNumber', 'description', 
+                             'images', 'isSold', 'listing_status', 'fuelType', 'transmission', 
+                             'drivetrain', 'engineSize', 'cylinders', 'is_published', 'sold_date',
+                             'sold_price', 'buyer_name', 'vendor_id', 'vendor_name', 'vendor_status',
+                             'vendor_stock_number', 'last_seen_from_vendor', 'price_markup_type',
+                             'price_markup_value'];
+      
+      for (const [key, value] of Object.entries(updates)) {
+        if (allowedFields.includes(key)) {
+          fields.push(`${key} = ?`);
+          // Handle null values properly
+          values.push(value === undefined ? null : value);
+        }
       }
-    }
-    
-    if (fields.length === 0) {
+      
+      if (fields.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'No valid fields to update'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      values.push(id);
+      
+      console.log('Updating vehicle:', id, 'Fields:', fields, 'Values:', values);
+      
+      await env.DB.prepare(`
+        UPDATE vehicles SET ${fields.join(', ')} WHERE id = ?
+      `).bind(...values).run();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Vehicle updated successfully'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Error updating vehicle:', error);
       return new Response(JSON.stringify({
         success: false,
-        error: 'No valid fields to update'
+        error: error.message || 'Failed to update vehicle'
       }), {
-        status: 400,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
-    values.push(id);
-    
-    await env.DB.prepare(`
-      UPDATE vehicles SET ${fields.join(', ')} WHERE id = ?
-    `).bind(...values).run();
-    
-    return new Response(JSON.stringify({
-      success: true,
-      message: 'Vehicle updated successfully'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
   },
 
   async handleDeleteVehicle(id, env, corsHeaders) {
@@ -747,9 +764,11 @@ export default {
   },
 
   async handleUpdateSettings(request, env, corsHeaders) {
-    const settings = await request.json();
-    
     try {
+      const settings = await request.json();
+      
+      console.log('Updating settings:', settings);
+      
       // Try to update existing settings
       await env.DB.prepare(`
         INSERT OR REPLACE INTO site_settings (id, settings, updated_at)
@@ -763,9 +782,10 @@ export default {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     } catch (error) {
+      console.error('Error updating settings:', error);
       return new Response(JSON.stringify({
         success: false,
-        error: error.message
+        error: error.message || 'Failed to update settings'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
