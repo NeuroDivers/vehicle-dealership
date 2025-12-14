@@ -37,9 +37,9 @@ export default function Footer() {
   }
 
   const currentYear = new Date().getFullYear();
-  const copyright = settings.copyright[currentLang]
-    .replace('2024', currentYear.toString())
-    .replace('(c)', '©');
+  const copyright = settings.copyright?.[currentLang]
+    ?.replace('2024', currentYear.toString())
+    ?.replace('(c)', '©') || `© ${currentYear} ${settings.siteName || 'AutoPrêt 123'}. All rights reserved.`;
 
   return (
     <footer className="bg-gray-900 text-white mt-auto">
