@@ -32,11 +32,7 @@ export default function LoginPage() {
 
       if (response.ok) {
         // Cookie is set automatically by the server (HttpOnly)
-        // Only store user info (not the token) for UI display
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Trigger login event for Navigation component
-        window.dispatchEvent(new Event('userLoggedIn'));
+        // No localStorage - user data fetched from API on each page load
         
         // Redirect to admin dashboard
         router.push('/admin');

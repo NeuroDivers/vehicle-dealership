@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   Home,
@@ -19,38 +19,16 @@ import {
   Image
 } from 'lucide-react';
 import AuthGuard from '@/components/AuthGuard';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 
-export default function AdminLayout({
+function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const router = useRouter();
+  const { user, logout } = useAuth();
   const pathname = usePathname();
-
-  useEffect(() => {
-    // Get user from localStorage
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
-
-  const handleLogout = async () => {
-    // Call logout API to clear HttpOnly cookie
-    await fetch(`${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/auth/logout`, {
-      method: 'POST',
-      credentials: 'include' // Cookie sent automatically
-    });
-    
-    // Clear user data from localStorage
-    localStorage.removeItem('user');
-    
-    // Redirect to login
-    router.push('/admin/login');
-  };
 
   // Don't show navigation on login page
   if (pathname === '/admin/login') {
@@ -155,7 +133,7 @@ export default function AdminLayout({
                 </div>
               )}
               <button
-                onClick={handleLogout}
+                onClick={logout}
                 className="hidden md:flex items-center space-x-2 hover:bg-gray-700 px-3 py-2 rounded"
               >
                 <LogOut className="h-4 w-4" />
@@ -246,7 +224,7 @@ export default function AdminLayout({
                 </Link>
               )}
               <button
-                onClick={handleLogout}
+                onClick={logout}
                 className="block w-full text-left px-3 py-2 rounded hover:bg-gray-700"
               >
                 Logout
@@ -263,5 +241,19 @@ export default function AdminLayout({
         </AuthGuard>
       </main>
     </div>
+  );
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AuthProvider>
+      <AdminLayoutContent>
+        {children}
+      </AdminLayoutContent>
+    </AuthProvider>
   );
 }

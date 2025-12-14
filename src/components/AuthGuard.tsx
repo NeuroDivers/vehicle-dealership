@@ -1,53 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-}
-
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      // Cookie is sent automatically with credentials: 'include'
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/auth/verify`,
-        {
-          credentials: 'include' // HttpOnly cookie sent automatically
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok && data.success && data.user) {
-        setAuthenticated(true);
-        setUser(data.user);
-        setLoading(false);
-      } else {
-        // Clear any user data and redirect to login
-        localStorage.removeItem('user');
-        router.push('/admin/login');
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('user');
-      router.push('/admin/login');
-    }
-  };
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -60,7 +17,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!authenticated) {
+  if (!user) {
     return null;
   }
 
