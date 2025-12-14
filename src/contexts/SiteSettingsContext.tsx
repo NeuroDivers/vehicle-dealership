@@ -106,10 +106,33 @@ const SiteSettingsContext = createContext<{
 export const useSiteSettings = () => useContext(SiteSettingsContext);
 
 export function SiteSettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
+  // Initialize with localStorage if available, otherwise use defaults
+  const [settings, setSettings] = useState<SiteSettings>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('siteInfo');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          // Apply CSS variables immediately on initial load
+          if (parsed.themeColors) {
+            document.documentElement.style.setProperty('--color-primary', parsed.themeColors.primary);
+            document.documentElement.style.setProperty('--color-secondary', parsed.themeColors.secondary);
+            document.documentElement.style.setProperty('--color-accent', parsed.themeColors.accent);
+            if (parsed.themeColors.headerText) {
+              document.documentElement.style.setProperty('--color-header-text', parsed.themeColors.headerText);
+            }
+          }
+          return parsed;
+        } catch (e) {
+          console.error('Failed to parse stored settings:', e);
+        }
+      }
+    }
+    return defaultSettings;
+  });
 
   useEffect(() => {
-    // Try to load settings from API first (for public access)
+    // Try to load settings from API (for updates)
     const loadSettings = async () => {
       try {
         // Try to fetch from the admin API which has the settings
