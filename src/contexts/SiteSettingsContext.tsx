@@ -118,8 +118,21 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
         const response = await fetch(`${apiUrl}/api/admin/settings`);
         
         if (response.ok) {
-          const apiSettings = await response.json();
-          if (apiSettings && apiSettings.themeColors) {
+          const data = await response.json();
+          // Handle nested format from API
+          const apiSettings = data.settings?.siteInfo || data.settings || data;
+          
+          if (apiSettings && (apiSettings.themeColors || apiSettings.siteName)) {
+            // Set CSS variables immediately
+            if (typeof document !== 'undefined' && apiSettings.themeColors) {
+              document.documentElement.style.setProperty('--color-primary', apiSettings.themeColors.primary);
+              document.documentElement.style.setProperty('--color-secondary', apiSettings.themeColors.secondary);
+              document.documentElement.style.setProperty('--color-accent', apiSettings.themeColors.accent);
+              if (apiSettings.themeColors.headerText) {
+                document.documentElement.style.setProperty('--color-header-text', apiSettings.themeColors.headerText);
+              }
+            }
+            
             setSettings(apiSettings);
             // Cache in localStorage for offline use
             localStorage.setItem('siteInfo', JSON.stringify(apiSettings));
