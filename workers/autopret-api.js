@@ -1038,13 +1038,74 @@ export default {
   },
 
   async handleSyncVehicleFromVendor(id, env, corsHeaders) {
-    // This is a placeholder - actual implementation would call vendor API
-    return new Response(JSON.stringify({
-      success: true,
-      message: 'Vehicle sync initiated'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    try {
+      // Get the vehicle to find its vendor
+      const vehicle = await env.DB.prepare(`
+        SELECT vendor_id FROM vehicles WHERE id = ?
+      `).bind(id).first();
+      
+      if (!vehicle || !vehicle.vendor_id) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Vehicle not found or has no vendor'
+        }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Get the vendor's feed configuration
+      const feed = await env.DB.prepare(`
+        SELECT * FROM vendor_feeds WHERE vendor_id = ? AND is_active = 1
+      `).bind(vehicle.vendor_id).first();
+      
+      if (!feed) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: `No active feed found for vendor: ${vehicle.vendor_id}`
+        }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Trigger feed sync by calling the feed-scraper worker
+      const feedScraperUrl = 'https://feed-scraper.nick-damato0011527.workers.dev';
+      const syncResponse = await fetch(`${feedScraperUrl}/api/scrape`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendorId: vehicle.vendor_id })
+      });
+      
+      const syncResult = await syncResponse.json();
+      
+      if (syncResponse.ok) {
+        return new Response(JSON.stringify({
+          success: true,
+          message: `Synced ${syncResult.processed || 0} vehicles from ${feed.vendor_name}`,
+          details: syncResult
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } else {
+        return new Response(JSON.stringify({
+          success: false,
+          error: syncResult.error || 'Feed sync failed'
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing vehicle from vendor:', error);
+      return new Response(JSON.stringify({
+        success: false,
+        error: error.message || 'Failed to sync vehicle from vendor'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
   },
 
   // ============================================
