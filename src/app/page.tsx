@@ -621,7 +621,7 @@ export default function Home() {
               <div>
                 <p className="font-semibold">{t.openToday}</p>
                 <p className="text-gray-600">
-                  {settings.businessHours[new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()]?.[language] || t.checkOurHours}
+                  {settings.businessHours?.[new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()]?.[language] || t.checkOurHours}
                 </p>
               </div>
             </div>

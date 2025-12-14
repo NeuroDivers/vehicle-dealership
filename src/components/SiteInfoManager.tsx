@@ -495,7 +495,7 @@ export default function SiteInfoManager() {
         </div>
         
         <div className="space-y-3">
-          {Object.entries(siteInfo.businessHours).map(([day, hours]) => (
+          {siteInfo.businessHours && Object.entries(siteInfo.businessHours).map(([day, hours]: [string, any]) => (
             <div key={day} className="flex items-center space-x-4">
               <span className="w-24 font-medium capitalize">{day}:</span>
               <input
@@ -769,7 +769,7 @@ export default function SiteInfoManager() {
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4">Social Media</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.entries(siteInfo.socialMedia).map(([platform, url]) => (
+          {siteInfo.socialMedia && Object.entries(siteInfo.socialMedia).map(([platform, url]: [string, any]) => (
             <div key={platform}>
               <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
                 {platform}
