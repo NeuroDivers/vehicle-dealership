@@ -10,7 +10,7 @@ database_id = "a6a6d62b-39d9-4aae-b505-21475763bac0"
 
 [[services]]
 binding = "IMAGE_PROCESSOR"
-service = "image-processor"
+service = "autopret-images"
 
 [[services]]
 binding = "DEALER_SCRAPER"
@@ -20,7 +20,7 @@ service = "dealer-scraper"
 ENVIRONMENT = "production"
 CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
 CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
-IMAGE_PROCESSOR_URL = "https://image-processor.nick-damato0011527.workers.dev"
+IMAGE_PROCESSOR_URL = "https://autopret-images.nick-damato0011527.workers.dev"
 CF_IMAGES_TOKEN = "hxqfnYpHcT8FrQYyiRiOiOmkPtGkTuhdf6aCfYVT"
 
 # Universal feed scraper - supports XML/JSON feeds from vendor_feeds table

@@ -1,0 +1,19 @@
+name = "autopret-images"
+main = "autopret-images.js"
+compatibility_date = "2024-01-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "autopret123"
+database_id = "a6a6d62b-39d9-4aae-b505-21475763bac0"
+
+[vars]
+ENVIRONMENT = "production"
+CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
+CLOUDFLARE_IMAGES_ACCOUNT_HASH = "fxSXhaLsNKtcGJIGPzWBwA"
+CF_IMAGES_TOKEN = "hxqfnYpHcT8FrQYyiRiOiOmkPtGkTuhdf6aCfYVT"
+
+# Unified Images Worker - Combines:
+# - image-processor (upload vendor URLs to Cloudflare)
+# - bulk-delete-images (manage Cloudflare Images)
