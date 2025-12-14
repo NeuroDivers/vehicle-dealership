@@ -1,0 +1,17 @@
+name = "autopret-api"
+main = "autopret-api.js"
+compatibility_date = "2024-01-01"
+account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "autopret123"
+database_id = "a6a6d62b-39d9-4aae-b505-21475763bac0"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Unified API Worker - Combines:
+# - vehicle-api (vehicle CRUD, auth)
+# - feed-management-api (feed CRUD)
+# - vin-decoder (VIN decoding utility)
