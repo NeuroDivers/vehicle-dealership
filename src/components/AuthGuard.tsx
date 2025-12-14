@@ -41,7 +41,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
       const data = await response.json();
 
-      if (response.ok && data.authenticated) {
+      if (response.ok && data.success && data.user) {
         setAuthenticated(true);
         setUser(data.user);
         setLoading(false);
