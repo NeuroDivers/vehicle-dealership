@@ -181,6 +181,11 @@ export default {
       // ANALYTICS ROUTES
       // ============================================
 
+      // GET /api/analytics/dashboard - Get dashboard analytics
+      if (url.pathname === '/api/analytics/dashboard' && request.method === 'GET') {
+        return await this.handleGetDashboardAnalytics(request, env, corsHeaders);
+      }
+
       // POST /api/analytics/vehicle-views - Track vehicle view
       if (url.pathname === '/api/analytics/vehicle-views' && request.method === 'POST') {
         return await this.handleTrackVehicleView(request, env, corsHeaders);
@@ -189,6 +194,11 @@ export default {
       // ============================================
       // REVIEWS ROUTES
       // ============================================
+
+      // GET /api/reviews - Get all reviews
+      if (url.pathname === '/api/reviews' && request.method === 'GET') {
+        return await this.handleGetReviews(env, corsHeaders);
+      }
 
       // GET /api/reviews/featured - Get featured reviews
       if (url.pathname === '/api/reviews/featured' && request.method === 'GET') {
@@ -1021,6 +1031,27 @@ export default {
   // REVIEWS HANDLERS
   // ============================================
 
+  async handleGetReviews(env, corsHeaders) {
+    try {
+      const { results } = await env.DB.prepare(`
+        SELECT * FROM reviews 
+        WHERE is_approved = 1
+        ORDER BY date DESC
+        LIMIT 50
+      `).all();
+      
+      return new Response(JSON.stringify(results || []), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      // Return empty array if table doesn't exist
+      return new Response(JSON.stringify([]), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  },
+
   async handleGetFeaturedReviews(env, corsHeaders) {
     try {
       const { results } = await env.DB.prepare(`
@@ -1045,6 +1076,59 @@ export default {
   // ============================================
   // ANALYTICS HANDLERS
   // ============================================
+
+  async handleGetDashboardAnalytics(request, env, corsHeaders) {
+    try {
+      const url = new URL(request.url);
+      const timeRange = url.searchParams.get('timeRange') || '7d';
+      
+      // Calculate date range
+      const days = parseInt(timeRange.replace('d', ''));
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      
+      // Get basic stats
+      const totalVehicles = await env.DB.prepare(`
+        SELECT COUNT(*) as count FROM vehicles WHERE is_published = 1
+      `).first();
+      
+      const totalViews = await env.DB.prepare(`
+        SELECT COUNT(*) as count FROM vehicle_views 
+        WHERE viewed_at >= datetime('now', '-${days} days')
+      `).first();
+      
+      const totalLeads = await env.DB.prepare(`
+        SELECT COUNT(*) as count FROM leads 
+        WHERE created_at >= datetime('now', '-${days} days')
+      `).first();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        stats: {
+          totalVehicles: totalVehicles?.count || 0,
+          totalViews: totalViews?.count || 0,
+          totalLeads: totalLeads?.count || 0,
+          timeRange
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard analytics:', error);
+      // Return default stats if tables don't exist
+      return new Response(JSON.stringify({
+        success: true,
+        stats: {
+          totalVehicles: 0,
+          totalViews: 0,
+          totalLeads: 0,
+          timeRange: '7d'
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  },
 
   async handleTrackVehicleView(request, env, corsHeaders) {
     try {
