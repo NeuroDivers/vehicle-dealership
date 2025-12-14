@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import NavigationMobile from "@/components/NavigationMobile";
 import Footer from "@/components/Footer";
+import AdminTopBar from "@/components/AdminTopBar";
 import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 
 const geistSans = localFont({
@@ -47,6 +48,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <SiteSettingsProvider>
+          <AdminTopBar />
           <NavigationMobile />
           <div className="flex-grow">
             {children}
