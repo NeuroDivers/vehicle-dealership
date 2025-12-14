@@ -11,8 +11,8 @@ CF_IMAGES_TOKEN = "hxqfnYpHcT8FrQYyiRiOiOmkPtGkTuhdf6aCfYVT"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "vehicle-dealership-analytics"
-database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
+database_name = "autopret123"
+database_id = "a6a6d62b-39d9-4aae-b505-21475763bac0"
 
 # Note: CF_IMAGES_TOKEN is set in [vars] above
 # D1 binding is now at root level for default environment

@@ -5,8 +5,8 @@ account_id = "928f2a6b07f166d57bb4b31b9100d1f4"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "vehicle-dealership-analytics"
-database_id = "d70754b6-fec7-483a-b103-c1c78916c497"
+database_name = "autopret123"
+database_id = "a6a6d62b-39d9-4aae-b505-21475763bac0"
 
 [[services]]
 binding = "IMAGE_PROCESSOR"
