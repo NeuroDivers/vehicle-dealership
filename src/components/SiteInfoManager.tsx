@@ -142,18 +142,19 @@ export default function SiteInfoManager() {
       }
 
       // Try to load from API
-      const response = await fetch('/api/admin/site-info');
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/admin/settings`);
       if (response.ok) {
         const data = await response.json();
-        if (data.siteInfo) {
+        if (data.settings && data.settings.siteInfo) {
           // Apply same migration logic
-          if (!data.siteInfo.themeColors) {
-            data.siteInfo.themeColors = defaultSiteInfo.themeColors;
+          if (!data.settings.siteInfo.themeColors) {
+            data.settings.siteInfo.themeColors = defaultSiteInfo.themeColors;
           }
-          setSiteInfo(data.siteInfo);
-          setLogoPreview(data.siteInfo.logo || '');
+          setSiteInfo(data.settings.siteInfo);
+          setLogoPreview(data.settings.siteInfo.logo || '');
           // Save to localStorage
-          localStorage.setItem('siteInfo', JSON.stringify(data.siteInfo));
+          localStorage.setItem('siteInfo', JSON.stringify(data.settings.siteInfo));
         }
       }
     } catch (error) {
@@ -180,7 +181,8 @@ export default function SiteInfoManager() {
       updateSettings(siteInfo as any);
       
       // Try to save to API
-      const response = await fetch('/api/admin/site-info', {
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev';
+      const response = await fetch(`${apiUrl}/api/admin/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ siteInfo })
