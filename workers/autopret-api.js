@@ -742,17 +742,28 @@ export default {
   
   async handleGetSettings(env, corsHeaders) {
     try {
-      const settings = await env.DB.prepare(`
-        SELECT * FROM site_settings LIMIT 1
+      const row = await env.DB.prepare(`
+        SELECT settings FROM site_settings LIMIT 1
       `).first();
+      
+      // Parse the JSON settings column
+      let parsedSettings = {};
+      if (row && row.settings) {
+        try {
+          parsedSettings = JSON.parse(row.settings);
+        } catch (e) {
+          console.error('Failed to parse settings JSON:', e);
+        }
+      }
       
       return new Response(JSON.stringify({
         success: true,
-        settings: settings || {}
+        settings: parsedSettings
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     } catch (error) {
+      console.error('Error fetching settings:', error);
       // If table doesn't exist, return empty settings
       return new Response(JSON.stringify({
         success: true,
