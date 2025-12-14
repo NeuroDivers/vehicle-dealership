@@ -165,19 +165,13 @@ export default {
   async handleLogin(request, env, corsHeaders) {
     const { email, password } = await request.json();
     
-    console.log('Login attempt for:', email);
-    
     const staff = await env.DB.prepare(`
       SELECT id, email, name, role, is_active, password_hash
       FROM staff 
       WHERE email = ? AND is_active = 1
     `).bind(email).first();
     
-    console.log('Staff found:', staff ? 'yes' : 'no');
-    
     const passwordMatch = staff ? await bcrypt.compare(password, staff.password_hash) : false;
-    
-    console.log('Password match:', passwordMatch);
     
     if (staff && passwordMatch) {
       delete staff.password_hash;
