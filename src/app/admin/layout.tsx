@@ -39,19 +39,13 @@ export default function AdminLayout({
   }, []);
 
   const handleLogout = async () => {
-    const token = localStorage.getItem('auth_token');
-    
     // Call logout API to clear HttpOnly cookie
     await fetch(`${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/auth/logout`, {
       method: 'POST',
-      credentials: 'include', // Include cookies in request
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include' // Cookie sent automatically
     });
     
-    // Clear local storage
-    localStorage.removeItem('auth_token');
+    // Clear user data from localStorage
     localStorage.removeItem('user');
     
     // Redirect to login

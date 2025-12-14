@@ -22,21 +22,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('auth_token');
-    
-    if (!token) {
-      router.push('/admin/login');
-      return;
-    }
-
     try {
+      // Cookie is sent automatically with credentials: 'include'
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://autopret-api.nick-damato0011527.workers.dev'}/api/auth/verify`,
         {
-          credentials: 'include', // Include cookies in request
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include' // HttpOnly cookie sent automatically
         }
       );
 
@@ -47,12 +38,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         setLoading(false);
       } else {
-        localStorage.removeItem('auth_token');
+        // Clear any user data and redirect to login
         localStorage.removeItem('user');
         router.push('/admin/login');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
+      localStorage.removeItem('user');
       router.push('/admin/login');
     }
   };

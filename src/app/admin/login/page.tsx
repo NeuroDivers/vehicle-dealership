@@ -31,10 +31,9 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Store token in localStorage
-        localStorage.setItem('auth_token', data.token);
+        // Cookie is set automatically by the server (HttpOnly)
+        // Only store user info (not the token) for UI display
         localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('userEmail', email); // Store email for dev check
         
         // Trigger login event for Navigation component
         window.dispatchEvent(new Event('userLoggedIn'));
