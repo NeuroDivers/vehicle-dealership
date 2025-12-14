@@ -34,7 +34,8 @@ export default function AdminDashboard() {
     fetch(`${apiUrl}/api/vehicles`)
       .then(res => res.json())
       .then(data => {
-        const vehicles = Array.isArray(data) ? data : [];
+        // Handle both old format (array) and new format (object with vehicles property)
+        const vehicles = Array.isArray(data) ? data : (data.vehicles || []);
         const total = vehicles.length;
         const sold = vehicles.filter((v) => v.isSold === 1).length;
         // Calculate total value only for available vehicles (not sold)
