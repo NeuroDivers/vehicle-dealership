@@ -16,12 +16,30 @@ export default {
   },
 
   async fetch(request, env) {
+    // CORS headers
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': 'https://autopret123.ca',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400',
+    };
+
+    // Handle OPTIONS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: corsHeaders
+      });
+    }
+
     // Allow manual trigger via HTTP
     if (request.method === 'POST') {
       try {
         const result = await cleanupOrphanedImages(env);
         return new Response(JSON.stringify(result), {
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          }
         });
       } catch (error) {
         return new Response(JSON.stringify({
@@ -29,13 +47,19 @@ export default {
           error: error.message
         }), {
           status: 500,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          }
         });
       }
     }
     
     return new Response('Image Cleanup Worker - POST to trigger cleanup', {
-      headers: { 'Content-Type': 'text/plain' }
+      headers: { 
+        ...corsHeaders,
+        'Content-Type': 'text/plain' 
+      }
     });
   }
 };
