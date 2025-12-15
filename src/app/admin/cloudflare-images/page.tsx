@@ -6,8 +6,10 @@ import { Trash2, RefreshCw, AlertCircle, CheckCircle, Clock } from 'lucide-react
 export default function CloudflareImagesManagement() {
   const [isScanning, setIsScanning] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
+  const [isCleaningAll, setIsCleaningAll] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [lastRun, setLastRun] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string>('');
 
   const scanOrphanedImages = async () => {
     setIsScanning(true);
@@ -71,6 +73,62 @@ export default function CloudflareImagesManagement() {
     }
   };
 
+  const cleanupAllOrphanedImages = async () => {
+    if (!stats || stats.orphaned === 0) {
+      alert('Please scan for orphaned images first');
+      return;
+    }
+
+    if (!confirm(`Delete ALL ${stats.orphaned} orphaned images? This will run multiple batches.`)) {
+      return;
+    }
+
+    setIsCleaningAll(true);
+    setProgress('');
+    let totalDeleted = 0;
+    let remainingOrphaned = stats.orphaned;
+    let batchNumber = 1;
+
+    try {
+      while (remainingOrphaned > 0) {
+        setProgress(`Batch ${batchNumber}: Deleting up to 100 images...`);
+        
+        const response = await fetch('https://autopret123-image-cleanup.nick-damato0011527.workers.dev', {
+          method: 'POST',
+        });
+
+        const data = await response.json();
+        
+        if (!data.success) {
+          alert(`✗ Error on batch ${batchNumber}: ${data.error}`);
+          break;
+        }
+
+        totalDeleted += data.stats.deleted;
+        remainingOrphaned = data.stats.remaining || 0;
+        setStats(data.stats);
+        setLastRun(new Date().toLocaleString());
+        
+        setProgress(`Batch ${batchNumber}: Deleted ${data.stats.deleted} images. Total: ${totalDeleted}. Remaining: ${remainingOrphaned}`);
+        
+        if (remainingOrphaned === 0) {
+          alert(`✓ All done! Deleted ${totalDeleted} orphaned images in ${batchNumber} batches.`);
+          break;
+        }
+
+        batchNumber++;
+        
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    } catch (error: any) {
+      alert(`✗ Error: ${error.message}`);
+    } finally {
+      setIsCleaningAll(false);
+      setProgress('');
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="max-w-4xl mx-auto">
@@ -102,10 +160,10 @@ export default function CloudflareImagesManagement() {
             </div>
           </div>
 
-          <div className="flex space-x-4 mb-6">
+          <div className="flex flex-wrap gap-4 mb-6">
             <button
               onClick={scanOrphanedImages}
-              disabled={isScanning}
+              disabled={isScanning || isCleaningAll}
               className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
             >
               <RefreshCw className={`h-5 w-5 ${isScanning ? 'animate-spin' : ''}`} />
@@ -113,16 +171,36 @@ export default function CloudflareImagesManagement() {
             </button>
 
             {stats && stats.orphaned > 0 && (
-              <button
-                onClick={cleanupOrphanedImages}
-                disabled={isCleaning}
-                className="flex items-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
-              >
-                <Trash2 className="h-5 w-5" />
-                <span>{isCleaning ? 'Cleaning...' : `Delete ${Math.min(stats.orphaned, 100)} Orphaned Images`}</span>
-              </button>
+              <>
+                <button
+                  onClick={cleanupOrphanedImages}
+                  disabled={isCleaning || isCleaningAll}
+                  className="flex items-center space-x-2 px-6 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition disabled:opacity-50"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  <span>{isCleaning ? 'Cleaning...' : `Delete ${Math.min(stats.orphaned, 100)} Images`}</span>
+                </button>
+
+                {stats.orphaned > 100 && (
+                  <button
+                    onClick={cleanupAllOrphanedImages}
+                    disabled={isCleaning || isCleaningAll}
+                    className="flex items-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                    <span>{isCleaningAll ? 'Cleaning All...' : `Delete ALL ${stats.orphaned} Orphaned Images`}</span>
+                  </button>
+                )}
+              </>
             )}
           </div>
+
+          {/* Progress indicator */}
+          {progress && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800 font-medium">{progress}</p>
+            </div>
+          )}
 
           {/* Stats Display */}
           {stats && (
