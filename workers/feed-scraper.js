@@ -429,10 +429,12 @@ export default {
       
       console.log(`✅ Saved: ${savedCount} new, ${updatedCount} updated`);
       
-      // Trigger image processing
+      // Trigger image processing for ALL vehicles that need it
       let imageJobId = null;
       if (vehicleIdsNeedingImages.length > 0 && env.IMAGE_PROCESSOR) {
         imageJobId = `feed-${vendorId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        console.log(`📸 Triggering image processing for ${vehicleIdsNeedingImages.length} vehicles...`);
         
         try {
           const imgResponse = await env.IMAGE_PROCESSOR.fetch(
@@ -440,8 +442,8 @@ export default {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                vehicleIds: vehicleIdsNeedingImages.slice(0, 20),
-                batchSize: 20,
+                vehicleIds: vehicleIdsNeedingImages, // Process ALL vehicles
+                batchSize: 50, // Increased batch size for efficiency
                 jobId: imageJobId,
                 vendorName: feedConfig.vendor_name
               })
@@ -450,7 +452,9 @@ export default {
           
           if (imgResponse.ok) {
             const imgData = await imgResponse.json();
-            console.log(`✅ Image processing: ${imgData.processed} vehicles, ${imgData.succeeded} succeeded`);
+            console.log(`✅ Image processing: ${imgData.processed} vehicles, ${imgData.succeeded} succeeded, ${imgData.failed} failed`);
+          } else {
+            console.error(`❌ Image processor returned status ${imgResponse.status}`);
           }
         } catch (err) {
           console.error('❌ Image processor failed:', err.message);
