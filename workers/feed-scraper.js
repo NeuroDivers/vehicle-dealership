@@ -38,7 +38,7 @@ function parseXML(xmlString) {
       'stockNumber', 'stock_number', 'stock', 'description', 'fuelType',
       'fuel_type', 'fuel', 'transmission', 'drivetrain', 'engineSize',
       'engine_size', 'engine', 'cylinders', 'doors', 'passengers',
-      'condition', 'status'
+      'condition', 'status', 'unique_identifier_value', 'uniqueIdentifierValue'
     ];
     
     fields.forEach(field => {
@@ -318,9 +318,11 @@ export default {
           } else if (vehicle.uniqueIdentifier && vehicle.uniqueIdentifier.trim() !== '') {
             // Use unique_identifier_value (URL) for vehicles without VIN
             uniqueKey = `uid:${vehicle.uniqueIdentifier}`;
+            console.log(`Using UID for ${vehicle.year} ${vehicle.make} ${vehicle.model}: ${vehicle.uniqueIdentifier}`);
           } else {
             // Fallback to make+model+year if no VIN or unique identifier
             uniqueKey = `mmy:${vehicle.make}|${vehicle.model}|${vehicle.year}|${feedConfig.vendor_id}`;
+            console.log(`Using MMY fallback for ${vehicle.year} ${vehicle.make} ${vehicle.model} (no VIN/UID found)`);
           }
           
           if (processedVins.has(uniqueKey)) {
