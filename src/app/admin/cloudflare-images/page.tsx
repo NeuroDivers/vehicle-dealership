@@ -1,149 +1,187 @@
 'use client';
 
 import { useState } from 'react';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { Trash2, RefreshCw, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 export default function CloudflareImagesManagement() {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+  const [lastRun, setLastRun] = useState<string | null>(null);
 
-  const deleteAllImages = async () => {
-    setIsDeleting(true);
-    setResult(null);
+  const scanOrphanedImages = async () => {
+    setIsScanning(true);
+    setStats(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'https://vehicle-dealership-analytics.nick-damato0011527.workers.dev';
-      const response = await fetch(`${apiUrl}/api/admin/images/delete-all`, {
-        method: 'DELETE',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch('https://autopret123-image-cleanup.nick-damato0011527.workers.dev', {
+        method: 'POST',
       });
 
       const data = await response.json();
-      setResult(data);
+      setStats(data.stats);
+      setLastRun(new Date().toLocaleString());
       
       if (data.success) {
-        const timeStr = data.timeSeconds ? ` in ${data.timeSeconds}s` : '';
-        const rateStr = data.rate ? ` (${data.rate} images/sec)` : '';
-        alert(`✓ Successfully deleted ${data.deletedCount} images${timeStr}${rateStr}!`);
+        if (data.stats.orphaned === 0) {
+          alert('✓ No orphaned images found!');
+        } else {
+          alert(`✓ Found ${data.stats.orphaned} orphaned images`);
+        }
       } else {
         alert(`✗ Error: ${data.error}`);
       }
     } catch (error: any) {
-      setResult({ success: false, error: error.message });
       alert(`✗ Error: ${error.message}`);
     } finally {
-      setIsDeleting(false);
-      setShowConfirm(false);
+      setIsScanning(false);
+    }
+  };
+
+  const cleanupOrphanedImages = async () => {
+    if (!stats || stats.orphaned === 0) {
+      alert('Please scan for orphaned images first');
+      return;
+    }
+
+    if (!confirm(`Delete ${Math.min(stats.orphaned, 100)} orphaned images?`)) {
+      return;
+    }
+
+    setIsCleaning(true);
+
+    try {
+      const response = await fetch('https://autopret123-image-cleanup.nick-damato0011527.workers.dev', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+      setStats(data.stats);
+      setLastRun(new Date().toLocaleString());
+      
+      if (data.success) {
+        alert(`✓ Deleted ${data.stats.deleted} orphaned images!`);
+      } else {
+        alert(`✗ Error: ${data.error}`);
+      }
+    } catch (error: any) {
+      alert(`✗ Error: ${error.message}`);
+    } finally {
+      setIsCleaning(false);
     }
   };
 
   return (
     <div className="p-8">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">Dev Tools</h1>
-        <p className="text-gray-600 mb-6">Developer-only tools and utilities</p>
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-2">Cloudflare Images Management</h1>
+        <p className="text-gray-600 mb-6">Manage orphaned images and optimize storage</p>
 
+        {/* Orphaned Images Scanner */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-2xl font-semibold mb-4 pb-2 border-b">Cloudflare Images Management</h2>
-          <div className="flex items-start space-x-4 mb-6">
-            <AlertTriangle className="h-8 w-8 text-yellow-500 flex-shrink-0 mt-1" />
-            <div>
-              <h3 className="text-xl font-semibold mb-2">Danger Zone</h3>
-              <p className="text-gray-600 mb-4">
-                This action will permanently delete ALL images from Cloudflare Images. 
-                This cannot be undone!
-              </p>
-              <p className="text-sm text-gray-500">
-                Use cases for deleting all images:
-              </p>
-              <ul className="text-sm text-gray-500 list-disc list-inside mt-2 space-y-1">
-                <li>Testing image upload functionality</li>
-                <li>Clearing duplicate images</li>
-                <li>Starting fresh with inventory</li>
-                <li>Freeing up Cloudflare Images storage</li>
-              </ul>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">Orphaned Images Cleanup</h2>
+            {lastRun && (
+              <div className="flex items-center text-sm text-gray-500">
+                <Clock className="h-4 w-4 mr-1" />
+                Last run: {lastRun}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-blue-900 mb-1">What are orphaned images?</h3>
+                <p className="text-sm text-blue-800">
+                  Images that exist in Cloudflare but are no longer referenced by any vehicle in the database. 
+                  These typically occur when vehicles are deleted or images are replaced.
+                </p>
+              </div>
             </div>
           </div>
 
-          {!showConfirm ? (
+          <div className="flex space-x-4 mb-6">
             <button
-              onClick={() => setShowConfirm(true)}
-              className="flex items-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
+              onClick={scanOrphanedImages}
+              disabled={isScanning}
+              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
             >
-              <Trash2 className="h-5 w-5" />
-              <span>Delete All Images</span>
+              <RefreshCw className={`h-5 w-5 ${isScanning ? 'animate-spin' : ''}`} />
+              <span>{isScanning ? 'Scanning...' : 'Scan for Orphaned Images'}</span>
             </button>
-          ) : (
-            <div className="space-y-4">
-              <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
-                <p className="text-red-800 font-semibold mb-2">
-                  ⚠️ Are you absolutely sure?
-                </p>
-                <p className="text-red-700 text-sm mb-4">
-                  This will delete ALL images from Cloudflare Images. Vehicle records 
-                  will still have image URLs, but they will be broken until you re-run 
-                  the scrapers to re-upload images.
-                </p>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={deleteAllImages}
-                    disabled={isDeleting}
-                    className="px-4 py-2 bg-red-600 text-white rounded font-semibold hover:bg-red-700 transition disabled:opacity-50"
-                  >
-                    {isDeleting ? '⚡ Deleting (batched for speed)...' : 'Yes, Delete Everything'}
-                  </button>
-                  <button
-                    onClick={() => setShowConfirm(false)}
-                    disabled={isDeleting}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded font-semibold hover:bg-gray-400 transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
+
+            {stats && stats.orphaned > 0 && (
+              <button
+                onClick={cleanupOrphanedImages}
+                disabled={isCleaning}
+                className="flex items-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
+              >
+                <Trash2 className="h-5 w-5" />
+                <span>{isCleaning ? 'Cleaning...' : `Delete ${Math.min(stats.orphaned, 100)} Orphaned Images`}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Stats Display */}
+          {stats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Database Images</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.dbImages?.toLocaleString()}</div>
               </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Cloudflare Images</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.cloudflareImages?.toLocaleString()}</div>
+              </div>
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <div className="text-sm text-yellow-700 mb-1">Orphaned</div>
+                <div className="text-2xl font-bold text-yellow-900">{stats.orphaned?.toLocaleString()}</div>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="text-sm text-green-700 mb-1">Deleted</div>
+                <div className="text-2xl font-bold text-green-900">{stats.deleted?.toLocaleString()}</div>
+              </div>
+            </div>
+          )}
+
+          {stats && stats.orphaned === 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+              <div>
+                <h3 className="font-semibold text-green-900">All Clean!</h3>
+                <p className="text-sm text-green-800">No orphaned images found. Your storage is optimized.</p>
+              </div>
+            </div>
+          )}
+
+          {stats && stats.remaining > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+              <p className="text-sm text-yellow-800">
+                <strong>{stats.remaining} orphaned images remaining.</strong> Run cleanup again to delete more (max 100 per run for safety).
+              </p>
             </div>
           )}
         </div>
 
-        {result && (
-          <div className={`rounded-lg p-6 ${result.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-            <h3 className={`font-semibold mb-2 ${result.success ? 'text-green-800' : 'text-red-800'}`}>
-              {result.success ? '✓ Success' : '✗ Error'}
-            </h3>
-            <p className={result.success ? 'text-green-700' : 'text-red-700'}>
-              {result.message || result.error}
-            </p>
-            {result.success && (
-              <div className="mt-4 text-sm text-green-700 space-y-1">
-                <p>• <strong>Total found:</strong> {result.totalFound?.toLocaleString()}</p>
-                <p>• <strong>Successfully deleted:</strong> {result.deletedCount?.toLocaleString()}</p>
-                {result.failedCount > 0 && <p>• <strong>Failed:</strong> {result.failedCount}</p>}
-                {result.timeSeconds && (
-                  <p>• <strong>Time:</strong> {result.timeSeconds}s</p>
-                )}
-                {result.rate && (
-                  <p>• <strong>Speed:</strong> {result.rate} images/sec ⚡</p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
-          <h3 className="font-semibold text-blue-900 mb-2">After Deleting All Images</h3>
-          <p className="text-blue-800 text-sm mb-2">
-            To restore images for your vehicles:
+        {/* Info Section */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold mb-3">Automated Cleanup</h3>
+          <p className="text-gray-600 mb-4">
+            A background worker automatically scans and deletes orphaned images <strong>daily at 3 AM UTC</strong>. 
+            You can also manually trigger cleanup using the button above.
           </p>
-          <ol className="text-blue-800 text-sm list-decimal list-inside space-y-1">
-            <li>Go to the scraper admin page (SLT Autos or Lambert)</li>
-            <li>Click "Run Scraper"</li>
-            <li>Scraper will re-upload all images to Cloudflare Images</li>
-            <li>Vehicle images will work again</li>
-          </ol>
+          
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-900 mb-2">Safety Features:</h4>
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li>• Maximum 100 images deleted per run</li>
+              <li>• Only deletes images not referenced in database</li>
+              <li>• Detailed logging of all operations</li>
+              <li>• Can be run multiple times if needed</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
