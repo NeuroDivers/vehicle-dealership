@@ -408,7 +408,7 @@ export default {
     const url = new URL(request.url);
     const status = url.searchParams.get('status') || 'available';
     const vendorId = url.searchParams.get('vendor');
-    const limit = parseInt(url.searchParams.get('limit')) || 100;
+    const limit = parseInt(url.searchParams.get('limit')) || 1000; // Increased from 100 to 1000 for admin
     const offset = parseInt(url.searchParams.get('offset')) || 0;
     
     let query = `SELECT * FROM vehicles WHERE 1=1`;
