@@ -325,11 +325,16 @@ export default {
           if (existing) {
             // Update existing vehicle
             const existingImages = existing.images ? JSON.parse(existing.images) : [];
+            const newImages = vehicle.images || [];
             const hasCloudflareIds = existingImages.length > 0 && 
               typeof existingImages[0] === 'string' && 
               !existingImages[0].startsWith('http');
             
-            const imagesToSave = hasCloudflareIds ? existing.images : JSON.stringify(vehicle.images || []);
+            // Re-process images if:
+            // 1. We don't have Cloudflare IDs yet (still vendor URLs)
+            // 2. Vendor has MORE images than we have stored (new photos added)
+            const shouldReprocessImages = !hasCloudflareIds || (newImages.length > existingImages.length);
+            const imagesToSave = shouldReprocessImages ? JSON.stringify(newImages) : existing.images;
             
             // Get existing markup settings
             const markupSettings = await env.DB.prepare(`
@@ -373,7 +378,8 @@ export default {
               existing.id
             ).run();
             
-            if (!hasCloudflareIds) {
+            // Add to image processing queue if we should reprocess
+            if (shouldReprocessImages) {
               vehicleIdsNeedingImages.push(existing.id);
             }
             updatedCount++;
