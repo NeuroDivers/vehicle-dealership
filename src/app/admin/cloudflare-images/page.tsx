@@ -7,9 +7,11 @@ export default function CloudflareImagesManagement() {
   const [isScanning, setIsScanning] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [isCleaningAll, setIsCleaningAll] = useState(false);
+  const [isReprocessing, setIsReprocessing] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [progress, setProgress] = useState<string>('');
+  const [reprocessStats, setReprocessStats] = useState<any>(null);
 
   const scanOrphanedImages = async () => {
     setIsScanning(true);
@@ -129,6 +131,44 @@ export default function CloudflareImagesManagement() {
     }
   };
 
+  const reprocessUnprocessedImages = async () => {
+    if (!confirm('Scan for vehicles with unprocessed images and trigger image processing?')) {
+      return;
+    }
+
+    setIsReprocessing(true);
+    setReprocessStats(null);
+    setProgress('');
+
+    try {
+      setProgress('Scanning for vehicles with unprocessed images...');
+      
+      const response = await fetch('https://image-reprocessor.nick-damato0011527.workers.dev', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setReprocessStats(data.stats);
+        const { needsProcessing, processed, failed } = data.stats;
+        
+        if (needsProcessing === 0) {
+          alert('✓ All vehicle images are already processed!');
+        } else {
+          alert(`✓ Found ${needsProcessing} vehicles needing processing.\nProcessed: ${processed}\nFailed: ${failed}`);
+        }
+      } else {
+        alert(`✗ Error: ${data.error}`);
+      }
+    } catch (error: any) {
+      alert(`✗ Error: ${error.message}`);
+    } finally {
+      setIsReprocessing(false);
+      setProgress('');
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="max-w-4xl mx-auto">
@@ -243,22 +283,75 @@ export default function CloudflareImagesManagement() {
           )}
         </div>
 
+        {/* Image Reprocessing Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">Unprocessed Images</h2>
+            <Clock className="h-6 w-6 text-gray-400" />
+          </div>
+
+          <p className="text-gray-600 mb-4">
+            Scan for vehicles with vendor URLs (not yet uploaded to Cloudflare) and trigger image processing.
+          </p>
+
+          <button
+            onClick={reprocessUnprocessedImages}
+            disabled={isReprocessing}
+            className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50"
+          >
+            <RefreshCw className={`h-5 w-5 ${isReprocessing ? 'animate-spin' : ''}`} />
+            <span>{isReprocessing ? 'Processing...' : 'Reprocess Unprocessed Images'}</span>
+          </button>
+
+          {reprocessStats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Total Vehicles</div>
+                <div className="text-2xl font-bold text-gray-900">{reprocessStats.total?.toLocaleString()}</div>
+              </div>
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <div className="text-sm text-yellow-700 mb-1">Needs Processing</div>
+                <div className="text-2xl font-bold text-yellow-900">{reprocessStats.needsProcessing?.toLocaleString()}</div>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="text-sm text-green-700 mb-1">Processed</div>
+                <div className="text-2xl font-bold text-green-900">{reprocessStats.processed?.toLocaleString()}</div>
+              </div>
+              <div className="bg-red-50 rounded-lg p-4">
+                <div className="text-sm text-red-700 mb-1">Failed</div>
+                <div className="text-2xl font-bold text-red-900">{reprocessStats.failed?.toLocaleString()}</div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Info Section */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold mb-3">Automated Cleanup</h3>
-          <p className="text-gray-600 mb-4">
-            A background worker automatically scans and deletes orphaned images <strong>daily at 3 AM UTC</strong>. 
-            You can also manually trigger cleanup using the button above.
-          </p>
-          
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-900 mb-2">Safety Features:</h4>
-            <ul className="text-sm text-gray-700 space-y-1">
-              <li>• Maximum 100 images deleted per run</li>
-              <li>• Only deletes images not referenced in database</li>
-              <li>• Detailed logging of all operations</li>
-              <li>• Can be run multiple times if needed</li>
-            </ul>
+          <h3 className="text-lg font-semibold mb-3">Automated Jobs</h3>
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-2">Orphaned Image Cleanup</h4>
+              <p className="text-sm text-gray-600 mb-2">
+                Runs <strong>daily at 3 AM UTC</strong> - Scans and deletes orphaned images
+              </p>
+              <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                <li>• Maximum 100 images deleted per run</li>
+                <li>• Only deletes images not referenced in database</li>
+                <li>• Detailed logging of all operations</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-2">Unprocessed Image Reprocessing</h4>
+              <p className="text-sm text-gray-600 mb-2">
+                Runs <strong>daily at 4 AM UTC</strong> - Finds vehicles with vendor URLs and triggers image processing
+              </p>
+              <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                <li>• Processes up to 50 vehicles per batch</li>
+                <li>• Uploads vendor images to Cloudflare</li>
+                <li>• Updates database with Cloudflare image IDs</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
