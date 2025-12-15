@@ -336,22 +336,13 @@ export default {
           }
           processedVins.add(uniqueKey);
           
-          // Check if vehicle exists
-          let existing = null;
+          // Generate feed_identifier for this vehicle
+          const feedIdentifier = uniqueKey;
           
-          if (vehicle.vin && vehicle.vin.trim() !== '') {
-            existing = await env.DB.prepare(`
-              SELECT id, images FROM vehicles WHERE vin = ? LIMIT 1
-            `).bind(vehicle.vin).first();
-          }
-          
-          if (!existing) {
-            existing = await env.DB.prepare(`
-              SELECT id, images FROM vehicles 
-              WHERE make = ? AND model = ? AND year = ? AND vendor_id = ?
-              LIMIT 1
-            `).bind(vehicle.make, vehicle.model, vehicle.year, vehicle.vendor_id).first();
-          }
+          // Check if vehicle exists by feed_identifier
+          let existing = await env.DB.prepare(`
+            SELECT id, images FROM vehicles WHERE feed_identifier = ? LIMIT 1
+          `).bind(feedIdentifier).first();
           
           if (existing) {
             // Update existing vehicle
@@ -397,7 +388,8 @@ export default {
                 vendor_id = ?, vendor_name = ?,
                 last_seen_from_vendor = datetime('now'),
                 vendor_status = 'active',
-                display_price = ?
+                display_price = ?,
+                feed_identifier = ?
               WHERE id = ?
             `).bind(
               vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
@@ -406,6 +398,7 @@ export default {
               vehicle.fuelType || null, vehicle.transmission || null, vehicle.drivetrain || null, vehicle.engineSize || null,
               vehicle.vendor_id, vehicle.vendor_name,
               displayPrice,
+              feedIdentifier,
               existing.id
             ).run();
             
@@ -437,15 +430,17 @@ export default {
                 fuelType, transmission, drivetrain, engineSize,
                 vendor_id, vendor_name,
                 last_seen_from_vendor, vendor_status,
-                price_markup_type, price_markup_value, display_price
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, datetime('now'), 'active', ?, ?, ?)
+                price_markup_type, price_markup_value, display_price,
+                feed_identifier
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, datetime('now'), 'active', ?, ?, ?, ?)
             `).bind(
               vehicle.make, vehicle.model, vehicle.year, vehicle.price, vehicle.odometer || 0,
               vehicle.bodyType || '', vehicle.color || '', vehicle.vin || '', vehicle.stockNumber || '',
               vehicle.description || '', JSON.stringify(vehicle.images || []),
               vehicle.fuelType || null, vehicle.transmission || null, vehicle.drivetrain || null, vehicle.engineSize || null,
               vehicle.vendor_id, vehicle.vendor_name,
-              markupType, markupValue, displayPrice
+              markupType, markupValue, displayPrice,
+              feedIdentifier
             ).run();
             
             if (result.meta.last_row_id) {
