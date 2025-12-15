@@ -524,14 +524,60 @@ export default {
   },
 
   async handleDeleteVehicle(id, env, corsHeaders) {
-    await env.DB.prepare(`DELETE FROM vehicles WHERE id = ?`).bind(id).run();
-    
-    return new Response(JSON.stringify({
-      success: true,
-      message: 'Vehicle deleted successfully'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    try {
+      // First, get the vehicle's images to delete from Cloudflare
+      const vehicle = await env.DB.prepare(`
+        SELECT images FROM vehicles WHERE id = ?
+      `).bind(id).first();
+      
+      if (vehicle && vehicle.images) {
+        const images = JSON.parse(vehicle.images);
+        const cloudflareImageIds = images.filter(img => 
+          typeof img === 'string' && !img.startsWith('http')
+        );
+        
+        // Delete each Cloudflare image
+        if (cloudflareImageIds.length > 0 && env.CF_IMAGES_TOKEN) {
+          const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+          
+          for (const imageId of cloudflareImageIds) {
+            try {
+              await fetch(
+                `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`,
+                {
+                  method: 'DELETE',
+                  headers: {
+                    'Authorization': `Bearer ${env.CF_IMAGES_TOKEN}`
+                  }
+                }
+              );
+              console.log(`✅ Deleted Cloudflare image: ${imageId}`);
+            } catch (err) {
+              console.error(`Failed to delete Cloudflare image ${imageId}:`, err);
+            }
+          }
+        }
+      }
+      
+      // Delete vehicle from database
+      await env.DB.prepare(`DELETE FROM vehicles WHERE id = ?`).bind(id).run();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Vehicle and images deleted successfully'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Error deleting vehicle:', error);
+      return new Response(JSON.stringify({
+        success: false,
+        error: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
   },
 
   async handleMarkSold(id, request, env, corsHeaders) {
@@ -743,7 +789,7 @@ export default {
   async handleGetSettings(env, corsHeaders) {
     try {
       const row = await env.DB.prepare(`
-        SELECT settings_json FROM site_settings WHERE id = 'global'
+        SELECT settings_json FROM site_settings WHERE id = 1
       `).first();
       
       console.log('Raw row from database:', row);
@@ -796,7 +842,7 @@ export default {
       // Try to update existing settings
       await env.DB.prepare(`
         INSERT OR REPLACE INTO site_settings (id, settings_json, updated_at)
-        VALUES ('global', ?, datetime('now'))
+        VALUES (1, ?, datetime('now'))
       `).bind(JSON.stringify(settings)).run();
       
       return new Response(JSON.stringify({
