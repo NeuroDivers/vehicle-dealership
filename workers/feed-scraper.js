@@ -293,7 +293,9 @@ export default {
       // Normalize and save vehicles
       let savedCount = 0;
       let updatedCount = 0;
+      let skippedCount = 0;
       const vehicleIdsNeedingImages = [];
+      const processedVins = new Set(); // Track VINs we've already processed
       
       for (const rawVehicle of vehicles) {
         try {
@@ -301,8 +303,19 @@ export default {
           
           // Skip invalid vehicles
           if (!vehicle.make || !vehicle.model || !vehicle.year || !vehicle.price) {
-            console.warn(`⚠️  Skipping invalid vehicle: ${JSON.stringify(vehicle)}`);
+            console.warn(`⚠️  Skipping invalid vehicle (missing required fields): Make=${vehicle.make}, Model=${vehicle.model}, Year=${vehicle.year}, Price=${vehicle.price}`);
+            skippedCount++;
             continue;
+          }
+          
+          // Check for duplicate VINs in the feed itself
+          if (vehicle.vin && vehicle.vin.trim() !== '') {
+            if (processedVins.has(vehicle.vin)) {
+              console.warn(`⚠️  Skipping duplicate VIN in feed: ${vehicle.vin} (${vehicle.year} ${vehicle.make} ${vehicle.model})`);
+              skippedCount++;
+              continue;
+            }
+            processedVins.add(vehicle.vin);
           }
           
           // Check if vehicle exists
@@ -427,7 +440,7 @@ export default {
         }
       }
       
-      console.log(`✅ Saved: ${savedCount} new, ${updatedCount} updated`);
+      console.log(`✅ Saved: ${savedCount} new, ${updatedCount} updated, ${skippedCount} skipped (duplicates/invalid)`);
       
       // Trigger image processing for ALL vehicles that need it
       let imageJobId = null;
