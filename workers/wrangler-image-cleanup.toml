@@ -1,0 +1,16 @@
+name = "autopret123-image-cleanup"
+main = "image-cleanup-worker.js"
+compatibility_date = "2024-01-01"
+
+# Run daily at 3 AM UTC
+[triggers]
+crons = ["0 3 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "autopret123"
+database_id = "a6a6d62b-39d9-4aae-b505-21475763bac0"
+
+[vars]
+ENVIRONMENT = "production"
+CLOUDFLARE_ACCOUNT_ID = "928f2a6b07f166d57bb4b31b9100d1f4"
