@@ -97,8 +97,11 @@ function normalizeVehicle(rawVehicle, vendorId, vendorName) {
   // VIN
   vehicle.vin = rawVehicle.vin || '';
   
+  // Unique identifier (for vehicles without VIN)
+  vehicle.uniqueIdentifier = rawVehicle.unique_identifier_value || rawVehicle.uniqueIdentifierValue || '';
+  
   // Stock Number
-  vehicle.stockNumber = rawVehicle.stockNumber || rawVehicle.stock_number || rawVehicle.stock || '';
+  vehicle.stockNumber = rawVehicle.stockNumber || rawVehicle.stock_number || rawVehicle.stock || ''
   
   // Description
   vehicle.description = rawVehicle.description || `${vehicle.year} ${vehicle.make} ${vehicle.model}`.trim();
@@ -308,15 +311,30 @@ export default {
             continue;
           }
           
-          // Check for duplicate VINs in the feed itself
+          // Check for duplicates in the feed itself
+          let uniqueKey;
           if (vehicle.vin && vehicle.vin.trim() !== '') {
-            if (processedVins.has(vehicle.vin)) {
-              console.warn(`⚠️  Skipping duplicate VIN in feed: ${vehicle.vin} (${vehicle.year} ${vehicle.make} ${vehicle.model})`);
-              skippedCount++;
-              continue;
-            }
-            processedVins.add(vehicle.vin);
+            uniqueKey = `vin:${vehicle.vin}`;
+          } else if (vehicle.uniqueIdentifier && vehicle.uniqueIdentifier.trim() !== '') {
+            // Use unique_identifier_value (URL) for vehicles without VIN
+            uniqueKey = `uid:${vehicle.uniqueIdentifier}`;
+          } else {
+            // Fallback to make+model+year if no VIN or unique identifier
+            uniqueKey = `mmy:${vehicle.make}|${vehicle.model}|${vehicle.year}|${feedConfig.vendor_id}`;
           }
+          
+          if (processedVins.has(uniqueKey)) {
+            if (vehicle.vin) {
+              console.warn(`⚠️  Skipping duplicate VIN in feed: ${vehicle.vin} (${vehicle.year} ${vehicle.make} ${vehicle.model})`);
+            } else if (vehicle.uniqueIdentifier) {
+              console.warn(`⚠️  Skipping duplicate unique_identifier in feed: ${vehicle.uniqueIdentifier}`);
+            } else {
+              console.warn(`⚠️  Skipping duplicate vehicle in feed (no VIN/UID): ${vehicle.year} ${vehicle.make} ${vehicle.model}`);
+            }
+            skippedCount++;
+            continue;
+          }
+          processedVins.add(uniqueKey);
           
           // Check if vehicle exists
           let existing = null;
@@ -440,7 +458,7 @@ export default {
         }
       }
       
-      console.log(`✅ Saved: ${savedCount} new, ${updatedCount} updated, ${skippedCount} skipped (duplicates/invalid)`);
+      console.log(`✅ Saved: ${savedCount} new, ${updatedCount} updated`);
       
       // Trigger image processing for ALL vehicles that need it
       let imageJobId = null;
